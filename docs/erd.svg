@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <style><![CDATA[
+      .title { font: 700 20px 'Segoe UI', Arial, sans-serif; fill:#1f2a44 }
+      .label { font: 600 16px 'Segoe UI', Arial, sans-serif; fill:#1f2a44 }
+      .field { font: 400 14px 'Segoe UI', Arial, sans-serif; fill:#2b3a5c }
+      .box { fill:#ffffff; stroke:#7a8aa0; stroke-width:2; rx:10 }
+      .arrow { stroke:#3b4a6b; stroke-width:2.2; fill:none }
+      .crow { fill:#3b4a6b }
+    ]]></style>
+    <marker id="crow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,7 L12,0 L12,14 Z" class="crow" />
+    </marker>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#3b4a6b" />
+    </marker>
+  </defs>
+
+  <text x="800" y="40" text-anchor="middle" class="title">StayWise – ERD</text>
+
+  <!-- USERS -->
+  <rect x="100" y="120" width="320" height="240" class="box" />
+  <text x="260" y="150" text-anchor="middle" class="label">USERS</text>
+  <text x="120" y="180" class="field">id PK</text>
+  <text x="120" y="200" class="field">name</text>
+  <text x="120" y="220" class="field">email UK</text>
+  <text x="120" y="240" class="field">password_hash</text>
+  <text x="120" y="260" class="field">role (tenant|admin)</text>
+  <text x="120" y="280" class="field">created_at</text>
+  <text x="120" y="300" class="field">updated_at</text>
+
+  <!-- PAYMENTS -->
+  <rect x="560" y="80" width="360" height="260" class="box" />
+  <text x="740" y="110" text-anchor="middle" class="label">PAYMENTS</text>
+  <text x="580" y="140" class="field">id PK</text>
+  <text x="580" y="160" class="field">user_id FK → USERS.id</text>
+  <text x="580" y="180" class="field">amount (10,2)</text>
+  <text x="580" y="200" class="field">method</text>
+  <text x="580" y="220" class="field">reference_no</text>
+  <text x="580" y="240" class="field">status (Pending|Verified|Rejected)</text>
+  <text x="580" y="260" class="field">proof_path</text>
+  <text x="580" y="280" class="field">bill_month, bill_year</text>
+  <text x="580" y="300" class="field">created_at, verified_at</text>
+
+  <!-- COMPLAINTS -->
+  <rect x="560" y="420" width="360" height="280" class="box" />
+  <text x="740" y="450" text-anchor="middle" class="label">COMPLAINTS</text>
+  <text x="580" y="480" class="field">id PK</text>
+  <text x="580" y="500" class="field">user_id FK → USERS.id</text>
+  <text x="580" y="520" class="field">subject</text>
+  <text x="580" y="540" class="field">details (text)</text>
+  <text x="580" y="560" class="field">status (Open|In Progress|Resolved|Rejected)</text>
+  <text x="580" y="580" class="field">attachment_path</text>
+  <text x="580" y="600" class="field">created_at, updated_at, resolved_at</text>
+
+  <!-- COMPLAINT_NOTES -->
+  <rect x="1030" y="420" width="380" height="220" class="box" />
+  <text x="1220" y="450" text-anchor="middle" class="label">COMPLAINT_NOTES</text>
+  <text x="1050" y="480" class="field">id PK</text>
+  <text x="1050" y="500" class="field">complaint_id FK → COMPLAINTS.id</text>
+  <text x="1050" y="520" class="field">author_user_id FK → USERS.id</text>
+  <text x="1050" y="540" class="field">note (text)</text>
+  <text x="1050" y="560" class="field">created_at</text>
+
+  <!-- ANNOUNCEMENTS -->
+  <rect x="1030" y="80" width="400" height="240" class="box" />
+  <text x="1230" y="110" text-anchor="middle" class="label">ANNOUNCEMENTS</text>
+  <text x="1050" y="140" class="field">id PK</text>
+  <text x="1050" y="160" class="field">author_user_id FK → USERS.id</text>
+  <text x="1050" y="180" class="field">title</text>
+  <text x="1050" y="200" class="field">body (text)</text>
+  <text x="1050" y="220" class="field">visibility (all|tenants|admins)</text>
+  <text x="1050" y="240" class="field">status (published|archived)</text>
+  <text x="1050" y="260" class="field">created_at, updated_at</text>
+
+  <!-- ADMIN_LOGS -->
+  <rect x="100" y="420" width="400" height="240" class="box" />
+  <text x="300" y="450" text-anchor="middle" class="label">ADMIN_LOGS</text>
+  <text x="120" y="480" class="field">id PK</text>
+  <text x="120" y="500" class="field">admin_user_id FK → USERS.id</text>
+  <text x="120" y="520" class="field">action</text>
+  <text x="120" y="540" class="field">entity_type, entity_id</text>
+  <text x="120" y="560" class="field">details (JSON)</text>
+  <text x="120" y="580" class="field">ip_address</text>
+  <text x="120" y="600" class="field">created_at</text>
+
+  <!-- RELATIONS -->
+  <!-- USERS to PAYMENTS (1 to many) -->
+  <polyline points="420,200 520,200 520,160 560,160" class="arrow" marker-end="url(#arrow)"/>
+  <polyline points="420,220 520,220 520,280 560,280" class="arrow" marker-end="url(#arrow)"/>
+
+  <!-- USERS to COMPLAINTS (1 to many) -->
+  <polyline points="420,260 520,260 520,500 560,500" class="arrow" marker-end="url(#arrow)"/>
+
+  <!-- USERS to ANNOUNCEMENTS (1 to many) -->
+  <polyline points="420,240 520,240 520,160 1030,160" class="arrow" marker-end="url(#arrow)"/>
+
+  <!-- USERS to ADMIN_LOGS (1 to many) -->
+  <polyline points="260,360 260,400 260,420" class="arrow" marker-end="url(#arrow)"/>
+  <polyline points="300,360 300,400 300,420" class="arrow" marker-end="url(#arrow)"/>
+
+  <!-- COMPLAINTS to COMPLAINT_NOTES (1 to many) -->
+  <polyline points="920,520 980,520 980,520 1030,520" class="arrow" marker-end="url(#arrow)"/>
+
+  <!-- Crow's feet (many) at child sides -->
+  <polyline points="560,160 555,155 555,165" class="arrow"/>
+  <polyline points="560,280 555,275 555,285" class="arrow"/>
+  <polyline points="560,500 555,495 555,505" class="arrow"/>
+  <polyline points="1030,520 1025,515 1025,525" class="arrow"/>
+  <polyline points="1030,160 1025,155 1025,165" class="arrow"/>
+  <polyline points="100,420 95,415 95,425" class="arrow"/>
+  <polyline points="140,420 135,415 135,425" class="arrow"/>
+</svg>

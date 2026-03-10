@@ -1,0 +1,27 @@
+## Security for uploads/payments
+# Disable PHP and other script execution in this folder (Apache 2.4)
+<FilesMatch "\.(php|php[0-9]?|phtml|phar|cgi|pl|py|asp|aspx|js|jsp)$">
+	Require all denied
+</FilesMatch>
+
+# Disallow access to .ht* files
+<Files ~ "^\.ht">
+	Require all denied
+</Files>
+
+# Prevent directory listing
+Options -Indexes
+
+# Allow common static files (images, pdf)
+<FilesMatch "\.(jpe?g|png|gif|webp|pdf|svg)$">
+	Require all granted
+</FilesMatch>
+
+# Extra hardening (only if mod_php is used; harmless otherwise)
+<IfModule mod_php7.c>
+	php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+	php_flag engine off
+</IfModule>
+

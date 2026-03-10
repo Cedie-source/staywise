@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>StayWise Test Cases (30)</title>
+<style>
+  body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #111; }
+  h1 { font-family: 'Times New Roman', Times, serif; font-size: 12pt; font-weight: bold; margin-bottom: 6pt; }
+  h2 { font-family: 'Times New Roman', Times, serif; font-size: 12pt; font-weight: bold; }
+  p { margin: 0 0 8pt 0; }
+  @page { size: 8.5in 11in; margin: 1in; }
+  table { border-collapse: collapse; width: 100%; table-layout: auto; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+  th, td { border: 1px solid #999; padding: 6pt; vertical-align: top; word-wrap: break-word; white-space: normal; }
+  th { background: #f3f6fb; text-align: left; }
+  thead { display: table-header-group; }
+  tbody { display: table-row-group; }
+  tr, td { page-break-inside: avoid; }
+  ol, li { page-break-inside: avoid; margin-top: 0; margin-bottom: 0; }
+  .small { color: #444; font-size: 10pt; }
+  ol { margin: 0; padding-left: 18pt; }
+</style>
+</head>
+<body>
+<h1>Please submit here your test case scenarios</h1>
+<p><b>Leader and Members</b></p>
+<p>Domider, Mary Rain Aina I. (Leader)</p>
+<p>Intapan, Alex Jr.</p>
+<p>Pisalbon, Christian Daniel B.</p>
+<p>Pilpa, Danise Hartel H.</p>
+<p>Rollon, Lorince L.</p>
+<p>&nbsp;</p>
+<p class="small">Fields: Case Number, Feature/Module, Test Case Scenario, Pre‑requisite, Test Steps, Test Data, Expected Results, Browsers</p>
+<p class="small">Default Browser: Chrome (latest)</p>
+
+<h2 style="margin:12pt 0 6pt 0;">Authentication &amp; Authorization</h2>
+<table border="1" cellspacing="0" cellpadding="6" width="100%" style="width:100%;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <thead>
+    <tr>
+      <th>Case Number</th>
+      <th>Feature / Module</th>
+      <th>Test Case Scenario</th>
+      <th>Pre‑requisite</th>
+      <th>Test Steps</th>
+      <th>Test Data</th>
+      <th>Expected Results</th>
+      <th>Browsers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Authentication & Authorization</td>
+      <td>Successful tenant login</td>
+      <td>Tenant account exists and is active</td>
+      <td>
+        <ol>
+          <li>Open login.php</li>
+          <li>Enter valid tenant email and password</li>
+          <li>Click Login</li>
+        </ol>
+      </td>
+      <td>email=tenant1@example.com; password=CorrectPassword1!</td>
+      <td>Redirect to tenant/dashboard.php; session established; header shows user menu</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Authentication & Authorization</td>
+      <td>Successful admin login</td>
+      <td>Admin account exists; role=admin</td>
+      <td>
+        <ol>
+          <li>Open login.php</li>
+          <li>Enter valid admin email and password</li>
+          <li>Click Login</li>
+        </ol>
+      </td>
+      <td>email=admin@example.com; password=AdminPass1!</td>
+      <td>Redirect to admin/dashboard.php; admin menus visible per RBAC</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Authentication & Authorization</td>
+      <td>Logout ends session</td>
+      <td>User is logged in (tenant or admin)</td>
+      <td>
+        <ol>
+          <li>Click Logout or open logout.php</li>
+          <li>Try accessing a protected page</li>
+        </ol>
+      </td>
+  <td>session=active (tenant/admin)</td>
+      <td>Session destroyed; redirected to login.php; protected page redirects to login</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Authentication & Authorization</td>
+      <td>Invalid password rejected</td>
+      <td>Tenant user exists</td>
+      <td>
+        <ol>
+          <li>Open login.php</li>
+          <li>Enter valid email with wrong password</li>
+          <li>Click Login</li>
+        </ol>
+      </td>
+      <td>email=tenant1@example.com; password=WrongPass</td>
+      <td>Stay on login.php with clear error; no session set</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>Authentication & Authorization</td>
+      <td>Access control blocks admin-only page for tenant</td>
+      <td>Tenant logged in as non-admin</td>
+      <td>
+        <ol>
+          <li>Navigate directly to admin/dashboard.php</li>
+        </ol>
+      </td>
+  <td>role=tenant; url=/admin/dashboard.php</td>
+      <td>Redirect to login or Access Denied; no sensitive data leaked</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>Authentication & Authorization</td>
+      <td>Expired/missing session blocks access</td>
+      <td>No valid session (logged out or expired)</td>
+      <td>
+        <ol>
+          <li>Open tenant/dashboard.php without logging in</li>
+        </ol>
+      </td>
+  <td>session=none or expired</td>
+      <td>Redirect to login.php; new session issued after login</td>
+  <td>Chrome</td>
+    </tr>
+  </tbody>
+</table>
+<div style="page-break-before: always;"></div>
+<h2 style="margin:12pt 0 6pt 0;">Payments</h2>
+<table border="1" cellspacing="0" cellpadding="6" width="100%" style="width:100%;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <thead>
+    <tr>
+      <th>Case Number</th>
+      <th>Feature / Module</th>
+      <th>Test Case Scenario</th>
+      <th>Pre‑requisite</th>
+      <th>Test Steps</th>
+      <th>Test Data</th>
+      <th>Expected Results</th>
+      <th>Browsers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>7</td>
+      <td>Payments</td>
+      <td>Submit payment proof</td>
+      <td>Tenant logged in; current month unpaid</td>
+      <td>
+        <ol>
+          <li>Open tenant/payments.php</li>
+          <li>Fill form fields; upload valid image</li>
+          <li>Submit</li>
+        </ol>
+      </td>
+      <td>amount=1500.00; method=GCash; ref=GC-123456; file=payment.jpg (≤2MB, jpg)</td>
+      <td>Record created with status "Pending"; file stored; success message; appears in list</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>Payments</td>
+      <td>View payment status list</td>
+      <td>At least one payment submitted</td>
+      <td>
+        <ol>
+          <li>Open tenant/payments.php</li>
+        </ol>
+      </td>
+  <td>N/A</td>
+      <td>Table lists payments with latest on top; statuses correctly shown</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>Payments</td>
+      <td>Verify payment</td>
+      <td>Admin logged in; a pending payment exists</td>
+      <td>
+        <ol>
+          <li>Open admin/payments.php</li>
+          <li>Review proof; click Verify</li>
+        </ol>
+      </td>
+      <td>Pick a pending payment</td>
+      <td>Status changes to "Verified"; tenant view reflects update</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>Payments</td>
+      <td>Reject invalid file type</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Open tenant/payments.php</li>
+          <li>Attach forbidden file type</li>
+          <li>Submit</li>
+        </ol>
+      </td>
+      <td>payment.exe or script.php</td>
+      <td>Validation error; file not stored; no DB insert</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>Payments</td>
+      <td>Reject oversized file</td>
+      <td>Tenant logged in; server max upload set (e.g., 2MB)</td>
+      <td>
+        <ol>
+          <li>Open tenant/payments.php</li>
+          <li>Upload an oversized file</li>
+          <li>Submit</li>
+        </ol>
+      </td>
+      <td>image ≈5MB</td>
+      <td>Error about size; no DB change</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>Payments</td>
+      <td>Prevent duplicate month submission</td>
+      <td>Existing payment for current billing month</td>
+      <td>
+        <ol>
+          <li>Attempt another submission for same month</li>
+        </ol>
+      </td>
+      <td>month=current; year=current</td>
+      <td>Duplicate prevented; appropriate error shown</td>
+  <td>Chrome</td>
+    </tr>
+  </tbody>
+</table>
+<div style="page-break-before: always;"></div>
+<h2 style="margin:12pt 0 6pt 0;">Complaints</h2>
+<table border="1" cellspacing="0" cellpadding="6" width="100%" style="width:100%;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <thead>
+    <tr>
+      <th>Case Number</th>
+      <th>Feature / Module</th>
+      <th>Test Case Scenario</th>
+      <th>Pre‑requisite</th>
+      <th>Test Steps</th>
+      <th>Test Data</th>
+      <th>Expected Results</th>
+      <th>Browsers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>13</td>
+      <td>Complaints</td>
+      <td>Submit complaint</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Open tenant/complaints.php</li>
+          <li>Fill subject and details; optionally attach image</li>
+          <li>Submit</li>
+        </ol>
+      </td>
+      <td>subject=Leaky faucet; details=Kitchen sink leak; optional image</td>
+      <td>Complaint created with status "Open"; appears in list</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td>Complaints</td>
+      <td>Admin updates complaint status</td>
+      <td>Admin logged in; complaint exists</td>
+      <td>
+        <ol>
+          <li>Open admin/complaints.php</li>
+          <li>Update status and note; save</li>
+        </ol>
+      </td>
+      <td>status → "In Progress" then "Resolved"; note=Plumber scheduled</td>
+      <td>Status updated; history/note recorded; tenant sees latest status</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>Complaints</td>
+      <td>Tenant views complaint history</td>
+      <td>Complaints exist for tenant</td>
+      <td>
+        <ol>
+          <li>Open tenant/complaints.php</li>
+        </ol>
+      </td>
+  <td>N/A</td>
+      <td>List shows statuses and timestamps; resolved items indicated</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td>Complaints</td>
+      <td>Empty subject or details blocked</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Submit with empty subject or details</li>
+        </ol>
+      </td>
+      <td>subject="" or details=""</td>
+      <td>Validation error; no DB insert</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>17</td>
+      <td>Complaints</td>
+      <td>Unauthorized status change blocked</td>
+      <td>Tenant logged in (non-admin); complaint exists</td>
+      <td>
+        <ol>
+          <li>Attempt admin-only update via URL or crafted POST</li>
+        </ol>
+      </td>
+  <td>role=tenant; complaint_id=existing; payload=status=Resolved</td>
+      <td>Access denied; no DB update</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>18</td>
+      <td>Complaints</td>
+      <td>Oversized/invalid attachment rejected</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Attach a 6MB or disallowed file; submit</li>
+        </ol>
+      </td>
+      <td>file≈6MB or .exe</td>
+      <td>Validation error; file not saved; complaint not created</td>
+  <td>Chrome</td>
+    </tr>
+  </tbody>
+</table>
+<div style="page-break-before: always;"></div>
+<h2 style="margin:12pt 0 6pt 0;">Announcements</h2>
+<table border="1" cellspacing="0" cellpadding="6" width="100%" style="width:100%;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <thead>
+    <tr>
+      <th>Case Number</th>
+      <th>Feature / Module</th>
+      <th>Test Case Scenario</th>
+      <th>Pre‑requisite</th>
+      <th>Test Steps</th>
+      <th>Test Data</th>
+      <th>Expected Results</th>
+      <th>Browsers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>19</td>
+      <td>Announcements</td>
+      <td>Admin posts announcement</td>
+      <td>Admin logged in</td>
+      <td>
+        <ol>
+          <li>Open admin/announcement.php</li>
+          <li>Create announcement and publish</li>
+        </ol>
+      </td>
+      <td>title=Water Maintenance; body=No water 2-4PM; visibility=All</td>
+      <td>Announcement saved; visible to tenants</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>Announcements</td>
+      <td>Tenants can read announcements</td>
+      <td>At least one announcement exists</td>
+      <td>
+        <ol>
+          <li>Open tenant/dashboard.php (announcements section)</li>
+        </ol>
+      </td>
+  <td>N/A</td>
+      <td>Newest first; readable in light/dark mode</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>21</td>
+      <td>Announcements</td>
+      <td>Admin archives/hides an announcement</td>
+      <td>Announcement exists</td>
+      <td>
+        <ol>
+          <li>Open admin/announcement.php</li>
+          <li>Archive or hide the item</li>
+        </ol>
+      </td>
+      <td>Select an existing announcement</td>
+      <td>Status changes; tenants no longer see archived item</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>22</td>
+      <td>Announcements</td>
+      <td>Missing title/body validation</td>
+      <td>Admin logged in</td>
+      <td>
+        <ol>
+          <li>Attempt to publish with empty title or body</li>
+        </ol>
+      </td>
+      <td>title="" or body=""</td>
+      <td>Error shown; not saved</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>23</td>
+      <td>Announcements</td>
+      <td>Tenant cannot modify announcements</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Access admin/announcement.php</li>
+        </ol>
+      </td>
+  <td>role=tenant; url=/admin/announcement.php</td>
+      <td>Redirect/Access denied; no change possible</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>24</td>
+      <td>Announcements</td>
+      <td>XSS content sanitized</td>
+      <td>Admin logged in</td>
+      <td>
+        <ol>
+          <li>Publish with script tags; view as tenant</li>
+        </ol>
+      </td>
+      <td>body contains &lt;script&gt;alert(1)&lt;/script&gt;</td>
+      <td>No script execution; content safely escaped/sanitized</td>
+  <td>Chrome</td>
+    </tr>
+  </tbody>
+</table>
+<div style="page-break-before: always;"></div>
+<h2 style="margin:12pt 0 6pt 0;">AI Chatbot</h2>
+<table border="1" cellspacing="0" cellpadding="6" width="100%" style="width:100%;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <thead>
+    <tr>
+      <th>Case Number</th>
+      <th>Feature / Module</th>
+      <th>Test Case Scenario</th>
+      <th>Pre‑requisite</th>
+      <th>Test Steps</th>
+      <th>Test Data</th>
+      <th>Expected Results</th>
+      <th>Browsers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>25</td>
+      <td>AI Chatbot</td>
+      <td>Tenant receives AI response</td>
+      <td>Tenant logged in; api/chat.php configured</td>
+      <td>
+        <ol>
+          <li>Open tenant/chatbot.php</li>
+          <li>Send a message</li>
+        </ol>
+      </td>
+      <td>message="How do I submit a payment proof?"</td>
+      <td>Assistant response displayed; no API keys exposed</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>26</td>
+      <td>AI Chatbot</td>
+      <td>Conversation history persists</td>
+      <td>Tenant logged in; chat page open</td>
+      <td>
+        <ol>
+          <li>Send multiple messages</li>
+          <li>Refresh the page</li>
+        </ol>
+      </td>
+      <td>2–3 message exchanges</td>
+      <td>Previous messages shown; assistant continues context</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>27</td>
+      <td>AI Chatbot</td>
+      <td>Handles provider errors gracefully</td>
+      <td>Simulate provider outage/timeout (e.g., wrong key)</td>
+      <td>
+        <ol>
+          <li>Send a message while provider fails</li>
+        </ol>
+      </td>
+      <td>message=any</td>
+      <td>User-friendly error; no crash; no sensitive details leaked</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>28</td>
+      <td>AI Chatbot</td>
+      <td>Unauthenticated chat blocked</td>
+      <td>Not logged in</td>
+      <td>
+        <ol>
+          <li>POST to api/chat.php directly</li>
+        </ol>
+      </td>
+  <td>N/A</td>
+      <td>401/redirect; no model details in response</td>
+  <td>Chrome</td>
+    </tr>
+    <tr>
+      <td>29</td>
+      <td>AI Chatbot</td>
+      <td>Empty or too-long message rejected</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Submit empty message; then a very long message (~20k chars)</li>
+        </ol>
+      </td>
+      <td>message="" or extremely long string</td>
+      <td>Validation error; length limited/truncated; not sent to provider</td>
+      <td>Chrome; Edge; Firefox</td>
+    </tr>
+    <tr>
+      <td>30</td>
+      <td>AI Chatbot</td>
+      <td>Injection/HTML sanitized in UI</td>
+      <td>Tenant logged in</td>
+      <td>
+        <ol>
+          <li>Send message containing HTML/JS payload</li>
+        </ol>
+      </td>
+      <td>message=&lt;img src=x onerror=alert(1)&gt;</td>
+      <td>Content escaped; no HTML/JS executed in chat bubbles</td>
+      <td>Chrome; Edge; Firefox</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="small">Tip: In Word, use File → Save As → Excel Workbook (*.xlsx) if you need to export to Excel later.</p>
+</body>
+</html>

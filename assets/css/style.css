@@ -1,0 +1,2315 @@
+/* ===== StayWise Custom Styles - Optimized ===== */
+
+/* ===== CSS Variables ===== */
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --text-light: #000000;
+    --text-dark: #f8f9fa;
+    --scale: 0.96;
+    --login-scale: 0.88;
+}
+
+/* ===== Global Scaling ===== */
+html {
+    font-size: calc(100% * var(--scale));
+    overflow-x: hidden;
+    height: 100%;
+}
+
+body {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ===== Base Styles ===== */
+body {
+    background-color: #f1f5f9;
+    color: #1e293b;
+}
+
+/* Sticky footer styling - footer always at bottom */
+footer {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+/* Dark mode body handled by .dark-mode class in header.php */
+
+/* ===== Responsive Scaling ===== */
+@media (max-width: 992px) { :root { --scale: 0.95; } }
+@media (max-width: 768px) { :root { --scale: 1; } }
+@media (max-width: 480px) { 
+    :root { 
+        --scale: 1;
+        --login-scale: 0.95;
+    }
+}
+
+/* ===== Navigation ===== */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* ===== Cards - Base Styles (NO HOVER BY DEFAULT) ===== */
+.card,
+.custom-card {
+    border: none;
+    border-radius: calc(10px * var(--scale));
+    transition: none;
+}
+
+.card:hover {
+    transform: none;
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    color: white;
+    border-radius: calc(10px * var(--scale)) calc(10px * var(--scale)) 0 0 !important;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 48px;
+}
+
+.card-body {
+    padding: 1rem 1.25rem !important;
+}
+
+/* ===== Light Mode Card Styling ===== */
+/* Stats cards with subtle shadow and gentle hover */
+body:not(.dark-mode) .dashboard-ui .card.hover-card,
+body:not(.dark-mode) .admin-ui .card.hover-card,
+body:not(.dark-mode) .tenant-ui .card.hover-card {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+    transition: box-shadow 200ms ease, transform 200ms ease !important;
+}
+
+body:not(.dark-mode) .dashboard-ui .card.hover-card:hover,
+body:not(.dark-mode) .admin-ui .card.hover-card:hover,
+body:not(.dark-mode) .tenant-ui .card.hover-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+}
+
+/* Regular cards with subtle shadow */
+body:not(.dark-mode) .dashboard-ui .card:not(.hover-card):not(.menu-card),
+body:not(.dark-mode) .admin-ui .card:not(.hover-card):not(.menu-card),
+body:not(.dark-mode) .tenant-ui .card:not(.hover-card):not(.menu-card) {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+    transition: box-shadow 200ms ease !important;
+}
+
+body:not(.dark-mode) .dashboard-ui .card:not(.hover-card):not(.menu-card):hover,
+body:not(.dark-mode) .admin-ui .card:not(.hover-card):not(.menu-card):hover,
+body:not(.dark-mode) .tenant-ui .card:not(.hover-card):not(.menu-card):hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+}
+
+body:not(.dark-mode) .dashboard-ui .card-header,
+body:not(.dark-mode) .admin-ui .card-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* ===== Menu Cards (Navigation Cards with Hover) ===== */
+.card.menu-card {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+    cursor: pointer;
+}
+
+.card.menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.14);
+}
+
+.card.menu-card .card-body {
+    padding: 1.5rem 1rem;
+}
+
+/* Menu card - Dark Mode */
+body.dark-mode .card.menu-card {
+    background-color: #1f2530;
+    border: 1px solid #2b3035;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .card.menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(78,214,193,0.15);
+}
+
+body.dark-mode .card.menu-card .card-body {
+    color: #e7e7ee;
+}
+
+/* ===== Dark Mode Cards (class-based) ===== */
+body.dark-mode .dashboard-ui .card,
+body.dark-mode .tenant-ui .card,
+body.dark-mode .admin-ui .card {
+    background-color: #111418;
+    color: #e0e1dd;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+    border-color: #1e2228;
+}
+
+/* Dark mode: neutral card headers */
+body.dark-mode .admin-ui .card-header,
+body.dark-mode .dashboard-ui .card-header {
+    background: linear-gradient(135deg, #1a1f26, #141920) !important;
+    color: #e0e1dd !important;
+    border-bottom: 1px solid #1e2228 !important;
+}
+
+/* ===== Buttons ===== */
+.btn {
+    border-radius: calc(8px * var(--scale));
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Clean button style in light mode */
+body:not(.dark-mode) .btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25) !important;
+}
+
+/* ===== Tables ===== */
+.table,
+.custom-table {
+    border-radius: calc(8px * var(--scale));
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.table thead th,
+.custom-table th {
+    background-color: var(--primary-color);
+    color: #ffffff !important;
+    border: none;
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+.custom-table {
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.custom-table th,
+.custom-table td {
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.custom-table th {
+    background: #f8fafc;
+}
+
+.custom-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Ensure tenant payment table headers remain white */
+.tenant-ui .table thead th {
+    color: #fff !important;
+}
+
+/* Dark mode table styling (class-based) */
+body.dark-mode .dashboard-ui .table thead th {
+    background-color: #304056;
+}
+
+body.dark-mode .dashboard-ui .table tbody td,
+body.dark-mode .dashboard-ui .list-group-item,
+body.dark-mode .tenant-ui .table tbody td,
+body.dark-mode .tenant-ui .list-group-item {
+    color: #e7e7ee;
+    background-color: transparent;
+    border-color: rgba(255,255,255,0.08);
+}
+
+/* ===== Badges & Status ===== */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5em 0.8em;
+    border-radius: calc(12px * var(--scale));
+}
+
+.status-pending { background-color: var(--warning-color); color: #fff; }
+.status-verified { background-color: var(--success-color); }
+.status-rejected { background-color: var(--danger-color); }
+.status-cancelled { background-color: #6c757d; color: #fff; }
+.status-ongoing { background-color: var(--info-color); color: #000; }
+.status-resolved { background-color: var(--success-color); }
+
+/* ===== Dashboard Cards ===== */
+.dashboard-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: calc(15px * var(--scale));
+    padding: 1.4rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-card h2 {
+    font-size: 2.4rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+/* Dashboard title: clean light/dark split */
+body:not(.dark-mode) .dashboard-title {
+    color: #1e293b !important;
+}
+
+body:not(.dark-mode) .dashboard-ui .dashboard-desc {
+    color: #64748b !important;
+}
+
+body.dark-mode .dashboard-title {
+    color: #4ED6C1 !important;
+}
+
+/* Dark mode dashboard desc handled by class */
+body.dark-mode .dashboard-ui .dashboard-desc {
+    color: #9CA3AF !important;
+}
+
+/* ===== Stats Cards (NO HOVER EFFECT) ===== */
+.stats-card {
+    background: white;
+    border-radius: calc(10px * var(--scale));
+    padding: 1.1rem;
+    text-align: center;
+    transition: none;
+}
+
+.stats-card:hover {
+    transform: none;
+}
+
+.stats-card .icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.stats-card h3 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-ui .stats-tile {
+    border-radius: 14px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.dashboard-ui .stats-tile h2 {
+    margin: 0;
+}
+
+/* ===== Login Styles ===== */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: #23232f;
+    border-radius: calc(18px * var(--scale));
+    padding: 2rem 1.6rem;
+    color: #DBD8E3;
+    border: calc(1px * var(--scale)) solid #35394a;
+    max-width: calc(400px * var(--scale));
+    width: 100%;
+    transform: scale(var(--login-scale)) !important;
+    transform-origin: top center !important;
+}
+
+.login-card h1 {
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #5C5470;
+    text-shadow: 0 2px 12px #181A20;
+}
+
+.login-card .form-label {
+    color: #DBD8E3;
+    font-weight: 500;
+}
+
+.login-card .form-control {
+    background: #181A20;
+    color: #DBD8E3;
+    border: calc(1px * var(--scale)) solid #35394a;
+    border-radius: calc(8px * var(--scale));
+    font-size: 1rem;
+    padding: 0.7rem 1rem;
+}
+
+.login-card .form-control:focus {
+    border-color: #5C5470;
+    box-shadow: 0 0 0 0.1rem rgba(92, 84, 112, 0.18);
+}
+
+.login-card .btn-primary {
+    background: linear-gradient(90deg, #5C5470 0%, #2A2438 100%);
+    border: none;
+    font-weight: 700;
+    font-size: 1.08rem;
+    letter-spacing: 0.5px;
+    border-radius: calc(8px * var(--scale));
+    color: #DBD8E3;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+.login-card .btn-primary:hover {
+    background: linear-gradient(90deg, #2A2438 0%, #5C5470 100%);
+    color: #fff;
+}
+
+.login-card .alert {
+    border-radius: calc(8px * var(--scale));
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    background: #23232f;
+    color: #DBD8E3;
+    border: calc(1px * var(--scale)) solid #35394a;
+}
+
+/* Login card shadows handled per-page */
+
+/* ===== Form Controls ===== */
+.form-control {
+    border-radius: calc(8px * var(--scale));
+    border: calc(2px * var(--scale)) solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Light mode form elements in tenant UI */
+body:not(.dark-mode) .tenant-ui .form-label,
+body:not(.dark-mode) .tenant-ui .form-check-label {
+    color: #000000 !important;
+    filter: none !important;
+    text-shadow: none !important;
+    font-weight: 500;
+}
+
+body:not(.dark-mode) .tenant-ui .form-control,
+body:not(.dark-mode) .tenant-ui .form-select {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: calc(1px * var(--scale)) solid #cccccc !important;
+    filter: none !important;
+}
+
+body:not(.dark-mode) .tenant-ui .form-text {
+    color: #555555 !important;
+    filter: none !important;
+}
+
+body:not(.dark-mode) .tenant-ui .invalid-feedback,
+body:not(.dark-mode) .tenant-ui .valid-feedback {
+    color: #dc3545 !important;
+    filter: none !important;
+}
+
+body:not(.dark-mode) .tenant-ui .form-check-input {
+    background-color: #ffffff !important;
+    border: 1px solid #cccccc !important;
+    filter: none !important;
+}
+
+body:not(.dark-mode) .tenant-ui .form-check-input:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+/* Overall tenant-ui light mode clarity */
+body:not(.dark-mode) .tenant-ui * {
+    filter: none !important;
+    -webkit-font-smoothing: antialiased !important;
+}
+
+/* Dark mode form controls for tenant UI */
+body.dark-mode .tenant-ui .form-control,
+body.dark-mode .tenant-ui textarea.form-control,
+body.dark-mode .tenant-ui input.form-control,
+body.dark-mode .tenant-ui select.form-select,
+body.dark-mode .tenant-ui .form-select {
+    background-color: #23272b !important;
+    color: #e7e7ee !important;
+    border: calc(1px * var(--scale)) solid #495057 !important;
+}
+
+body.dark-mode .tenant-ui .form-control:focus,
+body.dark-mode .tenant-ui textarea.form-control:focus,
+body.dark-mode .tenant-ui input.form-control:focus,
+body.dark-mode .tenant-ui select.form-select:focus,
+body.dark-mode .tenant-ui .form-select:focus {
+    background-color: #2b3035 !important;
+    color: #ffffff !important;
+    border-color: #6c757d !important;
+    box-shadow: 0 0 0 0.2rem rgba(108,117,125,0.25) !important;
+}
+
+body.dark-mode .tenant-ui .form-control::placeholder,
+body.dark-mode .tenant-ui textarea.form-control::placeholder,
+body.dark-mode .tenant-ui input.form-control::placeholder {
+    color: #aab2bd !important;
+    opacity: 1 !important;
+}
+
+body.dark-mode .tenant-ui input[type="date"].form-control {
+    color-scheme: dark;
+}
+
+/* ===== Alerts ===== */
+.alert {
+    border-radius: calc(8px * var(--scale));
+    border: none;
+}
+
+/* ===== Chatbot ===== */
+.chatbot-container {
+    background: white;
+    border-radius: calc(10px * var(--scale));
+    height: calc(500px * var(--scale));
+    display: flex;
+    flex-direction: column;
+}
+
+.chatbot-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    border-radius: calc(10px * var(--scale)) calc(10px * var(--scale)) 0 0;
+    font-weight: 600;
+}
+
+.chatbot-body {
+    flex: 1;
+    padding: 1rem;
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    background-color: #f8f9fa;
+}
+
+.chatbot-placeholder {
+    text-align: center;
+    color: #6c757d;
+}
+
+.chatbot-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.chat-messages {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding: .25rem;
+}
+
+.chat-bubble {
+    display: flex;
+}
+
+.chat-bubble .bubble-inner {
+    padding: .6rem .8rem;
+    border-radius: calc(12px * var(--scale));
+    max-width: 80%;
+    line-height: 1.35;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.chat-bubble.from-user {
+    justify-content: flex-end;
+}
+
+.chat-bubble.from-user .bubble-inner {
+    background: #0d6efd;
+    color: #fff;
+    border-top-right-radius: 4px;
+}
+
+.chat-bubble.from-assistant {
+    justify-content: flex-start;
+}
+
+.chat-bubble.from-assistant .bubble-inner {
+    background: #ffffff;
+    color: #000;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-top-left-radius: 4px;
+}
+
+body.dark-mode .chatbot-container {
+    background: #181a1b;
+}
+
+body.dark-mode .chatbot-header {
+    background: #23272b;
+    color: #e7e7ee;
+}
+
+body.dark-mode .chatbot-body {
+    background-color: #121416;
+}
+
+body.dark-mode .chat-bubble.from-assistant .bubble-inner {
+    background: #202327;
+    color: #e7e7ee;
+    border-color: rgba(255,255,255,0.08);
+}
+
+body.dark-mode .chat-bubble.from-user .bubble-inner {
+    background: #4ED6C1;
+    color: #0b1320;
+}
+
+/* ===== Text Color Management ===== */
+.complaint-text,
+.payment-text,
+.announcement-dashboard-text {
+    color: var(--text-light) !important;
+}
+
+body.dark-mode .complaint-text,
+body.dark-mode .payment-text,
+body.dark-mode .announcement-dashboard-text {
+    color: var(--text-dark) !important;
+}
+
+/* ===== Tenant UI Styles ===== */
+.tenant-ui .card {
+    background-color: #ffffff;
+    border-radius: calc(12px * var(--scale));
+}
+
+body:not(.dark-mode) .tenant-ui .card-header {
+    background-color: #0D6EFD !important;
+    color: #ffffff !important;
+}
+
+body:not(.dark-mode) .tenant-ui .card-header h4,
+body:not(.dark-mode) .tenant-ui .card-header h5,
+body:not(.dark-mode) .tenant-ui .card-header h6,
+body:not(.dark-mode) .tenant-ui .card-header i {
+    color: #ffffff !important;
+}
+
+body.dark-mode .tenant-ui .card {
+    background-color: #1f2530;
+    color: #e7e7ee;
+}
+
+.tenant-ui .no-record-message {
+    color: #6c757d;
+}
+
+body.dark-mode .tenant-ui .no-record-message {
+    color: #aab2bd;
+}
+
+.tenant-ui .list-group-item {
+    color: #000;
+}
+
+body.dark-mode .tenant-ui .list-group-item {
+    color: #e7e7ee;
+}
+
+.tenant-ui small.text-muted {
+    color: #6c757d !important;
+}
+
+body.dark-mode .tenant-ui small.text-muted {
+    color: #aab2bd !important;
+}
+
+/* Tenant profile */
+.tenant-profile-label {
+    color: #5C5470;
+    font-weight: 600;
+    text-shadow: none !important;
+}
+
+body:not(.dark-mode) .tenant-profile-label {
+    color: #000 !important;
+    filter: none !important;
+}
+
+.tenant-profile-input {
+    background-color: #DBD8E3;
+    color: #2A2438;
+    border: calc(1px * var(--scale)) solid #5C5470;
+    border-radius: calc(8px * var(--scale));
+}
+
+body.dark-mode .tenant-profile-label {
+    color: #DBD8E3;
+}
+
+body.dark-mode .tenant-profile-input {
+    background-color: #352F44;
+    color: #DBD8E3;
+    border: calc(1px * var(--scale)) solid #5C5470;
+}
+
+.tenant-ui .tenant-profile-card {
+    border-radius: calc(12px * var(--scale));
+}
+
+/* ===== Admin UI Styles ===== */
+.admin-ui,
+.dashboard-ui {
+    transform: scale(var(--scale)) !important;
+    transform-origin: top left !important;
+    width: calc(100% / var(--scale)) !important;
+    zoom: var(--scale);
+}
+
+.admin-ui .login-container,
+.admin-ui .dashboard-container,
+.admin-ui main,
+.dashboard-ui .login-container,
+.dashboard-ui .dashboard-container,
+.dashboard-ui main {
+    min-height: 100vh;
+}
+
+/* Admin recent lists */
+.admin-recent-list .list-group-item {
+    border-radius: calc(10px * var(--scale));
+    margin-bottom: .5rem;
+}
+
+.admin-recent-amount {
+    font-weight: 600;
+}
+
+/* Ensure Recent Payments and Recent Complaints cards are same height */
+.admin-ui .row > .col-md-6 {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-ui .row > .col-md-6 > .card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-ui .row > .col-md-6 > .card > .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-ui .row > .col-md-6 > .card > .card-body > .admin-recent-list {
+    flex: 1;
+}
+
+body.dark-mode .admin-recent-list .list-group-item {
+    color: #e7e7ee;
+    background-color: transparent;
+    border-color: rgba(255,255,255,0.08);
+}
+
+/* List group item colors */
+body:not(.dark-mode) .admin-ui .list-group-item,
+body:not(.dark-mode) .admin-ui .list-group-item > *,
+body:not(.dark-mode) .admin-ui .list-group-item p,
+body:not(.dark-mode) .admin-ui .list-group-item span,
+body:not(.dark-mode) .admin-ui .list-group-item small,
+body:not(.dark-mode) .admin-ui .list-group-item strong {
+    color: #000 !important;
+}
+
+body:not(.dark-mode) .admin-ui .list-group-item .text-muted,
+body:not(.dark-mode) .admin-ui .list-group-item small {
+    color: #6c757d !important;
+}
+
+body.dark-mode .admin-ui .list-group-item,
+body.dark-mode .admin-ui .list-group-item > *,
+body.dark-mode .admin-ui .list-group-item p,
+body.dark-mode .admin-ui .list-group-item span,
+body.dark-mode .admin-ui .list-group-item small,
+body.dark-mode .admin-ui .list-group-item strong {
+    color: #e7e7ee !important;
+}
+
+body.dark-mode .admin-ui .list-group-item .text-muted,
+body.dark-mode .admin-ui .list-group-item small {
+    color: #ffffff !important;
+}
+
+body.dark-mode .admin-ui .list-group-item {
+    background-color: transparent;
+    border-color: rgba(255,255,255,0.08);
+}
+
+/* ===== Announcements ===== */
+.announcement-admin-item {
+    border: calc(1px * var(--scale)) solid #444 !important;
+    border-radius: calc(10px * var(--scale));
+    padding: 0.85rem 1rem;
+    line-height: 1.5;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.list-group .announcement-admin-item + .announcement-admin-item {
+    margin-top: .5rem;
+}
+
+.announcement-admin-item strong {
+    display: block;
+    font-size: 1.05rem;
+    margin-bottom: .25rem;
+}
+
+.announcement-admin-item p {
+    margin: .25rem 0 0;
+}
+
+.announcement-admin-item:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.06);
+    border-color: #555 !important;
+}
+
+body:not(.dark-mode) .announcement-admin-item,
+body:not(.dark-mode) .announcement-admin-item > *,
+body:not(.dark-mode) .announcement-admin-item p,
+body:not(.dark-mode) .announcement-admin-item small,
+body:not(.dark-mode) .announcement-admin-item strong,
+body:not(.dark-mode) .dashboard-ui .announcement-admin-item,
+body:not(.dark-mode) .dashboard-ui .announcement-admin-item > *,
+body:not(.dark-mode) .dashboard-ui .announcement-admin-item p,
+body:not(.dark-mode) .dashboard-ui .announcement-admin-item small,
+body:not(.dark-mode) .dashboard-ui .announcement-admin-item strong {
+    color: #000 !important;
+}
+
+body:not(.dark-mode) .dashboard-ui .announcement-admin-item small {
+    color: #6c757d !important;
+}
+
+body.dark-mode .dashboard-ui .announcement-admin-item small {
+    color: #ffffff !important;
+}
+
+body:not(.dark-mode) .announcement-dashboard-text {
+    color: #000 !important;
+}
+
+body:not(.dark-mode) .tenant-ui .announcement-body,
+body:not(.dark-mode) .tenant-ui .announcement-body *,
+body:not(.dark-mode) .tenant-ui .announcement-body p,
+body:not(.dark-mode) .tenant-ui .announcement-body small,
+body:not(.dark-mode) .tenant-ui .announcement-body h5 {
+    color: #111 !important;
+}
+
+/* ===== Payments Table ===== */
+body:not(.dark-mode) .admin-ui #paymentsTable td,
+body:not(.dark-mode) .admin-ui #paymentsTable td *,
+body:not(.dark-mode) .admin-ui #paymentsTable small,
+body:not(.dark-mode) .admin-ui #paymentsTable .text-muted {
+    color: #000 !important;
+}
+
+body:not(.dark-mode) .admin-ui #paymentsTable td small,
+body:not(.dark-mode) .admin-ui #paymentsTable td .text-muted {
+    color: #6c757d !important;
+}
+
+body.dark-mode .admin-ui #paymentsTable td,
+body.dark-mode .admin-ui #paymentsTable td *,
+body.dark-mode .admin-ui #paymentsTable small,
+body.dark-mode .admin-ui #paymentsTable .text-muted {
+    color: #e7e7ee !important;
+}
+
+body.dark-mode .admin-ui #paymentsTable td small,
+body.dark-mode .admin-ui #paymentsTable td .text-muted {
+    color: #ffffff !important;
+}
+
+/* Submitted column (7th) styling */
+body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7),
+body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) *,
+body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) small,
+body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) .text-muted {
+    color: #000000 !important;
+}
+
+body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) {
+    background-color: #ffffff !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+
+body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7),
+body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) *,
+body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) small,
+body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) .text-muted {
+    color: #ffffff !important;
+}
+
+body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) {
+    background-color: #181a1b !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Tenant Payments Modal - Submitted column (4th) */
+body:not(.dark-mode) #tenantPaymentsModal table tbody tr td:nth-child(4),
+body:not(.dark-mode) #tenantPaymentsModal table tbody tr td:nth-child(4) *,
+body:not(.dark-mode) #tenantPaymentsModal table tbody tr td:nth-child(4) small,
+body:not(.dark-mode) #tenantPaymentsModal table tbody tr td:nth-child(4) .text-muted {
+    color: #000000 !important;
+}
+
+body:not(.dark-mode) #tenantPaymentsModal table tbody tr td:nth-child(4) {
+    background-color: #ffffff !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+
+body.dark-mode #tenantPaymentsModal table tbody tr td:nth-child(4),
+body.dark-mode #tenantPaymentsModal table tbody tr td:nth-child(4) *,
+body.dark-mode #tenantPaymentsModal table tbody tr td:nth-child(4) small,
+body.dark-mode #tenantPaymentsModal table tbody tr td:nth-child(4) .text-muted {
+    color: #ffffff !important;
+}
+
+body.dark-mode #tenantPaymentsModal table tbody tr td:nth-child(4) {
+    background-color: #181a1b !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Tenant Payments page - Submitted column (5th) */
+body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5),
+body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5) *,
+body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5) small,
+body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5) .text-muted,
+body:not(.dark-mode) .tenant-ui .payment-text {
+    color: #000000 !important;
+}
+
+/* Clear text rendering for tenant payments table in light mode */
+body:not(.dark-mode) .tenant-ui table tbody tr td,
+body:not(.dark-mode) .tenant-ui .table tbody tr td {
+    color: #000000 !important;
+    filter: none !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    font-smoothing: antialiased !important;
+    -webkit-font-smoothing: antialiased !important;
+}
+
+body.dark-mode .tenant-ui table tbody tr td:nth-child(5),
+body.dark-mode .tenant-ui table tbody tr td:nth-child(5) *,
+body.dark-mode .tenant-ui table tbody tr td:nth-child(5) small,
+body.dark-mode .tenant-ui table tbody tr td:nth-child(5) .text-muted,
+body.dark-mode .tenant-ui .payment-text {
+    color: #ffffff !important;
+}
+
+/* ===== Reports Page ===== */
+
+/* Filter card - no gradient header */
+.admin-ui .report-filter-card {
+    border: 1px solid #e2e8f0;
+}
+
+.admin-ui .report-filter-card .card-body {
+    background: #fff;
+    border-radius: calc(10px * var(--scale));
+}
+
+.admin-ui .report-filter-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.6px;
+    color: #64748b;
+}
+
+body.dark-mode .admin-ui .report-filter-card {
+    border-color: #1e2228;
+}
+
+body.dark-mode .admin-ui .report-filter-card .card-body {
+    background: #111418;
+}
+
+body.dark-mode .admin-ui .report-filter-label {
+    color: #94a3b8;
+}
+
+/* Summary stat cards */
+.admin-ui .report-stat-card {
+    border: 1px solid #e2e8f0;
+    border-radius: calc(12px * var(--scale));
+    transition: box-shadow 0.2s ease;
+}
+
+.admin-ui .report-stat-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.admin-ui .report-stat-card .card-body {
+    background: #fff;
+    border-radius: calc(12px * var(--scale));
+}
+
+.report-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.report-stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+.report-stat-amount {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+body.dark-mode .admin-ui .report-stat-card {
+    border-color: #1e2228;
+    background: #111418;
+}
+
+body.dark-mode .admin-ui .report-stat-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .admin-ui .report-stat-card .card-body {
+    background: #111418;
+    color: #e0e1dd;
+}
+
+body.dark-mode .admin-ui .report-stat-card h4 {
+    color: #e0e1dd;
+}
+
+body.dark-mode .report-stat-label {
+    color: #94a3b8;
+}
+
+body.dark-mode .report-stat-amount {
+    color: #4ade80;
+}
+
+/* Monthly Payments Report card */
+.admin-ui .report-mpr-card {
+    border: none;
+    border-radius: calc(10px * var(--scale));
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.admin-ui .report-mpr-card .card-header {
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+}
+
+.admin-ui .report-mpr-card .card-body {
+    background: #fff;
+}
+
+.mpr-month-input {
+    width: 160px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    border-radius: 6px;
+    color-scheme: dark;
+}
+
+.mpr-month-input:focus {
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.5);
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.15);
+}
+
+/* Light mode: revert the picker to normal scheme */
+body:not(.dark-mode) .mpr-month-input {
+    color-scheme: light;
+    background: rgba(255,255,255,0.9);
+    color: #1e293b;
+    border-color: rgba(255,255,255,0.6);
+}
+
+.mpr-title {
+    color: #1e293b;
+}
+
+.mpr-subtitle {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.mpr-amount {
+    color: var(--success-color);
+}
+
+/* MPR table */
+.admin-ui #mprTable thead th {
+    background-color: var(--primary-color);
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.65rem 0.75rem;
+    border: none;
+}
+
+.admin-ui #mprTable tbody td {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+
+.admin-ui #mprTable tbody tr:hover {
+    background-color: rgba(13,110,253,0.04);
+}
+
+/* Light mode table text */
+body:not(.dark-mode) .admin-ui #mprTable tbody td,
+body:not(.dark-mode) .admin-ui #mprTable tbody td * {
+    color: #1e293b;
+}
+
+body:not(.dark-mode) .admin-ui #mprTable tbody td.text-muted {
+    color: #64748b !important;
+}
+
+body:not(.dark-mode) .admin-ui #mprTable .mpr-amount {
+    color: var(--success-color) !important;
+}
+
+/* MPR total row */
+.admin-ui #mprTable tfoot .mpr-total-row,
+.mpr-total-row {
+    background-color: #f1f5f9 !important;
+    border-top: 2px solid #e2e8f0;
+}
+
+.admin-ui #mprTable tfoot .mpr-total-row td,
+.mpr-total-row td {
+    padding: 0.75rem !important;
+    color: #1e293b !important;
+    background-color: #f1f5f9 !important;
+}
+
+.admin-ui #mprTable tfoot .mpr-total-row td.mpr-amount {
+    color: var(--success-color) !important;
+}
+
+/* MPR empty state */
+.mpr-empty {
+    color: #94a3b8;
+}
+
+.mpr-empty i {
+    color: #cbd5e1;
+}
+
+/* ── Dark mode: Monthly Payments Report ── */
+body.dark-mode .admin-ui .report-mpr-card {
+    background: #111418;
+    border: 1px solid #1e2228;
+}
+
+body.dark-mode .admin-ui .report-mpr-card .card-header {
+    background: linear-gradient(135deg, #1a1f26, #141920) !important;
+    border-bottom: 1px solid #1e2228 !important;
+}
+
+body.dark-mode .admin-ui .report-mpr-card .card-body {
+    background: #111418;
+    color: #e0e1dd;
+}
+
+body.dark-mode .mpr-title {
+    color: #e0e1dd;
+}
+
+body.dark-mode .mpr-subtitle {
+    color: #94a3b8;
+}
+
+body.dark-mode .mpr-amount {
+    color: #4ade80 !important;
+}
+
+body.dark-mode .admin-ui #mprTable thead th {
+    background-color: #1a1f26 !important;
+    color: #c9d1d9 !important;
+    border-bottom: 1px solid #1e2228;
+}
+
+body.dark-mode .admin-ui #mprTable tbody td {
+    color: #e0e1dd;
+    border-bottom-color: #1e2228;
+}
+
+body.dark-mode .admin-ui #mprTable tbody td * {
+    color: #e0e1dd;
+}
+
+body.dark-mode .admin-ui #mprTable tbody td .badge {
+    color: #fff;
+}
+
+body.dark-mode .admin-ui #mprTable tbody td .badge.text-dark {
+    color: #000 !important;
+}
+
+body.dark-mode .admin-ui #mprTable tbody tr:hover {
+    background-color: rgba(255,255,255,0.04);
+}
+
+body.dark-mode .admin-ui #mprTable tfoot .mpr-total-row,
+body.dark-mode .mpr-total-row {
+    background-color: #0a0d10 !important;
+    border-top: 2px solid #1e2228;
+}
+
+body.dark-mode .admin-ui #mprTable tfoot .mpr-total-row td,
+body.dark-mode .mpr-total-row td {
+    color: #e0e1dd !important;
+    background-color: #0a0d10 !important;
+}
+
+body.dark-mode .admin-ui #mprTable tfoot .mpr-total-row td.mpr-amount,
+body.dark-mode .mpr-total-row .mpr-amount {
+    color: #4ade80 !important;
+}
+
+body.dark-mode .mpr-empty {
+    color: #64748b;
+}
+
+body.dark-mode .mpr-empty i {
+    color: #3a3f47;
+}
+
+/* btn-group in dark mode */
+body.dark-mode .admin-ui .btn-outline-primary {
+    color: #4ED6C1;
+    border-color: #4ED6C1;
+}
+
+body.dark-mode .admin-ui .btn-outline-primary:hover,
+body.dark-mode .admin-ui .btn-outline-primary.active {
+    background-color: #4ED6C1;
+    border-color: #4ED6C1;
+    color: #000;
+}
+
+body.dark-mode .admin-ui .btn-outline-secondary {
+    color: #adb5bd;
+    border-color: #adb5bd;
+}
+
+body.dark-mode .admin-ui .btn-outline-secondary:hover {
+    background-color: #adb5bd;
+    color: #000;
+}
+
+/* Dark mode form controls in reports */
+body.dark-mode .admin-ui .report-filter-card .form-control {
+    background-color: #0a0d10;
+    border-color: #1e2228;
+    color: #e0e1dd;
+}
+
+body.dark-mode .admin-ui .report-filter-card .form-control:focus {
+    background-color: #0a0d10;
+    border-color: #4ED6C1;
+    color: #e0e1dd;
+}
+
+body.dark-mode .admin-ui .report-filter-card .form-label {
+    color: #8b949e;
+}
+
+/* ===== Manage Tenants Layout ===== */
+.admin-ui.manage-tenants td.tenant-name-cell {
+    display: flex;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: .25rem !important;
+    min-height: 3rem;
+    flex-wrap: nowrap;
+}
+
+.admin-ui.manage-tenants td.tenant-name-cell .tenant-name-text {
+    display: inline-block;
+    max-width: clamp(160px, 28vw, 420px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 0 1 auto;
+    line-height: 1.25rem;
+}
+
+.admin-ui.manage-tenants td.tenant-name-cell .tenant-name-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    min-height: 1.5rem;
+}
+
+.admin-ui.manage-tenants td.tenant-name-cell.no-badges {
+    justify-content: center;
+}
+
+.admin-ui.manage-tenants td.tenant-name-cell.no-badges .tenant-name-badges {
+    display: none;
+}
+
+.admin-ui.manage-tenants td.tenant-name-cell .badge {
+    flex: 0 0 auto;
+    vertical-align: middle;
+    margin-left: 0 !important;
+}
+
+.admin-ui.manage-tenants table.table td,
+.admin-ui.manage-tenants table.table th {
+    vertical-align: middle;
+}
+
+/* ===== Dark Mode Text and Icons (class-based) ===== */
+body.dark-mode .admin-ui h1,
+body.dark-mode .admin-ui h2,
+body.dark-mode .admin-ui h3,
+body.dark-mode .admin-ui h4,
+body.dark-mode .admin-ui h5,
+body.dark-mode .admin-ui h6,
+body.dark-mode .admin-ui p,
+body.dark-mode .admin-ui span,
+body.dark-mode .admin-ui small,
+body.dark-mode .admin-ui label,
+body.dark-mode .admin-ui li,
+body.dark-mode .admin-ui td,
+body.dark-mode .admin-ui th,
+body.dark-mode .admin-ui strong,
+body.dark-mode .dashboard-ui h1,
+body.dark-mode .dashboard-ui h2,
+body.dark-mode .dashboard-ui h3,
+body.dark-mode .dashboard-ui h4,
+body.dark-mode .dashboard-ui h5,
+body.dark-mode .dashboard-ui h6,
+body.dark-mode .dashboard-ui p,
+body.dark-mode .dashboard-ui span,
+body.dark-mode .dashboard-ui small,
+body.dark-mode .dashboard-ui label,
+body.dark-mode .dashboard-ui li,
+body.dark-mode .dashboard-ui td,
+body.dark-mode .dashboard-ui th,
+body.dark-mode .dashboard-ui strong,
+body.dark-mode .dashboard-title,
+body.dark-mode .admin-ui .dashboard-title,
+body.dark-mode .dashboard-ui .dashboard-title,
+body.dark-mode .admin-ui .text-muted,
+body.dark-mode .dashboard-ui .text-muted {
+    color: #E0E0E0 !important;
+    opacity: 1 !important;
+}
+
+body.dark-mode .admin-ui i,
+body.dark-mode .dashboard-ui i,
+body.dark-mode .admin-ui .fa,
+body.dark-mode .dashboard-ui .fa,
+body.dark-mode .admin-ui .fas,
+body.dark-mode .dashboard-ui .fas,
+body.dark-mode .admin-ui .far,
+body.dark-mode .dashboard-ui .far,
+body.dark-mode .admin-ui .fab,
+body.dark-mode .dashboard-ui .fab,
+body.dark-mode .admin-ui .icon,
+body.dark-mode .dashboard-ui .icon {
+    color: #9CA3AF !important;
+}
+
+body.dark-mode .dashboard-ui .badge.bg-warning.text-dark {
+    background-color: #F59E0B !important;
+    color: #111827 !important;
+    border: none !important;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+}
+
+/* ===== Complaints and Payments Empty States ===== */
+
+/* Complaint thread reply bubbles */
+.complaint-thread .bg-light,
+.complaint-thread .bg-light * {
+    color: #212529 !important;
+    background-color: #f0f0f0 !important;
+}
+.complaint-thread .bg-light .text-muted {
+    color: #6c757d !important;
+}
+.complaint-thread .bg-light .badge.bg-secondary {
+    color: #fff !important;
+    background-color: #6c757d !important;
+}
+.complaint-thread .bg-primary,
+.complaint-thread .bg-primary * {
+    color: #ffffff !important;
+}
+.complaint-thread .bg-primary .text-white-50 {
+    color: rgba(255,255,255,.5) !important;
+}
+.complaint-thread .bg-dark .badge.bg-light {
+    color: #212529 !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Dark mode adjustments for complaint thread */
+body.dark-mode .complaint-thread .bg-dark {
+    background-color: #1a1d21 !important;
+    color: #e7e7ee !important;
+}
+body.dark-mode .complaint-thread .bg-dark .text-white-50 {
+    color: #aab2bd !important;
+}
+body.dark-mode .complaint-thread .bg-light,
+body.dark-mode .complaint-thread .bg-light * {
+    background-color: #2b3035 !important;
+    color: #e7e7ee !important;
+}
+body.dark-mode .complaint-thread .bg-light .text-muted {
+    color: #aab2bd !important;
+}
+/* Dark mode: admin response alert text black */
+body.dark-mode .alert-secondary,
+body.dark-mode .alert-secondary *,
+body.dark-mode .admin-ui .alert-secondary,
+body.dark-mode .admin-ui .alert-secondary *,
+body.dark-mode .tenant-ui .alert-secondary,
+body.dark-mode .tenant-ui .alert-secondary * {
+    background-color: #e2e3e5 !important;
+    color: #000 !important;
+    border-color: #d3d6d8 !important;
+}
+
+body:not(.dark-mode) .tenant-ui .complaint-text,
+body:not(.dark-mode) .tenant-ui .complaint-text *,
+body:not(.dark-mode) .tenant-ui .payment-text,
+body:not(.dark-mode) .tenant-ui .payment-text * {
+    color: #000 !important;
+    filter: none !important;
+    text-shadow: none !important;
+}
+
+body:not(.dark-mode) .tenant-ui .fa-exclamation-triangle.complaint-text {
+    color: #DC3545 !important;
+}
+
+body:not(.dark-mode) .tenant-ui h5.complaint-text,
+body:not(.dark-mode) .tenant-ui p.complaint-text,
+body:not(.dark-mode) .tenant-ui h5.payment-text,
+body:not(.dark-mode) .tenant-ui p.payment-text {
+    color: #111 !important;
+    filter: none !important;
+    text-shadow: none !important;
+}
+
+/* Ensure complaint cards are clear and not blurred */
+body:not(.dark-mode) .tenant-ui .card-body,
+body:not(.dark-mode) .tenant-ui .card {
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+body:not(.dark-mode) .tenant-ui .card-body p,
+body:not(.dark-mode) .tenant-ui .card-body h6,
+body:not(.dark-mode) .tenant-ui .card-body label {
+    color: #000000 !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+
+body.dark-mode .tenant-ui h5.complaint-text,
+body.dark-mode .tenant-ui p.complaint-text,
+body.dark-mode .tenant-ui h5.payment-text,
+body.dark-mode .tenant-ui p.payment-text {
+    color: #e7e7ee !important;
+}
+
+.tenant-ui .complaints-empty,
+.tenant-ui .payments-empty {
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+body:not(.dark-mode) .tenant-ui .complaints-empty,
+body:not(.dark-mode) .tenant-ui .payments-empty {
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: calc(12px * var(--scale)) !important;
+    padding: 1rem !important;
+}
+
+/* ===== List Group Items ===== */
+body:not(.dark-mode) .card .list-group-item {
+    background: #fff !important;
+    border-color: #e2e8f0 !important;
+}
+
+body:not(.dark-mode) .card .list-group-item:hover {
+    background: #f8fafc !important;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+    .dashboard-card {
+        padding: 1.5rem;
+    }
+    
+    .dashboard-card h2 {
+        font-size: 2rem;
+    }
+    
+    .login-card {
+        padding: 2rem;
+        margin: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Reduce card shadows on small screens */
+    body:not(.dark-mode) .dashboard-ui .card,
+    body:not(.dark-mode) .admin-ui .card,
+    body:not(.dark-mode) .tenant-ui .card {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+    }
+
+    body:not(.dark-mode) .card.menu-card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+    }
+    
+    body:not(.dark-mode) .card.menu-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important;
+    }
+}
+
+/* ===== Responsive Images ===== */
+img,
+video {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ===== Password Visibility Toggle ===== */
+.pw-toggle-wrap {
+    position: relative;
+}
+.pw-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1rem;
+    z-index: 5;
+    line-height: 1;
+}
+.pw-toggle-btn:hover,
+.pw-toggle-btn:focus {
+    color: #60A5FA;
+    outline: none;
+}
+
+/* ===== Migrated from header.php inline styles ===== */
+
+/* --- header.php style block 1 --- */
+/* Smooth theme transitions */
+        body,
+        .card,
+        .card-header,
+        .card-body,
+        .list-group-item,
+        .table thead th,
+        .table tbody td,
+        .sidebar-custom {
+            transition: background-color 240ms ease, color 240ms ease, background 240ms ease, border-color 240ms ease;
+        }
+        #darkModeToggle { transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
+
+/* --- header.php style block 2 --- */
+/* Ultra-specific final guard: Admin Manage Payments Submitted column readable in dark mode */
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7),
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) *,
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) small,
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) .text-muted,
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) small.text-muted {
+        color: #ffffff !important;
+        opacity: 1 !important;
+    }
+
+/* --- header.php style block 3 --- */
+/* Align table lines and content in Manage Payments (dark mode) */
+    body.dark-mode .admin-ui table#paymentsTable,
+    body.dark-mode .admin-ui table#paymentsTable th,
+    body.dark-mode .admin-ui table#paymentsTable td {
+        border-color: #2b3035 !important; /* consistent border color so lines line up */
+    }
+    body.dark-mode .admin-ui table#paymentsTable th,
+    body.dark-mode .admin-ui table#paymentsTable td {
+        vertical-align: middle !important; /* align text vertically for all cells */
+    }
+    /* Prevent wrapping in Submitted column to keep row height consistent */
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7),
+    body.dark-mode .admin-ui table#paymentsTable thead tr th:nth-child(7) {
+        white-space: nowrap !important;
+    }
+
+/* --- header.php style block 4 --- */
+/* Manage Tenants (light mode) - white text for headers and unit badge text */
+        body:not(.dark-mode) .admin-ui.manage-tenants .table thead th {
+            color: #ffffff !important; /* keep existing header background, make text white */
+        }
+        /* Ensure Unit badge uses primary blue with white text, not global badge colors */
+        body:not(.dark-mode) .admin-ui.manage-tenants .badge.bg-primary {
+            background: #0d6efd !important;
+            background-color: #0d6efd !important;
+            color: #ffffff !important;
+            border: none !important;
+        }
+
+/* --- header.php style block 5 --- */
+/* Apply same readable header/badge styling to all admin tables in light mode */
+        body:not(.dark-mode) .admin-ui .table thead th {
+            color: #ffffff !important; /* keep themed background, force white text */
+        }
+        /* Restore Bootstrap brand colors for badges within admin UI in light mode */
+        body:not(.dark-mode) .admin-ui .badge.bg-primary { background-color: #0d6efd !important; color: #ffffff !important; }
+        body:not(.dark-mode) .admin-ui .badge.bg-success { background-color: #198754 !important; color: #ffffff !important; }
+        body:not(.dark-mode) .admin-ui .badge.bg-danger  { background-color: #dc3545 !important; color: #ffffff !important; }
+        /* Keep warning/info with dark text for contrast */
+
+/* --- header.php style block 6 --- */
+/* Tenant Payments: Submitted column readable per theme */
+    body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5),
+    body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5) *,
+    body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5) small,
+    body:not(.dark-mode) .tenant-ui table tbody tr td:nth-child(5) .payment-text {
+        color: #000000 !important;
+    }
+    /* Keep general tenant payment helper text dark in light mode */
+    body:not(.dark-mode) .tenant-ui .payment-text { color: #000000 !important; }
+    body.dark-mode .tenant-ui table tbody tr td:nth-child(5),
+    body.dark-mode .tenant-ui table tbody tr td:nth-child(5) *,
+    body.dark-mode .tenant-ui table tbody tr td:nth-child(5) small,
+    body.dark-mode .tenant-ui table tbody tr td:nth-child(5) .payment-text,
+    body.dark-mode .tenant-ui .payment-text {
+        color: #ffffff !important;
+    }
+    /* Tenant Payments: ensure table header titles are white in both themes */
+    body:not(.dark-mode) .tenant-ui .table thead th,
+    body.dark-mode .tenant-ui .table thead th {
+        color: #ffffff !important;
+    }
+    /* Tenant Payments: high-contrast Pending badge per theme */
+    body:not(.dark-mode) .tenant-ui .badge.status-pending {
+        background-color: var(--primary-color) !important; /* light mode: blue */
+        color: #ffffff !important;
+        border: none !important;
+    }
+    body.dark-mode .tenant-ui .badge.status-pending {
+        background-color: var(--accent) !important; /* dark mode: tenant dashboard accent */
+        color: #ffffff !important;
+        border: none !important;
+    }
+    /* Tenant Announcements: match Payment History palette and readability */
+    body:not(.dark-mode) .tenant-ui .announcement-body h5 {
+        color: var(--primary-color) !important; /* blue titles in light */
+    }
+    body.dark-mode .tenant-ui .announcement-body h5 {
+        color: var(--accent) !important; /* blue-green titles in dark */
+    }
+    /* Ensure posted meta and muted text are readable */
+    body:not(.dark-mode) .tenant-ui .announcement-body .text-muted {
+        color: #000000 !important;
+        opacity: 1 !important;
+    }
+    body.dark-mode .tenant-ui .announcement-body .text-muted {
+        color: #ffffff !important;
+        opacity: 1 !important;
+    }
+
+/* --- header.php style block 7 --- */
+.dashboard-title { color: #1e293b !important; }
+        /* Dark mode: Super Admin dashboard titles use #E0E0E0 */
+        body.dark-mode .dashboard-title { color: #E0E0E0 !important; }
+        .no-record-message {
+            color: #64748b !important;
+        }
+        body.dark-mode .no-record-message {
+            color: #fff !important;
+        }
+        /* Make sidebar nav scrollable without clipping the logout dropdown */
+        #sidebar {
+            max-height: 100vh;
+            overflow: visible;
+        }
+        #sidebar > div:first-child {
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            /* Slim custom scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
+        }
+        #sidebar > div:first-child::-webkit-scrollbar {
+            width: 5px;
+        }
+        #sidebar > div:first-child::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #sidebar > div:first-child::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+        }
+        #sidebar > div:first-child::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        /* Pin the admin user/logout section at the bottom */
+        #sidebar > .border-top {
+            flex-shrink: 0;
+            position: relative;
+        }
+        #sidebar .dropup .dropdown-menu {
+            position: absolute !important;
+            bottom: 100% !important;
+            left: 0 !important;
+            top: auto !important;
+            transform: none !important;
+            margin-bottom: 4px;
+            min-width: 180px;
+            z-index: 1060;
+        }
+        body.dark-mode {
+            background: #000 !important;
+            /* Use darker blue-green accent in dark mode */
+            --accent: #0f766e; /* teal-700 like */
+        }
+
+/* --- header.php style block 8 --- */
+/* Final guard: Tenant rent status/due badges should be readable in light mode */
+        body:not(.dark-mode) .tenant-ui .badge.bg-success { color: #fff !important; }
+        body:not(.dark-mode) .tenant-ui .badge.bg-danger { color: #fff !important; }
+        /* keep warning/info with dark text for contrast */
+
+/* --- header.php style block 9 --- */
+:root {
+            --midnight: #0D1B2A;
+            --navy: #1B263B;
+            --slate-teal: #415A77;
+            --steel-blue: #778DA9;
+            --muted-cyan: #4E6E81;
+            --dusty-blue: #A9BCD0;
+            --accent-pale: #E0E1DD;
+            --sidebar-glow: 0 0 32px 6px #415A7744;
+            --sidebar-radius: 28px;
+            --sidebar-blur: blur(8px);
+            --accent: #4ED6C1;
+        }
+        body {
+            background: #f1f5f9 !important;
+            color: var(--midnight);
+        }
+        .sidebar-custom {
+            width: 220px;
+            min-height: 96vh;
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            top: 0;
+            z-index: 1040;
+            background: linear-gradient(180deg, var(--midnight) 0%, var(--navy) 100%);
+            color: var(--accent-pale);
+            box-shadow: var(--sidebar-glow);
+            border-radius: 18px;
+            backdrop-filter: var(--sidebar-blur);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin: 10px 0 10px 10px;
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+        }
+        /* Even vertical spacing for sidebar choices */
+        .sidebar-custom .nav { display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-custom .navbar-brand {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+            background: none;
+            text-shadow: 0 2px 12px #415A7744;
+            margin-bottom: 10px;
+        }
+        .sidebar-custom .nav-link {
+            color: var(--accent-pale);
+            font-size: 0.93rem;
+            font-weight: 500;
+            border-radius: 8px;
+            margin: 0; /* spacing controlled by container gap */
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            min-height: 38px; /* consistent item height */
+            line-height: 1.25rem;
+            transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 2px 8px #415A7722;
+        }
+        @media (max-width: 768px) {
+            .sidebar-custom {
+                width: 80vw;
+                min-width: 160px;
+                max-width: 320px;
+                border-radius: 0 18px 18px 0;
+                margin: 0;
+                padding-top: 0.7rem;
+                padding-bottom: 0.7rem;
+            }
+            .sidebar-custom .navbar-brand {
+                font-size: 1rem;
+            }
+            .sidebar-custom .nav-link {
+                font-size: 0.93rem;
+                padding: 7px 10px;
+            }
+            .main-content {
+                margin-left: 0 !important;
+            }
+        }
+        @media (max-width: 480px) {
+            .sidebar-custom {
+                width: 100vw;
+                min-width: unset;
+                max-width: unset;
+                border-radius: 0;
+                margin: 0;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+            .sidebar-custom .navbar-brand {
+                font-size: 0.85rem;
+            }
+            .sidebar-custom .nav-link {
+                font-size: 0.87rem;
+                padding: 6px 6px;
+            }
+        }
+        .sidebar-custom .nav-link:hover, .sidebar-custom .nav-link.active {
+            background: linear-gradient(90deg, var(--slate-teal) 0%, var(--muted-cyan) 100%);
+            color: var(--accent);
+            /* remove scaling to prevent hover jitter */
+            box-shadow: 0 6px 24px #415A7733;
+        }
+        .sidebar-custom .nav-link i {
+            flex: 0 0 20px; /* fixed icon width */
+            width: 20px;
+            margin-right: 12px;
+            text-align: center;
+        }
+        .sidebar-custom .dropdown-toggle {
+            color: var(--dusty-blue);
+            font-weight: 600;
+        }
+        .sidebar-custom .dropdown-menu {
+            background: var(--navy);
+            color: var(--accent-pale);
+            border-radius: 10px;
+            border: none;
+            z-index: 1050;
+        }
+        .sidebar-custom .dropdown-item {
+            color: var(--accent-pale);
+        }
+        .sidebar-custom .dropdown-item:hover {
+            background: linear-gradient(90deg, var(--muted-cyan), var(--steel-blue));
+            color: var(--midnight);
+        }
+
+        /* ===== Light Mode Sidebar — Cool Gray + Teal ===== */
+        body:not(.dark-mode) .sidebar-custom {
+            background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+            color: #0f172a !important;
+            box-shadow: 0 0 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid #cbd5e1;
+        }
+        body:not(.dark-mode) .sidebar-custom .navbar-brand {
+            text-shadow: none;
+        }
+        body:not(.dark-mode) .sidebar-custom .navbar-brand .sidebar-home-icon {
+            color: #0f172a !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .navbar-brand .brand-stay {
+            color: #14b8a6 !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .navbar-brand .brand-wise {
+            color: #0f172a !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .nav-link {
+            color: #0f172a !important;
+            box-shadow: none;
+        }
+        body:not(.dark-mode) .sidebar-custom .nav-link i {
+            color: #334155;
+        }
+        body:not(.dark-mode) .sidebar-custom .nav-link:hover,
+        body:not(.dark-mode) .sidebar-custom .nav-link.active {
+            background: linear-gradient(90deg, #ccfbf1 0%, #e0f7f4 100%) !important;
+            color: #0d9488 !important;
+            box-shadow: 0 2px 8px rgba(13,148,136,0.10);
+        }
+        body:not(.dark-mode) .sidebar-custom .nav-link:hover i,
+        body:not(.dark-mode) .sidebar-custom .nav-link.active i {
+            color: #0d9488 !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .border-top {
+            border-color: #cbd5e1 !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .border-bottom {
+            border-color: #cbd5e1 !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .dropdown-toggle {
+            color: #0f172a !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .dropdown-menu {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .dropdown-item {
+            color: #0f172a !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .dropdown-item:hover {
+            background: #ccfbf1 !important;
+            color: #0d9488 !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .btn-dark {
+            background: #0f172a !important;
+            border-color: #0f172a !important;
+            color: #ffffff !important;
+        }
+        body:not(.dark-mode) .sidebar-custom .btn-dark:hover {
+            background: #1e293b !important;
+        }
+        /* Light mode sidebar slim scrollbar */
+        body:not(.dark-mode) #sidebar > div:first-child {
+            scrollbar-color: rgba(0,0,0,0.1) transparent;
+        }
+        body:not(.dark-mode) #sidebar > div:first-child::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.1);
+        }
+        body:not(.dark-mode) #sidebar > div:first-child::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+        /* Avoid forcing text color globally; keep readable backgrounds only */
+        .card-body, .table tbody td {
+            background: #fff;
+        }
+        body.dark-mode .card-body, body.dark-mode .table tbody td {
+            background: #111418;
+        }
+        .list-group-item .badge {
+            background: #0d6efd !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+        }
+        body.dark-mode .dashboard-card,
+        body.dark-mode .card,
+        body.dark-mode .list-group-item {
+            background: #111418 !important;
+            color: #e0e1dd !important;
+            border-color: #1e2228 !important;
+        }
+        body.dark-mode .list-group-item .badge {
+            background: #1e2228 !important;
+            color: #4ED6C1 !important;
+        }
+        body.dark-mode .stats-card {
+            background: #111418 !important;
+            color: #e0e1dd !important;
+            box-shadow: 0 4px 24px #0002;
+        }
+        body.dark-mode .dashboard-header {
+            background: linear-gradient(135deg, #111418 0%, #000 100%) !important;
+        }
+            /* Do not force card background in light mode to preserve inline colored stat tiles */
+            .dashboard-card, .stats-card {
+                border-radius: 24px 24px 0 0 !important;
+            }
+        body.dark-mode .card-header {
+            background: linear-gradient(135deg, #1a1f26, #141920) !important;
+            color: #e0e1dd !important;
+            border-bottom: 1px solid #1e2228 !important;
+        }
+        body.dark-mode .card-header i {
+            color: #4ED6C1 !important;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(37,99,235,0.2);
+            padding: 8px 16px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+        }
+        .table thead th {
+            background: #334155;
+            color: #ffffff !important;
+            font-size: 0.97rem;
+            font-weight: 600;
+            border-radius: 6px;
+            letter-spacing: 0.02em;
+        }
+        body.dark-mode .table thead th {
+            background: #1a1f26 !important;
+            color: #c9d1d9 !important;
+            font-weight: 500 !important;
+            border-bottom: 1px solid #1e2228 !important;
+        }
+        .badge {
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 0.97rem;
+            border-radius: 6px;
+        }
+        body.dark-mode .badge {
+            background: #1e2228 !important;
+            color: #4ED6C1 !important;
+        }
+        body.dark-mode .btn-outline-primary {
+            border-color: #4ED6C1 !important;
+            color: #4ED6C1 !important;
+        }
+        body.dark-mode .btn-outline-primary:hover {
+            background: #4ED6C1 !important;
+            color: #23272b !important;
+        }
+        /* Final guard: Tenant dashboard 'Paid: ₱x / ₱y' metadata readable in dark mode */
+        body.dark-mode .tenant-ui .card .card-body .text-muted,
+        body.dark-mode .tenant-ui .card .card-body small.text-muted {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+        /* Dark mode: improve readability in Add Tenant / admin modals */
+        body.dark-mode .modal-content {
+            background-color: #111418 !important;
+            color: #e7e7ee !important;
+            border-color: #1e2228 !important;
+        }
+        body.dark-mode .modal-header,
+        body.dark-mode .modal-footer {
+            background-color: #141920 !important;
+            color: #e7e7ee !important;
+            border-color: #1e2228 !important;
+        }
+        body.dark-mode .modal-title { color: #4ED6C1 !important; }
+        body.dark-mode label.form-label,
+        body.dark-mode .form-label,
+        body.dark-mode label { color: #e7e7ee !important; }
+        body.dark-mode .form-control {
+            background-color: #0a0d10 !important;
+            color: #e7e7ee !important;
+            border-color: #1e2228 !important;
+        }
+        body.dark-mode .form-control:focus {
+            background-color: #0a0d10 !important;
+            color: #ffffff !important;
+            border-color: #4ED6C1 !important;
+            box-shadow: 0 0 0 0.2rem rgba(78,214,193,0.25) !important;
+        }
+        body.dark-mode .form-text,
+        body.dark-mode small.text-muted { color: #aab2bd !important; }
+        body.dark-mode .invalid-feedback { color: #ffb4b4 !important; }
+        /* Make the close (X) button visible on dark background */
+        body.dark-mode .btn-close { filter: invert(1) contrast(200%); }
+        /* Placeholder visibility in dark mode for modal inputs */
+        body.dark-mode .modal .form-control::placeholder { color: #aab2bd !important; opacity: 1 !important; }
+        body.dark-mode {
+            background: #000 !important;
+            color: #c9d1d9 !important;
+        }
+        .sidebar-custom.dark-mode {
+            background: linear-gradient(180deg, #0a0d10 0%, #111418 100%) !important;
+            color: #c9d1d9 !important;
+        }
+        .sidebar-custom.dark-mode .nav-link,
+        .sidebar-custom.dark-mode .navbar-brand {
+            color: #c9d1d9 !important;
+        }
+        .sidebar-custom.dark-mode .nav-link.active {
+            color: #4ED6C1 !important;
+        }
+        .sidebar-custom.dark-mode .dropdown-menu {
+            background: #111418 !important;
+            color: #c9d1d9 !important;
+        }
+        .sidebar-custom.dark-mode .dropdown-item {
+            color: #c9d1d9 !important;
+        }
+        .sidebar-custom.dark-mode .dropdown-item:hover {
+            background: #1a1f26 !important;
+            color: #4ED6C1 !important;
+        }
+
+/* --- header.php style block 10 --- */
+.dashboard-header {
+                background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+                color: #ffffff !important;
+            }
+            .dashboard-header .dashboard-title {
+                color: #000000 !important;
+            }
+            .dashboard-header .dashboard-desc {
+                color: #000000 !important;
+            }
+            /* Announcement boxes: keep background; ensure border visible */
+            .dashboard-ui .announcement-admin-item {
+                border: 1px solid #444 !important;
+            }
+            /* Page h2 title in dashboard pages */
+            .dashboard-ui h2.dashboard-title { color: #1e293b !important; }
+            /* No color overrides: keep text colors from page CSS; border remains visible in both modes */
+            body.dark-mode .dashboard-ui h2.dashboard-title { color: #e7e7ee !important; }
+            body.dark-mode .dashboard-header {
+                background: linear-gradient(135deg, #23272b 0%, #000 100%) !important;
+                color: #c9d1d9 !important;
+            }
+            body.dark-mode .dashboard-title {
+                color: #4ED6C1 !important;
+            }
+            body.dark-mode .dashboard-desc {
+                color: #8ca0b6 !important;
+            }
+
+/* --- header.php style block 11 --- */
+/* Final guard: Admin dashboard recent lists readable in both modes */
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item,
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item *,
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item p,
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item span,
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item small,
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item strong {
+                color: #000 !important;
+            }
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item .text-muted,
+            body:not(.dark-mode) .admin-ui .admin-recent-list .list-group-item small { color: #6c757d !important; }
+
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item,
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item *,
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item p,
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item span,
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item small,
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item strong {
+                color: #e7e7ee !important;
+            }
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item .text-muted,
+            body.dark-mode .admin-ui .admin-recent-list .list-group-item small { color: #ffffff !important; }
+
+            /* Final guard: Manage Payments metadata readable in dark mode */
+            body.dark-mode .admin-ui #paymentsTable td small,
+            body.dark-mode .admin-ui #paymentsTable td .text-muted,
+            body.dark-mode .admin-ui #paymentsTable .text-muted {
+                color: #ffffff !important;
+            }
+
+/* --- header.php style block 12 --- */
+/* Final guard: Manage Payments Submitted column colors by theme */
+    body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7),
+    body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) *,
+    body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) small,
+    body:not(.dark-mode) .admin-ui table#paymentsTable tbody tr td:nth-child(7) .text-muted {
+        color: #000 !important;
+    }
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7),
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) *,
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) small,
+    body.dark-mode .admin-ui table#paymentsTable tbody tr td:nth-child(7) .text-muted {
+        color: #fff !important;
+    }
+
+/* --- header.php style block 13 --- */
+#notifPanel { border-radius: 12px; border: none; overflow: hidden; }
+    #notifPanel .card-body { overflow-x: hidden !important; }
+    #notifPanel .notif-item { transition: background 0.2s ease; }
+    #notifPanel .min-w-0 { min-width: 0; }
+    /* Light mode notification panel */
+    body:not(.dark-mode) #notifPanel { background: #fff !important; border: 1px solid #e2e8f0 !important; box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important; }
+    body:not(.dark-mode) #notifPanel .card-header { background: #f8fafc !important; color: #1e293b !important; border-color: #e2e8f0 !important; }
+    body:not(.dark-mode) #notifPanel .card-footer { background: #f8fafc !important; border-color: #e2e8f0 !important; }
+    body:not(.dark-mode) #notifPanel .fw-semibold { color: #1e293b !important; }
+    body:not(.dark-mode) #notifPanel .text-muted { color: #64748b !important; }
+    body:not(.dark-mode) #notifPanel .border-bottom { border-color: #f1f5f9 !important; }
+    body:not(.dark-mode) #notifPanel .notif-unread { background: #f0fdf4 !important; }
+    body:not(.dark-mode) #notifPanel .notif-item:hover { background: #ecfdf5 !important; }
+    body:not(.dark-mode) #notifBellBtn { border-color: #94a3b8 !important; color: #475569 !important; }
+    body:not(.dark-mode) #notifBellBtn:hover { border-color: #4ED6C1 !important; color: #4ED6C1 !important; background: rgba(78,214,193,0.08) !important; }
+    /* Dark mode notification panel */
+    body.dark-mode #notifPanel { background: #181a1b !important; border: 1px solid #2b3035 !important; box-shadow: 0 8px 30px rgba(0,0,0,0.4) !important; }
+    body.dark-mode #notifPanel .card-header { background: #23272b !important; color: #e7e7ee !important; border-color: #2b3035 !important; }
+    body.dark-mode #notifPanel .card-footer { background: #23272b !important; border-color: #2b3035 !important; }
+    body.dark-mode #notifPanel .border-bottom { border-color: #2b3035 !important; }
+    body.dark-mode #notifPanel .notif-unread { background: rgba(78,214,193,0.06) !important; }
+    body.dark-mode #notifPanel .notif-item:hover { background: rgba(78,214,193,0.1) !important; }
+    body.dark-mode #notifPanel .fw-semibold { color: #e0e1dd !important; }
+    body.dark-mode #notifPanel .text-muted { color: #9ca3af !important; }
+    body.dark-mode #notifBellBtn { border-color: #4ED6C1 !important; color: #4ED6C1 !important; }
+    body.dark-mode #notifPanel .btn-outline-secondary {
+        color: #4ED6C1 !important;
+        border-color: #4ED6C1 !important;
+        background: transparent !important;
+    }
+    body.dark-mode #notifPanel .btn-outline-secondary:hover {
+        background: #4ED6C1 !important;
+        color: #0b1320 !important;
+    }
+
+/* ═══════════════════════════════════════════════════════════
+   ACTIVE NAV LINK — Strong indicator (overrides all above)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Dark mode active */
+.sidebar-custom .nav-link.active {
+    background: linear-gradient(90deg, rgba(78,214,193,0.18) 0%, rgba(78,214,193,0.08) 100%) !important;
+    color: #4ED6C1 !important;
+    font-weight: 700 !important;
+    border-left: 3px solid #4ED6C1 !important;
+    border-radius: 0 8px 8px 0 !important;
+    box-shadow: 0 2px 12px rgba(78,214,193,0.15) !important;
+}
+.sidebar-custom .nav-link.active i {
+    color: #4ED6C1 !important;
+}
+
+/* Light mode active */
+body:not(.dark-mode) .sidebar-custom .nav-link.active {
+    background: linear-gradient(90deg, rgba(13,148,136,0.12) 0%, rgba(13,148,136,0.05) 100%) !important;
+    color: #0d9488 !important;
+    font-weight: 700 !important;
+    border-left: 3px solid #0d9488 !important;
+    border-radius: 0 8px 8px 0 !important;
+    box-shadow: 0 2px 8px rgba(13,148,136,0.12) !important;
+}
+body:not(.dark-mode) .sidebar-custom .nav-link.active i {
+    color: #0d9488 !important;
+}
+
+/* Hover (non-active) stays subtle */
+.sidebar-custom .nav-link:not(.active):hover {
+    background: rgba(78,214,193,0.08) !important;
+    color: #4ED6C1 !important;
+    border-left: 3px solid rgba(78,214,193,0.4) !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+body:not(.dark-mode) .sidebar-custom .nav-link:not(.active):hover {
+    background: rgba(13,148,136,0.07) !important;
+    color: #0d9488 !important;
+    border-left: 3px solid rgba(13,148,136,0.3) !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+/* All non-active links get left border placeholder so layout doesn't jump */
+.sidebar-custom .nav-link {
+    border-left: 3px solid transparent !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+/* Mobile bottom nav active */
+#mobileBottomNav .mnav-item.active {
+    color: #4ED6C1 !important;
+    position: relative;
+}
+#mobileBottomNav .mnav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: #4ED6C1;
+    border-radius: 0 0 4px 4px;
+}
+body:not(.dark-mode) #mobileBottomNav .mnav-item.active {
+    color: #0d9488 !important;
+}
+body:not(.dark-mode) #mobileBottomNav .mnav-item.active::before {
+    background: #0d9488;
+}

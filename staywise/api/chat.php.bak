@@ -1,0 +1,252 @@
+<?php
+// API endpoint: POST /api/chat.php
+// Purpose: Proxy chat requests from authenticated users to an AI provider (OpenAI by default)
+// Security: Requires logged-in session; reads API keys from environment or optional config/ai.php
+
+declare(strict_types=1);
+
+session_start();
+
+// Require authentication (tenant or admin)
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Unauthorized']);
+    exit();
+}
+
+// Optional: load project DB (not used here) and AI config
+// Keep relative paths robust if api/ moves; adjust as needed for your project layout
+$root = dirname(__DIR__);
+@require_once $root . '/config/db.php';
+if (file_exists($root . '/config/ai.php')) {
+    /** @noinspection PhpIncludeInspection */
+    @require_once $root . '/config/ai.php';
+}
+
+header('Content-Type: application/json');
+
+// Only accept JSON POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' => 'Method Not Allowed']);
+    exit();
+}
+if (stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === false) {
+    http_response_code(415);
+    echo json_encode(['error' => 'Unsupported Media Type; expected application/json']);
+    exit();
+}
+
+// Read and validate input
+$raw = file_get_contents('php://input');
+$data = json_decode($raw ?: 'null', true);
+if (!is_array($data)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid JSON']);
+    exit();
+}
+
+$message = trim((string)($data['message'] ?? ''));
+$history = $data['history'] ?? [];
+
+if ($message === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'Message is required']);
+    exit();
+}
+
+// Basic input limits
+if (mb_strlen($message) > 2000) {
+    $message = mb_substr($message, 0, 2000);
+}
+// Limit history length to avoid large payloads
+if (is_array($history)) {
+    $history = array_slice($history, -10); // last 10 turns
+} else {
+    $history = [];
+}
+
+// Provider configuration
+$provider = getenv('AI_PROVIDER') ?: 'openai';
+
+// Build messages array in OpenAI format
+$messages = [];
+
+// Optional system prompt grounding
+$systemPrompt = getenv('AI_SYSTEM_PROMPT') ?: null;
+if ($systemPrompt) {
+    $messages[] = ['role' => 'system', 'content' => $systemPrompt];
+} else {
+    $messages[] = [
+        'role' => 'system',
+        'content' => 'You are StayWise, a helpful assistant for tenants in a rental/property management system. Answer clearly and concisely. If asked about personal data or account-specific info, remind the user you can only provide general guidance.'
+    ];
+}
+
+// Append history
+foreach ($history as $h) {
+    if (!is_array($h)) continue;
+    $role = $h['role'] ?? null;
+    $content = $h['content'] ?? null;
+    if (in_array($role, ['user', 'assistant', 'system'], true) && is_string($content) && $content !== '') {
+        $messages[] = ['role' => $role, 'content' => $content];
+    }
+}
+// Append current user message
+$messages[] = ['role' => 'user', 'content' => $message];
+
+// Dispatch to provider
+try {
+    if ($provider === 'azure') {
+        $result = chat_with_azure_openai($messages);
+    } elseif ($provider === 'ollama') {
+        $result = chat_with_ollama($messages);
+    } else { // default: openai
+        $result = chat_with_openai($messages);
+    }
+
+    echo json_encode($result);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'AI request failed', 'details' => $e->getMessage()]);
+}
+
+// -------------- Providers -------------- //
+
+function chat_with_openai(array $messages): array {
+    $apiKey = getenv('OPENAI_API_KEY') ?: null;
+    if (!$apiKey) {
+        throw new RuntimeException('Missing OPENAI_API_KEY');
+    }
+    $model = getenv('OPENAI_API_MODEL') ?: 'gpt-4o-mini';
+    $apiBase = getenv('OPENAI_API_BASE') ?: 'https://api.openai.com';
+
+    $url = rtrim($apiBase, '/') . '/v1/chat/completions';
+
+    $payload = [
+        'model' => $model,
+        'messages' => $messages,
+        'temperature' => 0.2,
+    ];
+
+    $resp = http_json('POST', $url, $payload, [
+        'Authorization: Bearer ' . $apiKey,
+        'Content-Type: application/json',
+    ]);
+
+    $reply = $resp['choices'][0]['message']['content'] ?? null;
+    if (!is_string($reply)) {
+        throw new RuntimeException('Invalid OpenAI response');
+    }
+
+    return [
+        'provider' => 'openai',
+        'model' => $resp['model'] ?? $model,
+        'reply' => $reply,
+        'usage' => $resp['usage'] ?? null,
+    ];
+}
+
+function chat_with_azure_openai(array $messages): array {
+    $apiKey = getenv('AZURE_OPENAI_API_KEY') ?: null;
+    $endpoint = getenv('AZURE_OPENAI_ENDPOINT') ?: null;
+    $deployment = getenv('AZURE_OPENAI_DEPLOYMENT') ?: null;
+    $apiVersion = getenv('AZURE_OPENAI_API_VERSION') ?: '2024-06-01';
+
+    if (!$apiKey || !$endpoint || !$deployment) {
+        throw new RuntimeException('Missing Azure OpenAI config');
+    }
+
+    $url = rtrim($endpoint, '/') . '/openai/deployments/' . rawurlencode($deployment) . '/chat/completions?api-version=' . rawurlencode($apiVersion);
+
+    $payload = [
+        'messages' => $messages,
+        'temperature' => 0.2,
+    ];
+
+    $resp = http_json('POST', $url, $payload, [
+        'api-key: ' . $apiKey,
+        'Content-Type: application/json',
+    ]);
+
+    $reply = $resp['choices'][0]['message']['content'] ?? null;
+    if (!is_string($reply)) {
+        throw new RuntimeException('Invalid Azure OpenAI response');
+    }
+
+    return [
+        'provider' => 'azure',
+        'model' => $deployment,
+        'reply' => $reply,
+        'usage' => $resp['usage'] ?? null,
+    ];
+}
+
+function chat_with_ollama(array $messages): array {
+    // Minimal Ollama chat support (local LLM). Requires OLLAMA_BASE_URL and OLLAMA_MODEL.
+    $base = getenv('OLLAMA_BASE_URL') ?: 'http://127.0.0.1:11434';
+    $model = getenv('OLLAMA_MODEL') ?: 'llama3.1:8b';
+
+    $url = rtrim($base, '/') . '/api/chat';
+
+    // Convert OpenAI-style messages to Ollama format
+    $payload = [
+        'model' => $model,
+        'messages' => $messages,
+        'stream' => false,
+        'options' => ['temperature' => 0.2],
+    ];
+
+    $resp = http_json('POST', $url, $payload, [
+        'Content-Type: application/json',
+    ]);
+
+    $reply = $resp['message']['content'] ?? null;
+    if (!is_string($reply)) {
+        throw new RuntimeException('Invalid Ollama response');
+    }
+
+    return [
+        'provider' => 'ollama',
+        'model' => $model,
+        'reply' => $reply,
+        'usage' => null,
+    ];
+}
+
+// -------------- HTTP helper -------------- //
+
+function http_json(string $method, string $url, array $payload, array $headers): array {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+    // If you use self-signed certificates in dev, you may disable verification (not recommended in prod)
+    if (getenv('AI_INSECURE_SKIP_VERIFY') === '1') {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    }
+
+    $resp = curl_exec($ch);
+    if ($resp === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        throw new RuntimeException('cURL error: ' . $err);
+    }
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $json = json_decode($resp, true);
+    if ($status >= 400) {
+        $summary = is_array($json) ? json_encode($json) : (string)$resp;
+        throw new RuntimeException('HTTP ' . $status . ': ' . $summary);
+    }
+    if (!is_array($json)) {
+        throw new RuntimeException('Invalid JSON from AI provider');
+    }
+    return $json;
+}

@@ -1,0 +1,13 @@
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+Options -Indexes
+
+# Deny GET to chat endpoint; only allow POST
+<Files "chat.php">
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{REQUEST_METHOD} !POST
+        RewriteRule ^ - [R=405,L]
+    </IfModule>
+</Files>

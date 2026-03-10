@@ -1,0 +1,52 @@
+<?php
+/**
+ * StayWise AI Configuration
+ * Cheap Setup: Ollama (local free AI) + Dialogflow (free NLU routing)
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Download Ollama from https://ollama.ai
+ * 2. Run: ollama pull llama2 (or nomic-embed-text for faster responses)
+ * 3. Start Ollama: ollama serve (it will run on http://127.0.0.1:11434)
+ * 4. This file is configured and ready to use!
+ */
+
+// === FREE LOCAL AI (Ollama) ===
+putenv('AI_PROVIDER=ollama');
+putenv('OLLAMA_BASE_URL=http://127.0.0.1:11434');
+// Note: Requires free RAM based on model:
+// - llama2 (7B, needs ~5.5GB RAM)
+// - For systems with <3GB RAM: close other apps or use cloud AI
+putenv('OLLAMA_MODEL=llama2');
+
+// === DIALOGFLOW FREE TIER (Intent Routing) ===
+// Optional: For NLU-based routing to specific tenant features
+// putenv('DIALOGFLOW_PROJECT_ID=your-project-id');
+// putenv('DIALOGFLOW_CREDENTIALS=path/to/credentials.json');
+
+// === SYSTEM PROMPT ===
+// Customize how the AI responds for StayWise
+putenv('AI_SYSTEM_PROMPT=' . <<<'PROMPT'
+You are StayWise AI Assistant, a helpful property management assistant for tenants.
+
+Your responsibilities:
+1. Answer questions about rent payments, maintenance requests, and building rules
+2. Guide tenants through the StayWise application features
+3. Provide general property management information
+4. Be friendly, concise, and professional
+
+Guidelines:
+- Keep responses short and clear (under 150 words)
+- For account-specific questions, direct users to their profile or admin
+- Never ask for or accept payment information
+- If unsure, suggest contacting the property admin
+- Always be helpful and courteous
+
+Current date: February 6, 2026
+PROMPT
+);
+
+// === DEVELOPER OPTIONS ===
+// Uncomment in development only:
+// putenv('AI_INSECURE_SKIP_VERIFY=1'); // For self-signed SSL in dev
+
+?>
