@@ -1,0 +1,10 @@
+{
+    frankenphp
+}
+
+:80 {
+    root * /app
+    php_server
+    file_server
+    try_files {path} {path}/ /index.php?{query}
+}
