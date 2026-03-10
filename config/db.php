@@ -7,9 +7,7 @@ $password   = getenv('MYSQLPASSWORD') ?: '';
 $dbname     = getenv('MYSQLDATABASE') ?: 'staywise';
 $port       = getenv('MYSQLPORT') ?: 3306;
 
-mysqli_report(MYSQLI_REPORT_OFF);
-
-$conn = new mysqli($servername, $username, $password, $dbname, $port);
+$conn = new mysqli($servername, $username, $password, $dbname, (int)$port);
 
 if ($conn->connect_error) {
     error_log("DB Error: " . $conn->connect_error);
