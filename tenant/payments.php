@@ -504,21 +504,24 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.cancelled { background: #94a3b8; }
 
 /* ID-based override — beats any !important class rule in style.css */
-#payHistoryHeader,
-#payHistoryHeader * {
-    background-color: transparent !important;
-    color: #0f172a !important;
-}
 #payHistoryHeader {
     background-color: #ffffff !important;
     border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
 }
+#payHistoryHeader h6 { color: #0f172a !important; }
 body.dark-mode #payHistoryHeader {
-    background-color: #1f2530 !important;
-    border-bottom-color: #2d3748 !important;
+    background-color: #111111 !important;
+    border-bottom-color: rgba(255,255,255,.08) !important;
+    color: #e2e8f0 !important;
 }
-body.dark-mode #payHistoryHeader,
-body.dark-mode #payHistoryHeader h6 {
+body.dark-mode #payHistoryHeader h6 { color: #e2e8f0 !important; }
+body.dark-mode #payHistoryHeader .btn-outline-secondary {
+    color: #94a3b8 !important;
+    border-color: #444 !important;
+}
+body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
+    background: rgba(255,255,255,.08) !important;
     color: #e2e8f0 !important;
 }
 
