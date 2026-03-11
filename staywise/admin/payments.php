@@ -451,7 +451,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     var tr = buildRow(p);
                     if (statusFilter !== 'all' && p.status !== statusFilter) tr.style.display = 'none';
                     tbody.insertBefore(tr, tbody.firstChild);
-                    setTimeout(function() { tr.style.transition = 'background 1.5s'; tr.style.background = ''; }, 5000);
                 });
                 lastPollTime = rows[0].created_at;
                 showToast(newRows.length);
