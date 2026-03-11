@@ -503,31 +503,44 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.rejected  { background: #ef4444; }
 .status-dot.cancelled { background: #94a3b8; }
 
-/* Override global blue card-header for this page */
-.tenant-ui .pay-form-card .card-header {
-    background-color: #ffffff !important;
+/* ID-based override — beats any !important class rule in style.css */
+#payHistoryHeader,
+#payHistoryHeader * {
+    background-color: transparent !important;
     color: #0f172a !important;
+}
+#payHistoryHeader {
+    background-color: #ffffff !important;
     border-bottom: 1px solid #e2e8f0 !important;
 }
-.tenant-ui .pay-form-card .card-header h6,
-.tenant-ui .pay-form-card .card-header i {
-    color: inherit !important;
-}
-body.dark-mode .tenant-ui .pay-form-card .card-header {
+body.dark-mode #payHistoryHeader {
     background-color: #1f2530 !important;
-    color: #e2e8f0 !important;
     border-bottom-color: #2d3748 !important;
 }
-.filter-tab {
-    background: transparent; color: #64748b; border: none; border-bottom: 2px solid transparent;
-    border-radius: 0; padding: .4rem .75rem; font-size: .8rem; font-weight: 500;
-    transition: all .15s; margin-bottom: -1px;
+body.dark-mode #payHistoryHeader,
+body.dark-mode #payHistoryHeader h6 {
+    color: #e2e8f0 !important;
 }
-.filter-tab:hover { color: #0f172a; }
-.filter-tab.active { color: #007DFE; border-bottom-color: #007DFE; font-weight: 700; }
-body.dark-mode .filter-tab { color: #94a3b8; }
-body.dark-mode .filter-tab:hover { color: #e2e8f0; }
-body.dark-mode .filter-tab.active { color: #4ED6C1; border-bottom-color: #4ED6C1; }
+
+/* Filter tabs */
+.filter-tab {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    padding: .45rem .85rem !important;
+    font-size: .8rem !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    transition: all .15s;
+    margin-bottom: -1px;
+    box-shadow: none !important;
+}
+.filter-tab:hover { color: #0f172a !important; background: transparent !important; }
+.filter-tab.active { color: #007DFE !important; border-bottom-color: #007DFE !important; font-weight: 700 !important; }
+body.dark-mode .filter-tab { color: #94a3b8 !important; }
+body.dark-mode .filter-tab:hover { color: #e2e8f0 !important; }
+body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; }
 .history-item.hidden-by-filter { display: none !important; }
 .info-ribbon {
     border-radius: 12px;
@@ -844,7 +857,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1; border-bottom-color: #4ED6C1
         <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
-                <div class="card-header bg-white border-bottom px-3 px-md-4 pt-3 pb-0">
+                <div class="card-header border-bottom px-3 px-md-4 pt-3 pb-0" id="payHistoryHeader" style="background:#fff !important;">
                     <!-- Row 1: Title + action buttons -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold mb-0" style="font-size:.95rem;">
