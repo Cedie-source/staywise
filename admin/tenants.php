@@ -568,7 +568,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Get all tenants (exclude soft-deleted; order by name; status column may not exist)
-$tenants = $conn->query("SELECT t.*, u.username, u.force_password_change AS u_force_password_change FROM tenants t JOIN users u ON t.user_id = u.id WHERE t.deleted_at IS NULL ORDER BY t.name");
+$tenants = $conn->query("SELECT t.*, u.username, u.profile_photo, u.force_password_change AS u_force_password_change FROM tenants t JOIN users u ON t.user_id = u.id WHERE t.deleted_at IS NULL ORDER BY t.name");
 
 include '../includes/header.php';
 ?>
@@ -661,11 +661,25 @@ ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL;
                                         $noBadgesClass = (!$hasPending && !$hasRejected && !$mustChange) ? ' no-badges' : '';
                                     ?>
                                     <td class="tenant-name-cell<?php echo $noBadgesClass; ?>">
-                                        <strong class="tenant-name-text"><?php echo htmlspecialchars($tenant['name']); ?></strong>
-                                        <div class="tenant-name-badges">
-                                            <?php if (isset($tenant['status']) && $tenant['status'] === 'pending'): ?><span class="badge bg-warning text-dark">Pending</span><?php endif; ?>
-                                            <?php if (isset($tenant['status']) && $tenant['status'] === 'rejected'): ?><span class="badge bg-danger">Rejected</span><?php endif; ?>
-                                            <?php if (!empty($tenant['u_force_password_change'])): ?><span class="badge bg-danger">Must change password</span><?php endif; ?>
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                          <?php
+                                            $tp = $tenant['profile_photo'] ?? '';
+                                            $tpPath = '../uploads/profiles/' . $tp;
+                                            $tInitials = strtoupper(substr($tenant['name'], 0, 2));
+                                          ?>
+                                          <?php if (!empty($tp) && file_exists($tpPath)): ?>
+                                            <img src="<?php echo htmlspecialchars($tpPath) ?>" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(78,214,193,.35);">
+                                          <?php else: ?>
+                                            <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4ED6C1,#007DFE);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;"><?php echo $tInitials ?></div>
+                                          <?php endif; ?>
+                                          <div>
+                                            <strong class="tenant-name-text"><?php echo htmlspecialchars($tenant['name']); ?></strong>
+                                            <div class="tenant-name-badges">
+                                                <?php if (isset($tenant['status']) && $tenant['status'] === 'pending'): ?><span class="badge bg-warning text-dark">Pending</span><?php endif; ?>
+                                                <?php if (isset($tenant['status']) && $tenant['status'] === 'rejected'): ?><span class="badge bg-danger">Rejected</span><?php endif; ?>
+                                                <?php if (!empty($tenant['u_force_password_change'])): ?><span class="badge bg-danger">Must change password</span><?php endif; ?>
+                                            </div>
+                                          </div>
                                         </div>
                                     </td>
                                     <td>
