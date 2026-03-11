@@ -1,497 +1,617 @@
 <?php
-require_once '../includes/security.php';
-set_secure_session_cookies();
-session_start();
-require_once '../config/db.php';
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'tenant') {
-    header("Location: ../index.php");
-    exit();
-}
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/security.php';
 
-$page_title = "My Profile";
+$base_url = '/';
+$req_uri  = $_SERVER['REQUEST_URI'] ?? '';
+$adminRoleNav = strtolower((string)($_SESSION['admin_role'] ?? ''));
+$userRole     = $_SESSION['role'] ?? '';
+$currentPage  = basename($_SERVER['PHP_SELF'] ?? '');
 
-// Fetch user + tenant info
-$stmt = $conn->prepare("
-    SELECT u.username, u.full_name, u.email, u.profile_photo,
-           u.middle_name, u.company_name, u.display_as_company,
-           t.unit_number, t.rent_amount, t.lease_start_date, t.lease_end_date,
-           t.deposit_amount, t.advance_amount, t.deposit_paid, t.advance_paid,
-           t.contact, t.tenant_id
-    FROM users u
-    LEFT JOIN tenants t ON t.user_id = u.id
-    WHERE u.id = ?
-");
-$stmt->bind_param("i", $_SESSION['user_id']);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$user) { header("Location: ../logout.php"); exit(); }
-
-$success = $error = '';
-
-// Split full name
-$nameParts = explode(' ', trim($user['full_name'] ?? ''), 2);
-$firstName = $nameParts[0] ?? '';
-$lastName  = $nameParts[1] ?? '';
-
-// Handle profile photo upload
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_photo'])) {
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
-    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === 0) {
-        $allowed_mime = ['image/jpeg','image/png','image/webp','image/gif'];
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->file($_FILES['profile_photo']['tmp_name']);
-        $extMap = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];
-        $ext = $extMap[$mime] ?? '';
-        if (!$ext) { $error = "Invalid image type."; }
-        elseif ($_FILES['profile_photo']['size'] > 3 * 1024 * 1024) { $error = "Image too large (max 3MB)."; }
-        else {
-            $upload_dir = '../uploads/profiles/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-            $filename = 'profile_' . $_SESSION['user_id'] . '_' . time() . '.' . $ext;
-            if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_dir . $filename)) {
-                $upd = $conn->prepare("UPDATE users SET profile_photo = ? WHERE id = ?");
-                $upd->bind_param("si", $filename, $_SESSION['user_id']);
-                $upd->execute(); $upd->close();
-                $success = "Profile photo updated.";
-                $user['profile_photo'] = $filename;
-            } else { $error = "Upload failed."; }
+if (isset($_SESSION['user_id']) && empty($_SESSION['must_change_password'])) {
+    try {
+        if (isset($conn) && function_exists('db_column_exists') && db_column_exists($conn, 'users', 'force_password_change')) {
+            $uid  = (int)$_SESSION['user_id'];
+            $stmt = $conn->prepare("SELECT force_password_change FROM users WHERE id = ?");
+            $stmt->bind_param("i", $uid); $stmt->execute();
+            $res  = $stmt->get_result(); $row = $res ? $res->fetch_assoc() : null; $stmt->close();
+            if ($row && !empty($row['force_password_change'])) $_SESSION['must_change_password'] = true;
         }
+    } catch (Throwable $e) {}
+}
+if (!empty($_SESSION['must_change_password'])) {
+    $self = basename($_SERVER['PHP_SELF'] ?? '');
+    if (!in_array($self, ['change_password.php','logout.php','login.php','index.php'])) {
+        header('Location: ' . $base_url . 'change_password.php'); exit();
     }
 }
 
-// Handle profile update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
-    $first       = trim($_POST['first_name']        ?? '');
-    $middle      = trim($_POST['middle_name']        ?? '');
-    $last        = trim($_POST['last_name']          ?? '');
-    $email       = trim($_POST['email']              ?? '');
-        $phone       = trim($_POST['phone']              ?? '');
-    $company     = trim($_POST['company_name']       ?? '');
-    $as_company  = isset($_POST['display_as_company']) ? 1 : 0;
-    $full_name   = trim("$first $last");
-
-    if (empty($first) || empty($last) || empty($email)) {
-        $error = "First name, last name and email are required.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Invalid email format.";
-    } else {
-        $stmt = $conn->prepare("UPDATE users SET full_name=?, middle_name=?, email=?, company_name=?, display_as_company=? WHERE id=?");
-        $stmt->bind_param("ssssii", $full_name, $middle, $email, $company, $as_company, $_SESSION['user_id']);
-        if ($stmt->execute()) {
-            $sync = $conn->prepare("UPDATE tenants SET name = ?, email = ?, contact = ? WHERE user_id = ?");
-            if ($sync) { $sync->bind_param("sssi", $full_name, $email, $phone, $_SESSION['user_id']); $sync->execute(); $sync->close(); }
-            $success = "Profile updated successfully.";
-            $user['full_name']          = $full_name;
-            $user['middle_name']        = $middle;
-            $user['email']              = $email;
-            $user['phone'] = $phone; // maps from contact column
-            $user['company_name']       = $company;
-            $user['display_as_company'] = $as_company;
-            $firstName = $first; $middleName = $middle; $lastName = $last;
-        } else { $error = "Failed to update profile."; }
-        $stmt->close();
-    }
-}
-
-$profilePhoto = $user['profile_photo'] ?? '';
-$initials = strtoupper(substr($firstName ?: $user['username'], 0, 1) . substr($lastName ?: ($user['username'] ?? ''), 0, 1));
-// Split middle name from last name parts if stored
-$middleName = '';
-if (count($nameParts) > 2) {
-  $middleName = $nameParts[1] ?? '';
-  $lastName   = $nameParts[2] ?? '';
-}
-
-$activeTab = $_GET['tab'] ?? 'profile';
-
-include '../includes/header.php';
+// Fetch display name for header avatar
+$_headerName = $_SESSION['username'] ?? '';
+$_headerInitials = strtoupper(substr($_headerName, 0, 2));
 ?>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title><?php echo isset($page_title) ? htmlspecialchars($page_title) : 'StayWise'; ?> - Rental Management</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+<link href="<?php echo $base_url; ?>assets/css/style.css?v=2026030602" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="<?php echo $base_url; ?>assets/favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="<?php echo $base_url; ?>assets/favicon-32.png"/>
+<link rel="apple-touch-icon" href="<?php echo $base_url; ?>assets/icon-192.png"/>
+<link rel="manifest" href="<?php echo $base_url; ?>site.webmanifest"/>
+<meta name="theme-color" content="#4ED6C1"/>
 <style>
-.profile-wrap { max-width: 920px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+/* ── Variables ── */
+:root {
+  --topbar-h: 58px;
+  --sidebar-w: 230px;
+  --brand-teal: #4ED6C1;
+  --brand-dark: #111111;
+  --brand-blue: #007DFE;
+  --nav-active-bg: rgba(78,214,193,.13);
+  --nav-active-color: #4ED6C1;
+}
 
-/* ── Page heading ── */
-.acct-heading {
-  font-size: 1.45rem; font-weight: 700; margin-bottom: 1.5rem;
-}
-body:not(.dark-mode) .acct-heading { color: #111827; }
-body.dark-mode .acct-heading { color: #f1f5f9; }
+/* ── Reset font ── */
+body, button, input { font-family: 'DM Sans', sans-serif; }
 
-/* ── Tabs ── */
-.profile-tabs {
-  display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem; gap: 0;
+/* ── TOP BAR ── */
+#topBar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  z-index: 1045;
+  display: flex; align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0,0,0,.07);
+  transition: background .2s;
 }
-body.dark-mode .profile-tabs { border-bottom-color: #2d3748; }
-.profile-tab {
-  padding: .7rem 1.35rem; font-size: .88rem; font-weight: 600;
-  border: none; background: none; cursor: pointer;
-  border-bottom: 3px solid transparent; margin-bottom: -2px;
-  transition: color .15s, border-color .15s; color: #64748b;
-  white-space: nowrap;
+body:not(.dark-mode) #topBar {
+  background: #fff;
+  box-shadow: 0 1px 8px rgba(0,0,0,.06);
 }
-.profile-tab:hover { color: #0f172a; }
-.profile-tab.active { color: #16a34a; border-bottom-color: #16a34a; }
-body.dark-mode .profile-tab { color: #94a3b8; }
-body.dark-mode .profile-tab:hover { color: #e2e8f0; }
-body.dark-mode .profile-tab.active { color: #4ED6C1; border-bottom-color: #4ED6C1; }
+body.dark-mode #topBar {
+  background: #111111;
+  border-bottom-color: rgba(255,255,255,.08);
+}
 
-/* ── Panels ── */
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+/* Brand */
+.topbar-brand {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; flex-shrink: 0;
+  font-weight: 700; font-size: 1.15rem; letter-spacing: -.01em;
+}
+.topbar-brand .brand-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #4ED6C1, #007DFE);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .85rem;
+}
+body:not(.dark-mode) .topbar-brand { color: #0f172a; }
+body.dark-mode .topbar-brand { color: #fff; }
 
-/* ── Headings ── */
-.section-title { font-weight: 700; font-size: 1rem; margin-bottom: .2rem; }
-.section-sub { font-size: .82rem; color: #94a3b8; margin-bottom: 1.75rem; }
-body:not(.dark-mode) .section-title { color: #111827; }
-body.dark-mode .section-title { color: #f1f5f9; }
+/* Divider */
+.topbar-divider {
+  width: 1px; height: 22px; background: rgba(0,0,0,.1); flex-shrink: 0;
+}
+body.dark-mode .topbar-divider { background: rgba(255,255,255,.1); }
 
-/* ── Inputs ── */
-.tc-label {
-  display: block; font-size: .78rem; font-weight: 600;
-  color: #6b7280; margin-bottom: 5px;
+/* Page title area */
+.topbar-title {
+  font-size: .88rem; font-weight: 600; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-body.dark-mode .tc-label { color: #94a3b8; }
-.tc-input {
-  width: 100%; padding: .65rem .9rem;
-  border: 1.5px solid #d1d5db; border-radius: 8px;
-  font-size: .88rem; color: #111827; background: #fff;
-  transition: border-color .15s, box-shadow .15s; outline: none;
-  font-family: inherit;
-}
-.tc-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
-.tc-input:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
-body.dark-mode .tc-input { background: #1e293b; border-color: #374151; color: #e2e8f0; }
-body.dark-mode .tc-input:focus { border-color: #4ED6C1; box-shadow: 0 0 0 3px rgba(78,214,193,.1); }
-body.dark-mode .tc-input:disabled { background: #111827; color: #4b5563; }
+body:not(.dark-mode) .topbar-title { color: #374151; }
+body.dark-mode .topbar-title { color: #e2e8f0; }
 
-/* ── Checkbox row ── */
-.tc-check-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: .5rem 0;
-}
-.tc-check-row input[type=checkbox] {
-  width: 16px; height: 16px; accent-color: #16a34a; cursor: pointer; flex-shrink: 0;
-}
-.tc-check-label { font-size: .88rem; font-weight: 500; cursor: pointer; }
-body:not(.dark-mode) .tc-check-label { color: #374151; }
-body.dark-mode .tc-check-label { color: #d1d5db; }
+/* Right controls */
+.topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
-/* ── Save btn ── */
-.btn-tc-save {
-  background: #16a34a; color: #fff; border: none;
-  padding: .6rem 1.75rem; border-radius: 8px;
-  font-weight: 600; font-size: .88rem; cursor: pointer;
-  font-family: inherit; transition: background .15s;
-}
-.btn-tc-save:hover { background: #15803d; }
-
-/* ── Photo circle ── */
-.photo-wrap { display: flex; flex-direction: column; align-items: center; gap: .6rem; }
-.photo-circle {
-  width: 108px; height: 108px; border-radius: 50%;
-  background: #64748b; display: flex; align-items: center;
-  justify-content: center; position: relative; overflow: hidden;
-  cursor: pointer; flex-shrink: 0;
-}
-.photo-circle img { width: 100%; height: 100%; object-fit: cover; }
-.photo-circle-initials { font-size: 2.2rem; font-weight: 700; color: #fff; line-height: 1; }
-.photo-overlay {
-  position: absolute; inset: 0; background: rgba(0,0,0,.45);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  opacity: 0; transition: opacity .2s;
-}
-.photo-circle:hover .photo-overlay { opacity: 1; }
-.photo-overlay i { color: #fff; font-size: 1.25rem; }
-.photo-overlay span { color: #fff; font-size: .68rem; margin-top: 5px; font-weight: 600; letter-spacing: .02em; }
-
-/* ── My Cards ── */
-.cards-empty {
-  text-align: center; padding: 3rem 1rem;
-}
-.cards-empty i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; display: block; }
-.cards-empty p { color: #94a3b8; font-size: .88rem; margin: 0; }
-.card-item {
-  display: flex; align-items: center; gap: 14px;
-  padding: 1rem; border-radius: 12px; margin-bottom: .75rem;
-  border: 1.5px solid #e2e8f0;
-}
-body.dark-mode .card-item { border-color: #2d3748; background: #1e293b; }
-.card-logo { width: 48px; height: 32px; border-radius: 6px; background: linear-gradient(135deg,#1e40af,#3b82f6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.card-logo i { color: #fff; font-size: 1.1rem; }
-.card-number { font-size: .88rem; font-weight: 600; }
-body:not(.dark-mode) .card-number { color: #111827; }
-body.dark-mode .card-number { color: #e2e8f0; }
-.card-exp { font-size: .76rem; color: #94a3b8; }
-
-/* ── Security rows ── */
-.sec-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.1rem 0; border-bottom: 1px solid #f1f5f9;
-}
-.sec-row:last-child { border-bottom: none; }
-body.dark-mode .sec-row { border-bottom-color: #1e293b; }
-.sec-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.btn-outline-tc {
-  border: 1.5px solid #d1d5db; background: none; color: #374151;
-  padding: .4rem 1rem; border-radius: 8px;
-  font-weight: 600; font-size: .8rem; cursor: pointer;
-  font-family: inherit; text-decoration: none;
-  transition: border-color .15s, color .15s; display: inline-block;
-}
-.btn-outline-tc:hover { border-color: #16a34a; color: #16a34a; }
-body.dark-mode .btn-outline-tc { border-color: #374151; color: #94a3b8; }
-body.dark-mode .btn-outline-tc:hover { border-color: #4ED6C1; color: #4ED6C1; }
-.btn-danger-tc {
-  border: 1.5px solid #fecaca; background: none; color: #dc2626;
-  padding: .4rem 1rem; border-radius: 8px;
-  font-weight: 600; font-size: .8rem; cursor: pointer;
-  font-family: inherit; text-decoration: none; display: inline-block;
+/* Icon buttons */
+.topbar-btn {
+  width: 36px; height: 36px; border-radius: 9px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; cursor: pointer; position: relative;
   transition: background .15s;
 }
-.btn-danger-tc:hover { background: #fef2f2; color: #dc2626; }
+body:not(.dark-mode) .topbar-btn { background: #f1f5f9; color: #475569; }
+body:not(.dark-mode) .topbar-btn:hover { background: #e2e8f0; }
+body.dark-mode .topbar-btn { background: rgba(255,255,255,.07); color: #94a3b8; }
+body.dark-mode .topbar-btn:hover { background: rgba(255,255,255,.12); }
 
-/* ── Toggle switch ── */
-.tog {
-  width: 42px; height: 24px; border-radius: 12px; position: relative;
-  cursor: pointer; border: none; flex-shrink: 0; transition: background .2s;
+/* Avatar button */
+.topbar-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #4ED6C1, #007DFE);
+  color: #fff; font-weight: 700; font-size: .75rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color .15s;
+  flex-shrink: 0;
 }
-.tog.on  { background: #16a34a; }
-.tog.off { background: #d1d5db; }
-body.dark-mode .tog.off { background: #374151; }
-.tog::after {
-  content: ''; position: absolute; top: 3px; left: 3px;
-  width: 18px; height: 18px; border-radius: 50%; background: #fff;
-  transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
-}
-.tog.on::after { transform: translateX(18px); }
+.topbar-avatar:hover { border-color: #4ED6C1; }
 
-/* ── Notif rows ── */
-.notif-row {
+/* Dropdown menu */
+.topbar-dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  min-width: 200px; border-radius: 12px;
+  padding: 6px;
+  z-index: 2000;
+  display: none;
+}
+body:not(.dark-mode) .topbar-dropdown {
+  background: #fff; border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+body.dark-mode .topbar-dropdown {
+  background: #1B263B; border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.topbar-dropdown.open { display: block; }
+.topbar-dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 8px;
+  text-decoration: none; font-size: .84rem; font-weight: 500;
+  transition: background .12s; cursor: pointer; border: none; width: 100%;
+  background: transparent; text-align: left;
+}
+body:not(.dark-mode) .topbar-dropdown-item { color: #374151; }
+body:not(.dark-mode) .topbar-dropdown-item:hover { background: #f1f5f9; }
+body.dark-mode .topbar-dropdown-item { color: #e2e8f0; }
+body.dark-mode .topbar-dropdown-item:hover { background: rgba(255,255,255,.06); }
+.topbar-dropdown-item.danger { color: #ef4444 !important; }
+.topbar-dropdown-header {
+  padding: 10px 12px 6px; font-size: .75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+body:not(.dark-mode) .topbar-dropdown-header { color: #94a3b8; }
+body.dark-mode .topbar-dropdown-header { color: #64748b; }
+.topbar-dropdown hr { margin: 4px 0; border-color: rgba(0,0,0,.06); }
+body.dark-mode .topbar-dropdown hr { border-color: rgba(255,255,255,.06); }
+
+/* Notif badge */
+.topbar-badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ef4444; border: 2px solid #fff;
+  display: none;
+}
+body.dark-mode .topbar-badge { border-color: #111111; }
+.topbar-badge.visible { display: block; }
+
+/* Notif panel */
+#notifPanel {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: min(360px, 95vw); border-radius: 14px;
+  z-index: 2001; display: none;
+  max-height: 480px; overflow: hidden;
+  flex-direction: column;
+}
+body:not(.dark-mode) #notifPanel {
+  background: #fff; border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+body.dark-mode #notifPanel {
+  background: #1B263B; border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+#notifPanel.open { display: flex; }
+.notif-header {
+  padding: 14px 16px 10px; font-weight: 700; font-size: .9rem;
+  border-bottom: 1px solid rgba(0,0,0,.06); flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 0; border-bottom: 1px solid #f1f5f9;
 }
-.notif-row:last-child { border-bottom: none; }
-body.dark-mode .notif-row { border-bottom-color: #1e293b; }
+body.dark-mode .notif-header { border-bottom-color: rgba(255,255,255,.06); }
+.notif-body { overflow-y: auto; flex: 1; }
+.notif-item {
+  padding: 10px 16px; border-bottom: 1px solid rgba(0,0,0,.04);
+  cursor: pointer; transition: background .12s;
+}
+.notif-item:hover { background: rgba(0,0,0,.02); }
+body.dark-mode .notif-item:hover { background: rgba(255,255,255,.03); }
+body.dark-mode .notif-item { border-bottom-color: rgba(255,255,255,.04); }
+.notif-unread { background: rgba(78,214,193,.05); }
+
+/* ── LEFT SIDEBAR ── */
+#sidebar {
+  position: fixed; left: 0; top: var(--topbar-h); bottom: 0;
+  width: var(--sidebar-w); z-index: 1040;
+  display: flex; flex-direction: column;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+body:not(.dark-mode) #sidebar { background: #fff; border-right: 1px solid rgba(0,0,0,.07); }
+body.dark-mode #sidebar { background: #111111; border-right: 1px solid rgba(255,255,255,.06); }
+
+.sidebar-scroll {
+  flex: 1; overflow-y: auto; padding: 10px 8px;
+  scrollbar-width: thin;
+}
+body:not(.dark-mode) .sidebar-scroll { scrollbar-color: rgba(0,0,0,.1) transparent; }
+body.dark-mode .sidebar-scroll { scrollbar-color: rgba(255,255,255,.08) transparent; }
+
+/* Nav links */
+.nav-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 9px;
+  font-size: .84rem; font-weight: 500;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+body:not(.dark-mode) .nav-link { color: #475569; }
+body:not(.dark-mode) .nav-link:hover { background: #f1f5f9; color: #0f172a; }
+body:not(.dark-mode) .nav-link.active { background: var(--nav-active-bg); color: #0d9488; font-weight: 600; }
+body.dark-mode .nav-link { color: #94a3b8; }
+body.dark-mode .nav-link:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+body.dark-mode .nav-link.active { background: var(--nav-active-bg); color: var(--nav-active-color); font-weight: 600; }
+.nav-link i { width: 18px; text-align: center; font-size: .88rem; flex-shrink: 0; }
+
+/* Nav section label */
+.nav-section-label {
+  font-size: .67rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; padding: 14px 12px 4px;
+}
+body:not(.dark-mode) .nav-section-label { color: #94a3b8; }
+body.dark-mode .nav-section-label { color: #475569; }
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 10px 8px; flex-shrink: 0;
+}
+body:not(.dark-mode) .sidebar-footer { border-top: 1px solid rgba(0,0,0,.07); }
+body.dark-mode .sidebar-footer { border-top: 1px solid rgba(255,255,255,.06); }
+
+/* Dark mode toggle */
+.dark-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 9px; cursor: pointer;
+  font-size: .84rem; font-weight: 500; border: none; width: 100%;
+  transition: background .15s;
+}
+body:not(.dark-mode) .dark-toggle { background: #f1f5f9; color: #475569; }
+body:not(.dark-mode) .dark-toggle:hover { background: #e2e8f0; }
+body.dark-mode .dark-toggle { background: rgba(255,255,255,.07); color: #94a3b8; }
+body.dark-mode .dark-toggle:hover { background: rgba(255,255,255,.12); }
+
+/* Toggle pill */
+.dark-toggle-pill {
+  width: 32px; height: 18px; border-radius: 9px; position: relative;
+  transition: background .2s; flex-shrink: 0;
+}
+body:not(.dark-mode) .dark-toggle-pill { background: #cbd5e1; }
+body.dark-mode .dark-toggle-pill { background: #4ED6C1; }
+.dark-toggle-pill::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  transition: transform .2s;
+}
+body.dark-mode .dark-toggle-pill::after { transform: translateX(14px); }
+
+/* ── MAIN CONTENT ── */
+#mainContent {
+  margin-left: var(--sidebar-w);
+  padding-top: var(--topbar-h);
+  min-height: 100vh;
+}
+
+/* ── OVERLAY ── */
+#sidebarOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 1039;
+  backdrop-filter: blur(2px);
+}
+#sidebarOverlay.active { display: block; }
+
+/* ── MOBILE BOTTOM NAV ── */
+#mobileBottomNav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  height: 60px; z-index: 1038;
+  padding: 4px 8px 4px;
+}
+body:not(.dark-mode) #mobileBottomNav { background: #fff; border-top: 1px solid #e2e8f0; }
+body.dark-mode #mobileBottomNav { background: #111111; border-top: 1px solid rgba(255,255,255,.07); }
+#mobileBottomNav .mnav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  text-decoration: none; font-size: .62rem; font-weight: 500;
+  padding: 2px 4px; border-radius: 8px; transition: color .15s;
+}
+body:not(.dark-mode) #mobileBottomNav .mnav-item { color: #94a3b8; }
+body.dark-mode #mobileBottomNav .mnav-item { color: #64748b; }
+#mobileBottomNav .mnav-item i { font-size: 1.1rem; }
+body:not(.dark-mode) #mobileBottomNav .mnav-item.active,
+body:not(.dark-mode) #mobileBottomNav .mnav-item:hover { color: #0d9488; }
+body.dark-mode #mobileBottomNav .mnav-item.active,
+body.dark-mode #mobileBottomNav .mnav-item:hover { color: #4ED6C1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); top: 0; }
+  #sidebar.open { transform: translateX(0); }
+  #mainContent { margin-left: 0 !important; padding-bottom: 68px !important; }
+  #mobileBottomNav { display: flex !important; }
+  .topbar-title { display: none; }
+  .topbar-divider { display: none; }
+}
+@media (min-width: 769px) {
+  #sidebarOverlay { display: none !important; }
+  #mobileBottomNav { display: none !important; }
+}
 </style>
+</head>
+<?php $initialDark = isset($_COOKIE['darkMode']) && $_COOKIE['darkMode'] === 'true'; ?>
+<body class="<?php echo $initialDark ? 'dark-mode' : ''; ?>">
 
-<div class="profile-wrap">
+<div id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-  <div class="acct-heading">Account settings</div>
+<!-- ══════════════ TOP BAR ══════════════ -->
+<header id="topBar">
 
-  <?php if ($success): ?>
-  <div class="alert alert-success alert-dismissible fade show rounded-3 border-0 shadow-sm mb-3">
-    <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-  <?php endif; ?>
-  <?php if ($error): ?>
-  <div class="alert alert-danger alert-dismissible fade show rounded-3 border-0 shadow-sm mb-3">
-    <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-  <?php endif; ?>
+  <!-- Hamburger (mobile only) -->
+  <button class="topbar-btn d-md-none" onclick="toggleSidebar()" aria-label="Menu" id="sidebarToggle">
+    <i class="fas fa-bars" id="toggleIcon"></i>
+  </button>
 
-  <!-- Tabs -->
-  <div class="profile-tabs">
-    <button class="profile-tab <?= $activeTab==='profile'?'active':'' ?>" data-tab="profile">Profile</button>
-    <button class="profile-tab <?= $activeTab==='mycards'?'active':'' ?>" data-tab="mycards">My cards</button>
-    <button class="profile-tab <?= $activeTab==='security'?'active':'' ?>" data-tab="security">Security</button>
-    <button class="profile-tab <?= $activeTab==='notifications'?'active':'' ?>" data-tab="notifications">Notifications</button>
-  </div>
+  <!-- Brand -->
+  <a href="<?php echo $base_url; ?>" class="topbar-brand">
+    <div class="brand-icon"><i class="fas fa-home"></i></div>
+    <span><span style="color:#4ED6C1;">Stay</span><span>Wise</span></span>
+  </a>
 
-  <!-- ══ PROFILE ══ -->
-  <div class="tab-panel <?= $activeTab==='profile'?'active':'' ?>" id="tab-profile">
-    <div class="row g-5">
-      <div class="col-md-8">
-        <div class="section-title">Profile details</div>
-        <div class="section-sub">Your profile is visible to your connected users.</div>
-        <form method="POST">
-          <?= csrf_input() ?>
-          <div class="row g-3">
-            <div class="col-sm-6">
-              <label class="tc-label">First name <span style="color:#ef4444">*</span></label>
-              <input type="text" name="first_name" class="tc-input" required value="<?= htmlspecialchars($firstName) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Middle name</label>
-              <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>" placeholder="">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Last name <span style="color:#ef4444">*</span></label>
-              <input type="text" name="last_name" class="tc-input" required value="<?= htmlspecialchars($lastName) ?>">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Company name</label>
-              <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
-            </div>
-            <div class="col-12">
-              <div class="tc-check-row">
-                <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
-                <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
-              </div>
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Phone number</label>
-              <input type="tel" name="phone" class="tc-input" placeholder="09XX XXX XXXX" value="<?= htmlspecialchars($user['contact'] ?? '') ?>">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
-              <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Username</label>
-              <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['username']) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Unit number</label>
-              <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['unit_number'] ?? '—') ?>">
-            </div>
-          </div>
-          <div class="mt-4">
-            <button type="submit" name="update_profile" class="btn-tc-save">Save changes</button>
-          </div>
-        </form>
-      </div>
+  <div class="topbar-divider"></div>
 
-      <!-- Photo -->
-      <div class="col-md-4 d-flex flex-column align-items-center align-items-md-end pt-md-2">
-        <form method="POST" enctype="multipart/form-data">
-          <?= csrf_input() ?>
-          <input type="hidden" name="update_photo" value="1">
-          <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
-          <div class="photo-wrap">
-            <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
-              <?php if (!empty($profilePhoto) && file_exists('../uploads/profiles/' . $profilePhoto)): ?>
-                <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo">
-              <?php else: ?>
-                <div class="photo-circle-initials"><?= $initials ?></div>
-              <?php endif; ?>
-              <div class="photo-overlay">
-                <i class="fas fa-camera"></i>
-                <span>Update image</span>
-              </div>
-            </div>
-            <div style="font-size:.75rem;color:#94a3b8;text-align:center;">Click to update photo</div>
-          </div>
-        </form>
+  <!-- Page title -->
+  <span class="topbar-title"><?php echo isset($page_title) ? htmlspecialchars($page_title) : ''; ?></span>
+
+  <!-- Right actions -->
+  <div class="topbar-actions">
+
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <!-- Notifications -->
+    <div style="position:relative;">
+      <button class="topbar-btn" id="notifBellBtn" onclick="toggleNotifPanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="topbar-badge" id="notifBadge"></span>
+      </button>
+      <div id="notifPanel">
+        <div class="notif-header">
+          <span><i class="fas fa-bell me-2" style="color:#4ED6C1;"></i>Notifications</span>
+          <button onclick="markAllNotificationsRead()" style="font-size:.75rem;background:none;border:none;color:#4ED6C1;cursor:pointer;font-weight:600;">Mark all read</button>
+        </div>
+        <div class="notif-body" id="notifList">
+          <p class="text-center py-4 mb-0" id="notifEmpty" style="font-size:.84rem;color:#94a3b8;">No notifications</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ══ MY CARDS ══ -->
-  <div class="tab-panel <?= $activeTab==='mycards'?'active':'' ?>" id="tab-mycards">
-    <div class="section-title">My cards</div>
-    <div class="section-sub">Manage your saved payment methods for rent payments.</div>
-
-    <?php
-    // Check if tenant has GCash or saved payment info
-    $hasCard = false;
-    ?>
-
-    <?php if ($hasCard): ?>
-      <div class="card-item">
-        <div class="card-logo"><i class="fas fa-credit-card"></i></div>
-        <div class="flex-grow-1">
-          <div class="card-number">•••• •••• •••• 4242</div>
-          <div class="card-exp">Expires 12/27</div>
-        </div>
-        <button class="btn-outline-tc" style="color:#dc2626;border-color:#fecaca;">Remove</button>
+    <!-- User avatar dropdown -->
+    <div style="position:relative;">
+      <div class="topbar-avatar" id="avatarBtn" onclick="toggleAvatarDropdown()" title="Account">
+        <?php echo $_headerInitials; ?>
       </div>
-    <?php else: ?>
-      <div class="cards-empty">
-        <i class="fas fa-credit-card"></i>
-        <p style="font-weight:600;color:#374151;font-size:.95rem;margin-bottom:.4rem;">No saved cards</p>
-        <p>Payment methods used for rent will appear here. Pay via GCash or online payment to save a method.</p>
-        <a href="payments.php" class="btn-tc-save mt-3" style="display:inline-block;text-decoration:none;padding:.55rem 1.5rem;">
-          <i class="fas fa-arrow-right me-2"></i>Go to Payments
+      <div class="topbar-dropdown" id="avatarDropdown">
+        <div class="topbar-dropdown-header"><?php echo htmlspecialchars($_headerName); ?></div>
+        <hr>
+        <?php if ($userRole === 'tenant'): ?>
+        <a href="<?php echo $base_url; ?>tenant/profile.php" class="topbar-dropdown-item">
+          <i class="fas fa-user" style="color:#4ED6C1;width:16px;"></i> My Profile
+        </a>
+        <?php else: ?>
+        <a href="<?php echo $base_url; ?>admin/profile.php" class="topbar-dropdown-item">
+          <i class="fas fa-user" style="color:#4ED6C1;width:16px;"></i> My Profile
+        </a>
+        <?php endif; ?>
+        <button class="topbar-dropdown-item" onclick="applyDarkModeState(!document.body.classList.contains('dark-mode'))">
+          <i class="fas fa-moon" style="color:#94a3b8;width:16px;" id="dropdownDarkIcon"></i>
+          <span id="dropdownDarkLabel">Dark Mode</span>
+        </button>
+        <hr>
+        <a href="<?php echo $base_url; ?>logout.php" class="topbar-dropdown-item danger">
+          <i class="fas fa-sign-out-alt" style="width:16px;"></i> Logout
         </a>
       </div>
+    </div>
     <?php endif; ?>
   </div>
+</header>
 
-  <!-- ══ SECURITY ══ -->
-  <div class="tab-panel <?= $activeTab==='security'?'active':'' ?>" id="tab-security">
-    <div class="section-title">Security</div>
-    <div class="section-sub">Manage your password and account access.</div>
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-scroll">
+    <ul class="nav flex-column mb-2">
+      <?php if (isset($_SESSION['user_id'])): ?>
+        <?php if ($userRole === 'admin'): ?>
+          <li><span class="nav-section-label">Overview</span></li>
+          <?php if ($adminRoleNav === 'super_admin'): ?>
+            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='super_dashboard.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/super_dashboard.php" onclick="closeSidebar()"><i class="fas fa-house"></i>Super Dashboard</a></li>
+          <?php else: ?>
+            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='dashboard.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/dashboard.php" onclick="closeSidebar()"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+          <?php endif; ?>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_monitoring.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/payment_monitoring.php" onclick="closeSidebar()"><i class="fas fa-chart-line"></i>Payment Tracker</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='reports.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/reports.php" onclick="closeSidebar()"><i class="fas fa-file-alt"></i>Reports</a></li>
 
-    <div class="sec-row">
-      <div class="d-flex align-items-center gap-3">
-        <div class="sec-icon" style="background:#f0fdf4;"><i class="fas fa-key" style="color:#16a34a;"></i></div>
-        <div>
-          <div style="font-weight:600;font-size:.9rem;">Password</div>
-          <div style="font-size:.78rem;color:#94a3b8;">Change your password via email verification</div>
-        </div>
-      </div>
-      <a href="../change_password.php" class="btn-outline-tc">Change password</a>
-    </div>
+          <li><span class="nav-section-label">Manage</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='tenants.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/tenants.php" onclick="closeSidebar()"><i class="fas fa-users"></i>Tenants</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payments.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/payments.php" onclick="closeSidebar()"><i class="fas fa-credit-card"></i>Payments</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_settings.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/payment_settings.php" onclick="closeSidebar()"><i class="fas fa-wallet"></i>Payment Settings</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='complaints.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/complaints.php" onclick="closeSidebar()"><i class="fas fa-exclamation-triangle"></i>Complaints</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='announcements.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/announcements.php" onclick="closeSidebar()"><i class="fas fa-bullhorn"></i>Announcements</a></li>
 
-    <div class="sec-row">
-      <div class="d-flex align-items-center gap-3">
-        <div class="sec-icon" style="background:#eff6ff;"><i class="fas fa-envelope" style="color:#2563eb;"></i></div>
-        <div>
-          <div style="font-weight:600;font-size:.9rem;">Email address</div>
-          <div style="font-size:.78rem;color:#94a3b8;"><?= htmlspecialchars($user['email']) ?></div>
-        </div>
-      </div>
-      <button class="btn-outline-tc" onclick="document.querySelector('[data-tab=profile]').click()">Update</button>
-    </div>
+          <li><span class="nav-section-label">Intelligence</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='ai_insights.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/ai_insights.php" onclick="closeSidebar()"><i class="fas fa-brain"></i>AI Insights</a></li>
 
-    <div class="sec-row">
-      <div class="d-flex align-items-center gap-3">
-        <div class="sec-icon" style="background:#fef2f2;"><i class="fas fa-sign-out-alt" style="color:#dc2626;"></i></div>
-        <div>
-          <div style="font-weight:600;font-size:.9rem;">Sign out</div>
-          <div style="font-size:.78rem;color:#94a3b8;">Log out of your StayWise account</div>
-        </div>
-      </div>
-      <a href="../logout.php" class="btn-danger-tc">Sign out</a>
-    </div>
+          <?php if ($adminRoleNav === 'super_admin'): ?>
+          <li><span class="nav-section-label">System</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_management.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/admin_management.php" onclick="closeSidebar()"><i class="fas fa-users-cog"></i>Admin Management</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='role_manager.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/role_manager.php" onclick="closeSidebar()"><i class="fas fa-user-shield"></i>Role Manager</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_logs.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/admin_logs.php" onclick="closeSidebar()"><i class="fas fa-clipboard-list"></i>Admin Logs</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='system_settings.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/system_settings.php" onclick="closeSidebar()"><i class="fas fa-cogs"></i>System Settings</a></li>
+          <?php endif; ?>
+
+          <li><span class="nav-section-label">Account</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/profile.php" onclick="closeSidebar()"><i class="fas fa-user-edit"></i>Profile</a></li>
+
+        <?php else: ?>
+          <li><span class="nav-section-label">Home</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='dashboard.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/dashboard.php" onclick="closeSidebar()"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+
+          <li><span class="nav-section-label">My Unit</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payments.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/payments.php" onclick="closeSidebar()"><i class="fas fa-credit-card"></i>Payments</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='complaints.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/complaints.php" onclick="closeSidebar()"><i class="fas fa-exclamation-triangle"></i>Complaints</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='announcements.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/announcements.php" onclick="closeSidebar()"><i class="fas fa-bullhorn"></i>Announcements</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='chatbot.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/chatbot.php" onclick="closeSidebar()"><i class="fas fa-robot"></i>AI Assistant</a></li>
+
+          <li><span class="nav-section-label">Account</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/profile.php" onclick="closeSidebar()"><i class="fas fa-user"></i>Profile</a></li>
+        <?php endif; ?>
+      <?php endif; ?>
+    </ul>
   </div>
 
-  <!-- ══ NOTIFICATIONS ══ -->
-  <div class="tab-panel <?= $activeTab==='notifications'?'active':'' ?>" id="tab-notifications">
-    <div class="section-title">Notifications</div>
-    <div class="section-sub">Choose what updates you want to be notified about.</div>
-
-    <?php
-    $notifItems = [
-      ['Payment verified',   'When admin verifies your payment',      true],
-      ['Payment rejected',   'When admin rejects your payment',       true],
-      ['New announcements',  'When admin posts a new announcement',   true],
-      ['Complaint updates',  'When your complaint status changes',    true],
-      ['Payment reminders',  'Remind me before rent is due',         false],
-    ];
-    foreach ($notifItems as $n):
-    ?>
-    <div class="notif-row">
-      <div>
-        <div style="font-weight:600;font-size:.88rem;"><?= $n[0] ?></div>
-        <div style="font-size:.78rem;color:#94a3b8;"><?= $n[1] ?></div>
-      </div>
-      <button class="tog <?= $n[2]?'on':'off' ?>" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
-    </div>
-    <?php endforeach; ?>
+  <!-- Dark mode toggle in sidebar -->
+  <div class="sidebar-footer">
+    <button class="dark-toggle" onclick="applyDarkModeState(!document.body.classList.contains('dark-mode'))">
+      <span style="display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-moon" style="font-size:.85rem;"></i>
+        <span id="sidebarDarkLabel">Dark Mode</span>
+      </span>
+      <div class="dark-toggle-pill" id="darkTogglePill"></div>
+    </button>
   </div>
+</nav>
 
-</div>
+<!-- MOBILE BOTTOM NAV -->
+<?php if (isset($_SESSION['user_id'])): ?>
+<nav id="mobileBottomNav">
+  <?php if ($userRole === 'admin'): ?>
+    <a href="<?php echo $base_url; ?>admin/<?php echo $adminRoleNav==='super_admin'?'super_dashboard':'dashboard'; ?>.php" class="mnav-item <?php echo in_array($currentPage,['dashboard.php','super_dashboard.php'])?'active':''; ?>"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="<?php echo $base_url; ?>admin/tenants.php" class="mnav-item <?php echo $currentPage==='tenants.php'?'active':''; ?>"><i class="fas fa-users"></i><span>Tenants</span></a>
+    <a href="<?php echo $base_url; ?>admin/payments.php" class="mnav-item <?php echo $currentPage==='payments.php'?'active':''; ?>"><i class="fas fa-credit-card"></i><span>Payments</span></a>
+    <a href="<?php echo $base_url; ?>admin/complaints.php" class="mnav-item <?php echo $currentPage==='complaints.php'?'active':''; ?>"><i class="fas fa-exclamation-triangle"></i><span>Issues</span></a>
+    <a href="#" class="mnav-item" onclick="toggleSidebar();return false;"><i class="fas fa-ellipsis-h"></i><span>More</span></a>
+  <?php else: ?>
+    <a href="<?php echo $base_url; ?>tenant/dashboard.php" class="mnav-item <?php echo $currentPage==='dashboard.php'?'active':''; ?>"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="<?php echo $base_url; ?>tenant/payments.php" class="mnav-item <?php echo $currentPage==='payments.php'?'active':''; ?>"><i class="fas fa-credit-card"></i><span>Payments</span></a>
+    <a href="<?php echo $base_url; ?>tenant/complaints.php" class="mnav-item <?php echo $currentPage==='complaints.php'?'active':''; ?>"><i class="fas fa-exclamation-triangle"></i><span>Issues</span></a>
+    <a href="<?php echo $base_url; ?>tenant/announcements.php" class="mnav-item <?php echo $currentPage==='announcements.php'?'active':''; ?>"><i class="fas fa-bullhorn"></i><span>News</span></a>
+    <a href="<?php echo $base_url; ?>tenant/profile.php" class="mnav-item <?php echo $currentPage==='profile.php'?'active':''; ?>"><i class="fas fa-user"></i><span>Profile</span></a>
+  <?php endif; ?>
+</nav>
+<?php endif; ?>
 
+<!-- MAIN CONTENT WRAPPER -->
+<div class="flex-grow-1" id="mainContent">
+
+<?php if (isset($_SESSION['user_id'])): ?>
 <script>
-document.querySelectorAll('.profile-tab').forEach(function(tab) {
-  tab.addEventListener('click', function() {
-    document.querySelectorAll('.profile-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-    this.classList.add('active');
-    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
-  });
+// ── Notifications ──────────────────────────────────────────────
+let notifPanelOpen = false;
+function toggleNotifPanel() {
+  notifPanelOpen = !notifPanelOpen;
+  document.getElementById('notifPanel').classList.toggle('open', notifPanelOpen);
+  if (notifPanelOpen) { loadNotifications(); markAllNotificationsRead(); }
+}
+document.addEventListener('click', function(e) {
+  const bellWrap = document.getElementById('notifBellBtn')?.closest('div');
+  if (notifPanelOpen && bellWrap && !bellWrap.contains(e.target)) {
+    notifPanelOpen = false;
+    document.getElementById('notifPanel').classList.remove('open');
+  }
+});
+function loadNotifications() {
+  fetch('<?php echo $base_url; ?>api/notifications.php').then(r => r.json()).then(data => {
+    const list = document.getElementById('notifList'), empty = document.getElementById('notifEmpty');
+    if (!data.notifications || !data.notifications.length) {
+      list.innerHTML = ''; list.appendChild(empty); empty.style.display = 'block'; return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = data.notifications.map(n => `
+      <div class="notif-item${n.is_read==0?' notif-unread':''}" onclick="readNotification(${n.notification_id},'${n.action_url||''}')">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <i class="fas fa-bell mt-1" style="color:#4ED6C1;font-size:.8rem;flex-shrink:0;"></i>
+          <div>
+            <div style="font-weight:600;font-size:.83rem;">${escHtml(n.title)}</div>
+            <div style="font-size:.78rem;color:#94a3b8;margin-top:1px;">${escHtml(n.message)}</div>
+            <div style="font-size:.72rem;color:#cbd5e1;margin-top:2px;">${n.time_ago||''}</div>
+          </div>
+        </div>
+      </div>`).join('');
+  }).catch(() => {});
+}
+function readNotification(id, url) {
+  fetch('<?php echo $base_url; ?>api/notifications.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'mark_read',notification_id:id}) })
+    .then(() => { fetchNotifCount(); if (url) window.location.href = url; });
+}
+function markAllNotificationsRead() {
+  fetch('<?php echo $base_url; ?>api/notifications.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'mark_all_read'}) })
+    .then(() => { fetchNotifCount(); loadNotifications(); });
+}
+function fetchNotifCount() {
+  fetch('<?php echo $base_url; ?>api/notifications.php?count=1').then(r => r.json()).then(data => {
+    const b = document.getElementById('notifBadge');
+    if (data.unread > 0) { b.textContent = data.unread > 99 ? '99+' : data.unread; b.classList.add('visible'); b.style.width=''; b.style.height=''; }
+    else b.classList.remove('visible');
+  }).catch(() => {});
+}
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+fetchNotifCount(); setInterval(fetchNotifCount, 60000);
+
+// ── Avatar dropdown ──────────────────────────────────────────────
+let avatarDropOpen = false;
+function toggleAvatarDropdown() {
+  avatarDropOpen = !avatarDropOpen;
+  document.getElementById('avatarDropdown').classList.toggle('open', avatarDropOpen);
+}
+document.addEventListener('click', function(e) {
+  const avatarWrap = document.getElementById('avatarBtn')?.closest('div');
+  if (avatarDropOpen && avatarWrap && !avatarWrap.contains(e.target)) {
+    avatarDropOpen = false;
+    document.getElementById('avatarDropdown').classList.remove('open');
+  }
 });
 </script>
+<?php endif; ?>
 
-<?php include '../includes/footer.php'; ?>
+<script>
+// ── Sidebar ──────────────────────────────────────────────────────
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+let sidebarOpen = false;
+function openSidebar()  { sidebarOpen=true;  sidebar.classList.add('open');    overlay.classList.add('active');    document.getElementById('toggleIcon').className='fas fa-times'; document.body.style.overflow='hidden'; }
+function closeSidebar() { sidebarOpen=false; sidebar.classList.remove('open'); overlay.classList.remove('active'); document.getElementById('toggleIcon').className='fas fa-bars';  document.body.style.overflow=''; }
+function toggleSidebar() { sidebarOpen ? closeSidebar() : openSidebar(); }
+sidebar.addEventListener('touchstart', e => { window._txStart = e.touches[0].clientX; }, {passive:true});
+sidebar.addEventListener('touchend',   e => { if (e.changedTouches[0].clientX - (window._txStart||0) < -60) closeSidebar(); }, {passive:true});
+
+// ── Dark mode ────────────────────────────────────────────────────
+function applyDarkModeState(isDark) {
+  document.body.classList.toggle('dark-mode', isDark);
+  sidebar.classList.toggle('dark-mode', isDark);
+  // Update labels
+  const sLabel = document.getElementById('sidebarDarkLabel');
+  const dLabel = document.getElementById('dropdownDarkLabel');
+  const dIcon  = document.getElementById('dropdownDarkIcon');
+  if (sLabel) sLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  if (dLabel) dLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  if (dIcon)  dIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+  if (dIcon)  dIcon.style.color = isDark ? '#f59e0b' : '#94a3b8';
+  try { localStorage.setItem('darkMode', String(isDark)); } catch(_) {}
+  try { document.cookie = 'darkMode=' + (isDark?'true':'false') + '; path=/; max-age=31536000'; } catch(_) {}
+}
+window.addEventListener('DOMContentLoaded', function() {
+  const isDark = document.body.classList.contains('dark-mode');
+  applyDarkModeState(isDark);
+});
+</script>
