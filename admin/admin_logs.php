@@ -9,6 +9,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     exit();
 }
 
+// Super admin only
+if (strtolower((string)($_SESSION['admin_role'] ?? '')) !== 'super_admin') {
+    header("Location: dashboard.php");
+    exit();
+}
+
 $page_title = "Admin Logs";
 
 // Date filter handling (GET: start, end as YYYY-MM-DD)
