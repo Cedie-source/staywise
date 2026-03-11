@@ -293,6 +293,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_payment'])) {
     exit();
 }
 
+// ── Handle payment deletion (cancelled/rejected only) ────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_payment'])) {
+    $payment_id = intval($_POST['payment_id']);
+    $stmt = $conn->prepare("DELETE FROM payments WHERE payment_id = ? AND tenant_id = ? AND status IN ('cancelled','rejected')");
+    $stmt->bind_param("ii", $payment_id, $tenant_id);
+    $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $affected > 0]);
+        exit();
+    }
+    header("Location: payments.php?deleted=1");
+    exit();
+}
+
+// ── Handle bulk delete (all cancelled/rejected) ───────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_all_cancelled'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
+    $stmt = $conn->prepare("DELETE FROM payments WHERE tenant_id = ? AND status IN ('cancelled','rejected')");
+    $stmt->bind_param("i", $tenant_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: payments.php?cleared=1");
+    exit();
+}
+
 // ── Auto-verify stuck PayMongo payments (polling fallback) ───────────
 try {
     $pending_pm = $conn->prepare("SELECT payment_id, paymongo_checkout_id FROM payments WHERE tenant_id = ? AND status = 'pending' AND payment_method = 'paymongo_gcash' AND paymongo_checkout_id IS NOT NULL AND paymongo_checkout_id != '' AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
@@ -334,6 +363,8 @@ $stats_stmt->close();
 // Flash messages
 if (isset($_GET['cancelled'])) $success = "Payment has been cancelled.";
 if (isset($_GET['uploaded']))  $success = "Payment submitted! Awaiting admin verification.";
+if (isset($_GET['deleted']))   $success = "Record deleted.";
+if (isset($_GET['cleared']))   $success = "All cancelled/rejected records cleared.";
 
 include '../includes/header.php';
 ?>
@@ -472,7 +503,12 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.rejected  { background: #ef4444; }
 .status-dot.cancelled { background: #94a3b8; }
 
-/* Deposit/advance ribbon */
+/* Filter tabs */
+.filter-tab { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; transition: all .15s; }
+.filter-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+body.dark-mode .filter-tab { background: #1e293b; color: #94a3b8; border-color: #334155; }
+body.dark-mode .filter-tab.active { background: #4ED6C1; color: #0f172a; border-color: #4ED6C1; }
+.history-item.hidden-by-filter { display: none !important; }
 .info-ribbon {
     border-radius: 12px;
     background: linear-gradient(90deg, #4ED6C108, #4ED6C122);
@@ -788,15 +824,43 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
         <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
-                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3 px-3 px-md-4">
-                    <h6 class="fw-bold mb-0" style="font-size:.95rem;">
-                        <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
-                    </h6>
-                    <?php if ($payments->num_rows > 0): ?>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" id="exportPaymentsCsv">
-                        <i class="fas fa-download me-1"></i><span class="d-none d-sm-inline">Export </span>CSV
-                    </button>
-                    <?php endif; ?>
+                <div class="card-header bg-transparent border-bottom py-3 px-3 px-md-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0" style="font-size:.95rem;">
+                            <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
+                        </h6>
+                        <div class="d-flex gap-2 align-items-center">
+                            <?php
+                            // Count cancelled+rejected for bulk clear badge
+                            $junk_stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM payments WHERE tenant_id = ? AND status IN ('cancelled','rejected')");
+                            $junk_stmt->bind_param("i", $tenant_id);
+                            $junk_stmt->execute();
+                            $junk_count = (int)$junk_stmt->get_result()->fetch_assoc()['cnt'];
+                            $junk_stmt->close();
+                            ?>
+                            <?php if ($junk_count > 0): ?>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('Delete all <?= $junk_count ?> cancelled/rejected records? This cannot be undone.')">
+                                <?= csrf_input() ?>
+                                <input type="hidden" name="delete_all_cancelled" value="1">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-2" title="Clear all cancelled/rejected">
+                                    <i class="fas fa-trash me-1"></i>Clear <span class="badge bg-danger ms-1"><?= $junk_count ?></span>
+                                </button>
+                            </form>
+                            <?php endif; ?>
+                            <?php if ($payments->num_rows > 0): ?>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" id="exportPaymentsCsv">
+                                <i class="fas fa-download me-1"></i><span class="d-none d-sm-inline">CSV</span>
+                            </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <!-- Filter tabs -->
+                    <div class="d-flex gap-1" id="historyFilterTabs">
+                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab active" data-filter="all" style="font-size:.75rem;">All</button>
+                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab" data-filter="active" style="font-size:.75rem;">Active</button>
+                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab" data-filter="verified" style="font-size:.75rem;">Paid</button>
+                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab" data-filter="cancelled" style="font-size:.75rem;">Cancelled</button>
+                    </div>
                 </div>
                 <div class="card-body p-0" id="historyList">
                     <?php if ($payments->num_rows > 0):
@@ -812,7 +876,7 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
                             $st = $p['status'] ?? 'pending';
                             $fm = $p['for_month'] ?? '';
                     ?>
-                    <div class="history-item" id="hist-<?= $p['payment_id'] ?>">
+                    <div class="history-item" id="hist-<?= $p['payment_id'] ?>" data-status="<?= $st ?>">
                         <div class="history-icon" style="background:<?= $pm[2] ?>; color:<?= $pm[3] ?>;">
                             <i class="fas <?= $pm[1] ?>"></i>
                         </div>
@@ -850,10 +914,17 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
                                 <i class="fas fa-times" style="font-size:.75rem;"></i>
                             </button>
                             <?php endif; ?>
+                            <?php if (in_array($st, ['cancelled','rejected'])): ?>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-2 delete-payment-btn p-1"
+                                    data-id="<?= $p['payment_id'] ?>" title="Delete record" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                                <i class="fas fa-trash" style="font-size:.7rem;"></i>
+                            </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endwhile; ?>
                     <?php else: ?>
+                    <div class="text-center py-5 px-3" id="historyEmpty" style="display:none;"></div>
                     <div class="text-center py-5 px-3">
                         <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
                             <i class="fas fa-receipt" style="font-size:1.5rem;color:#94a3b8;"></i>
@@ -880,6 +951,73 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.method-panel').forEach(function (p) { p.classList.add('d-none'); });
             var panel = document.getElementById('panel-' + this.dataset.method);
             if (panel) panel.classList.remove('d-none');
+        });
+    });
+
+    // ── Filter tabs ──
+    document.querySelectorAll('.filter-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.filter-tab').forEach(function (t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            var filter = this.dataset.filter;
+            document.querySelectorAll('#historyList .history-item').forEach(function (item) {
+                var st = item.dataset.status;
+                var show = false;
+                if (filter === 'all') show = true;
+                else if (filter === 'active') show = (st === 'pending');
+                else if (filter === 'verified') show = (st === 'verified');
+                else if (filter === 'cancelled') show = (st === 'cancelled' || st === 'rejected');
+                item.classList.toggle('hidden-by-filter', !show);
+            });
+            // Show empty state if nothing visible
+            var visible = document.querySelectorAll('#historyList .history-item:not(.hidden-by-filter)').length;
+            var emptyMsg = document.getElementById('historyEmpty');
+            if (emptyMsg) emptyMsg.style.display = visible === 0 ? 'block' : 'none';
+        });
+    });
+
+    // ── Delete payment record (AJAX) ──
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.delete-payment-btn');
+        if (!btn) return;
+        if (!confirm('Delete this record? This cannot be undone.')) return;
+        var id = btn.dataset.id;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:.7rem;"></i>';
+
+        var fd = new FormData();
+        fd.append('delete_payment', '1');
+        fd.append('payment_id', id);
+
+        fetch('payments.php', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                var item = document.getElementById('hist-' + id);
+                if (item) {
+                    item.style.transition = 'opacity .25s, max-height .3s';
+                    item.style.opacity = '0';
+                    item.style.maxHeight = item.offsetHeight + 'px';
+                    setTimeout(function () {
+                        item.style.maxHeight = '0';
+                        item.style.overflow = 'hidden';
+                        item.style.padding = '0';
+                        setTimeout(function () { item.remove(); }, 300);
+                    }, 200);
+                }
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash" style="font-size:.7rem;"></i>';
+                alert('Unable to delete.');
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash" style="font-size:.7rem;"></i>';
         });
     });
 
