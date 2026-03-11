@@ -598,7 +598,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
                     </div>
                     <div class="col-6">
                         <div class="hero-stat">
-                            <div class="hero-stat-value" style="color:#d97706;"><?= (int)$stats['pending_count'] ?></div>
+                            <div class="hero-stat-value" id="statPendingCount" style="color:#d97706;"><?= (int)$stats['pending_count'] ?></div>
                             <div class="hero-stat-label">Pending</div>
                         </div>
                     </div>
@@ -1065,6 +1065,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (amt) { amt.textContent = 'Cancelled'; amt.style.color = '#94a3b8'; }
                     // Update data-status so filter tabs work correctly
                     item.dataset.status = 'cancelled';
+                    // Decrement pending count in hero header
+                    var pendingStat = document.getElementById('statPendingCount');
+                    if (pendingStat) {
+                        var cur = parseInt(pendingStat.textContent, 10) || 0;
+                        pendingStat.textContent = Math.max(0, cur - 1);
+                    }
                     // Remove cancel button and inject delete button immediately
                     button.remove();
                     var actionsDiv = item.querySelector('.history-actions');
