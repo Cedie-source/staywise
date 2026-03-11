@@ -189,6 +189,24 @@ body.dark-mode .tc-check-label { color: #d1d5db; }
 }
 .btn-tc-save:hover { background: #15803d; }
 
+/* ── Profile header row (photo + name) ── */
+.profile-header-row {
+  display: flex; align-items: center; gap: 20px; margin-bottom: 1.5rem;
+}
+.profile-header-info { flex: 1; }
+.profile-header-name {
+  font-size: 1.2rem; font-weight: 700; line-height: 1.2;
+}
+body:not(.dark-mode) .profile-header-name { color: #111827; }
+body.dark-mode .profile-header-name { color: #f1f5f9; }
+.profile-header-meta { font-size: .8rem; color: #94a3b8; margin-top: 3px; }
+
+/* ── Divider ── */
+.profile-divider {
+  border: none; border-top: 1px solid #e2e8f0; margin: 1.25rem 0;
+}
+body.dark-mode .profile-divider { border-top-color: #2d3748; }
+
 /* ── Photo circle ── */
 .photo-wrap { display: flex; flex-direction: column; align-items: center; gap: .6rem; }
 .photo-circle {
@@ -307,81 +325,90 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
 
   <!-- ══ PROFILE ══ -->
   <div class="tab-panel <?= $activeTab==='profile'?'active':'' ?>" id="tab-profile">
-    <div class="row g-5">
-      <div class="col-md-8">
-        <div class="section-title">Profile details</div>
-        <div class="section-sub">Your profile is visible to your connected users.</div>
-        <form method="POST">
-          <?= csrf_input() ?>
-          <div class="row g-3">
-            <div class="col-sm-6">
-              <label class="tc-label">First name <span style="color:#ef4444">*</span></label>
-              <input type="text" name="first_name" class="tc-input" required value="<?= htmlspecialchars($firstName) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Middle name</label>
-              <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>" placeholder="">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Last name <span style="color:#ef4444">*</span></label>
-              <input type="text" name="last_name" class="tc-input" required value="<?= htmlspecialchars($lastName) ?>">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Company name</label>
-              <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
-            </div>
-            <div class="col-12">
-              <div class="tc-check-row">
-                <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
-                <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
-              </div>
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Phone number</label>
-              <input type="tel" name="phone" class="tc-input" placeholder="09XX XXX XXXX" value="<?= htmlspecialchars($user['contact'] ?? '') ?>">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
-              <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Username</label>
-              <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['username']) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Unit number</label>
-              <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['unit_number'] ?? '—') ?>">
-            </div>
-          </div>
-          <div class="mt-4">
-            <button type="submit" name="update_profile" class="btn-tc-save">Save changes</button>
-          </div>
-        </form>
-      </div>
 
-      <!-- Photo -->
-      <div class="col-md-4 d-flex flex-column align-items-center align-items-md-end pt-md-2">
-        <form method="POST" enctype="multipart/form-data">
-          <?= csrf_input() ?>
-          <input type="hidden" name="update_photo" value="1">
-          <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
-          <div class="photo-wrap">
-            <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
-              <?php if (!empty($profilePhoto) && file_exists('../uploads/profiles/' . $profilePhoto)): ?>
-                <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo">
-              <?php else: ?>
-                <div class="photo-circle-initials"><?= $initials ?></div>
-              <?php endif; ?>
-              <div class="photo-overlay">
-                <i class="fas fa-camera"></i>
-                <span>Update image</span>
-              </div>
-            </div>
-            <div style="font-size:.75rem;color:#94a3b8;text-align:center;">Click to update photo</div>
+    <!-- Photo + name header row -->
+    <div class="profile-header-row">
+      <form method="POST" enctype="multipart/form-data" style="flex-shrink:0;">
+        <?= csrf_input() ?>
+        <input type="hidden" name="update_photo" value="1">
+        <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
+        <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
+          <?php if (!empty($profilePhoto) && file_exists('../uploads/profiles/' . $profilePhoto)): ?>
+            <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo">
+          <?php else: ?>
+            <div class="photo-circle-initials"><?= $initials ?></div>
+          <?php endif; ?>
+          <div class="photo-overlay">
+            <i class="fas fa-camera"></i>
+            <span>Update</span>
           </div>
-        </form>
+        </div>
+      </form>
+      <div class="profile-header-info">
+        <div class="profile-header-name"><?= htmlspecialchars($user['full_name'] ?: $user['username']) ?></div>
+        <div class="profile-header-meta"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; Unit <?= htmlspecialchars($user['unit_number'] ?? '—') ?></div>
+        <div style="font-size:.72rem;color:#94a3b8;margin-top:4px;">Click photo to update</div>
       </div>
     </div>
+
+    <div class="profile-divider"></div>
+
+    <div class="section-title">Profile details</div>
+    <div class="section-sub">Your profile is visible to your connected users.</div>
+
+    <form method="POST">
+      <?= csrf_input() ?>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="tc-label">First name <span style="color:#ef4444">*</span></label>
+          <input type="text" name="first_name" class="tc-input" required value="<?= htmlspecialchars($firstName) ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Middle name</label>
+          <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>" placeholder="">
+        </div>
+        <div class="col-12" style="margin-bottom:.5rem;">
+          <label class="tc-label">Last name <span style="color:#ef4444">*</span></label>
+          <input type="text" name="last_name" class="tc-input" required value="<?= htmlspecialchars($lastName) ?>">
+        </div>
+
+        <!-- Spacer divider between name and company -->
+        <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
+
+        <div class="col-12">
+          <label class="tc-label">Company name</label>
+          <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
+        </div>
+        <div class="col-12">
+          <div class="tc-check-row">
+            <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
+            <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
+          </div>
+        </div>
+
+        <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
+
+        <div class="col-sm-6">
+          <label class="tc-label">Phone number</label>
+          <input type="tel" name="phone" class="tc-input" placeholder="09XX XXX XXXX" value="<?= htmlspecialchars($user['contact'] ?? '') ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
+          <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Username</label>
+          <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['username']) ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Unit number</label>
+          <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['unit_number'] ?? '—') ?>">
+        </div>
+      </div>
+      <div class="mt-4">
+        <button type="submit" name="update_profile" class="btn-tc-save">Save changes</button>
+      </div>
+    </form>
   </div>
 
   <!-- ══ SECURITY ══ -->
