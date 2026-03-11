@@ -52,6 +52,9 @@ if (function_exists('db_ensure_user_force_change_columns')) {
     } catch (Throwable $e) {
         error_log('db_ensure_user_force_change_columns failed: ' . $e->getMessage());
     }
+    // Clear any mysqli error state left by ALTER TABLE queries inside db_ensure
+    // Without this, subsequent prepare() calls can fail silently
+    try { while ($conn->more_results()) { $conn->next_result(); } } catch (Throwable $e) {}
 }
 
 // ── Helper functions ────────────────────────────────────────────────────────
@@ -262,6 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $row = $stmt->get_result()->fetch_assoc();
                         $stmt->close();
                     } else {
+                        error_log('Prepare SELECT password failed: ' . $conn->error);
                         $errors[] = 'Database error. Please try again.';
                     }
                 } catch (Throwable $e) {
