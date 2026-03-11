@@ -49,6 +49,7 @@ if (!empty($_SESSION['pw_otp_code']) && !empty($_SESSION['pw_otp_expires'])) {
 }
 
 // Helper: get user email for OTP
+if (!function_exists('_get_user_email_for_otp')) {
 function _get_user_email_for_otp($conn, $user_id) {
     $stmt = $conn->prepare('SELECT email, username, full_name, role FROM users WHERE id = ?');
     $stmt->bind_param('i', $user_id);
@@ -75,11 +76,14 @@ function _get_user_email_for_otp($conn, $user_id) {
     }
     return ['email' => $email, 'name' => $name, 'role' => $role, 'username' => $row['username'] ?? ''];
 }
+} // end if(!function_exists('_get_user_email_for_otp'))
 
 // Helper: generate OTP
+if (!function_exists('_generate_otp')) {
 function _generate_otp() {
     return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 }
+} // end if(!function_exists('_generate_otp'))
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
