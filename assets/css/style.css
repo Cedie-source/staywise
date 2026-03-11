@@ -1789,14 +1789,14 @@ video {
 
 /* --- header.php style block 9 --- */
 :root {
-            --midnight: #0D1B2A;
-            --navy: #1B263B;
-            --slate-teal: #415A77;
-            --steel-blue: #778DA9;
-            --muted-cyan: #4E6E81;
-            --dusty-blue: #A9BCD0;
-            --accent-pale: #E0E1DD;
-            --sidebar-glow: 0 0 32px 6px #415A7744;
+            --midnight: #111111;
+            --navy: #1a1a1a;
+            --slate-teal: #2e2e2e;
+            --steel-blue: #888888;
+            --muted-cyan: #3a3a3a;
+            --dusty-blue: #cccccc;
+            --accent-pale: #e8e8e8;
+            --sidebar-glow: 0 0 32px 6px rgba(0,0,0,0.4);
             --sidebar-radius: 28px;
             --sidebar-blur: blur(8px);
             --accent: #4ED6C1;
@@ -1920,11 +1920,11 @@ video {
             color: var(--midnight);
         }
 
-        /* ===== Light Mode Sidebar — Cool Gray + Teal ===== */
+        /* ===== Light Mode Sidebar — Dark/Black ===== */
         body:not(.dark-mode) .sidebar-custom {
-            background: linear-gradient(180deg, #0D1B2A 0%, #1B263B 100%) !important;
+            background: linear-gradient(180deg, #111111 0%, #1a1a1a 100%) !important;
             color: #94a3b8 !important;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.18);
+            box-shadow: 2px 0 12px rgba(0,0,0,0.3);
             border: none;
             border-right: 1px solid rgba(255,255,255,.06) !important;
         }
@@ -1967,7 +1967,7 @@ video {
             color: #94a3b8 !important;
         }
         body:not(.dark-mode) .sidebar-custom .dropdown-menu {
-            background: #1B263B !important;
+            background: #1a1a1a !important;
             color: #e2e8f0 !important;
             border: 1px solid rgba(255,255,255,.08) !important;
             box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
@@ -2132,7 +2132,7 @@ video {
             color: #c9d1d9 !important;
         }
         .sidebar-custom.dark-mode {
-            background: linear-gradient(180deg, #0a0d10 0%, #111418 100%) !important;
+            background: linear-gradient(180deg, #0a0a0a 0%, #111111 100%) !important;
             color: #c9d1d9 !important;
         }
         .sidebar-custom.dark-mode .nav-link,
@@ -2143,14 +2143,14 @@ video {
             color: #4ED6C1 !important;
         }
         .sidebar-custom.dark-mode .dropdown-menu {
-            background: #111418 !important;
+            background: #111111 !important;
             color: #c9d1d9 !important;
         }
         .sidebar-custom.dark-mode .dropdown-item {
             color: #c9d1d9 !important;
         }
         .sidebar-custom.dark-mode .dropdown-item:hover {
-            background: #1a1f26 !important;
+            background: #222222 !important;
             color: #4ED6C1 !important;
         }
 
