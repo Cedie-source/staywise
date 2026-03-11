@@ -276,7 +276,14 @@ body.dark-mode .sidebar-scroll {
 body.dark-mode .nav-link { color: #94a3b8; }
 .nav-link:hover { background: rgba(0,0,0,.05); color: #0f172a; }
 body.dark-mode .nav-link:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
-.nav-link.active { background: var(--nav-active-bg); color: var(--nav-active-color); font-weight: 600; }
+.nav-link.active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-color);
+  font-weight: 600;
+  border-left: 3px solid var(--nav-active-color);
+  padding-left: 9px;
+}
+body:not(.dark-mode) .nav-link.active { border-left-color: #0d9488; color: #0d9488; background: rgba(13,148,136,.08); }
 .nav-link i { width: 18px; text-align: center; font-size: .88rem; flex-shrink: 0; }
 
 /* Nav section label */
@@ -481,7 +488,7 @@ body.dark-mode #mobileBottomNav .mnav-item:hover { color: #4ED6C1; }
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_management.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/admin_management.php" onclick="closeSidebar()"><i class="fas fa-users-cog"></i>Admin Management</a></li>
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='role_manager.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/role_manager.php" onclick="closeSidebar()"><i class="fas fa-user-shield"></i>Role Manager</a></li>
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_logs.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/admin_logs.php" onclick="closeSidebar()"><i class="fas fa-clipboard-list"></i>Admin Logs</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='system_settings.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/system_settings.php" onclick="closeSidebar()"><i class="fas fa-cogs"></i>System Settings</a></li>
+
           <?php endif; ?>
 
           <li><span class="nav-section-label">Account</span></li>
