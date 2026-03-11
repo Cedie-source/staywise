@@ -338,473 +338,550 @@ if (isset($_GET['uploaded']))  $success = "Payment submitted! Awaiting admin ver
 include '../includes/header.php';
 ?>
 
-<div class="container mt-4 tenant-ui">
+<style>
+/* ── Payments Page Redesign ── */
+.pay-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0d6efd22 100%);
+    border-radius: 16px;
+    color: #fff;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.pay-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(78, 214, 193, 0.08);
+}
+.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
+.pay-hero .hero-amount { font-size: 2.4rem; font-weight: 800; line-height: 1.1; }
+.pay-hero .hero-unit  { font-size: .9rem; opacity: .7; }
+.balance-pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .35rem .9rem; border-radius: 50px;
+    font-size: .8rem; font-weight: 600;
+}
+.balance-pill.due   { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+.balance-pill.paid  { background: rgba(34,197,94,.15); color: #86efac;  border: 1px solid rgba(34,197,94,.3); }
+.balance-pill.credit{ background: rgba(78,214,193,.15); color: #4ED6C1; border: 1px solid rgba(78,214,193,.3); }
+
+/* Stat cards */
+.stat-card {
+    border-radius: 12px;
+    border: none;
+    transition: transform .15s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-icon-wrap {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+
+/* Method tabs */
+.method-tabs { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+.method-tab {
+    flex: 1; padding: .6rem .5rem; border-radius: 10px; border: 1.5px solid #dee2e6;
+    background: transparent; cursor: pointer; font-size: .8rem; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: all .18s; color: #64748b;
+}
+.method-tab i { font-size: 1.1rem; }
+.method-tab.active { border-color: #007DFE; background: #007DFE12; color: #007DFE; }
+body.dark-mode .method-tab { border-color: #334155; color: #94a3b8; background: transparent; }
+body.dark-mode .method-tab.active { border-color: #007DFE; background: #007DFE18; color: #60a5fa; }
+.method-tab.cash-tab.active { border-color: #22c55e; background: #22c55e12; color: #22c55e; }
+
+/* Payment form card */
+.pay-form-card {
+    border-radius: 14px; border: none;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+}
+body.dark-mode .pay-form-card { box-shadow: 0 2px 16px rgba(0,0,0,.3); }
+
+/* GCash info box */
+.gcash-info-box {
+    border-radius: 12px;
+    background: linear-gradient(135deg, #007DFE08 0%, #007DFE18 100%);
+    border: 1.5px solid #007DFE30;
+    padding: 1rem;
+}
+
+/* History card */
+.history-item {
+    display: flex; align-items: center; gap: .9rem;
+    padding: .85rem 1rem; border-bottom: 1px solid rgba(0,0,0,.06);
+    transition: background .12s;
+}
+.history-item:last-child { border-bottom: none; }
+.history-item:hover { background: rgba(0,0,0,.02); }
+body.dark-mode .history-item { border-bottom-color: rgba(255,255,255,.06); }
+body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
+.history-icon {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: .9rem;
+}
+.history-meta { flex: 1; min-width: 0; }
+.history-meta .month { font-weight: 600; font-size: .88rem; }
+.history-meta .detail { font-size: .75rem; color: #94a3b8; }
+.history-amount { font-weight: 700; font-size: .95rem; text-align: right; }
+.history-actions { display: flex; gap: .35rem; align-items: center; }
+.status-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    display: inline-block; margin-right: 3px;
+}
+.status-dot.verified  { background: #22c55e; }
+.status-dot.pending   { background: #f59e0b; }
+.status-dot.rejected  { background: #ef4444; }
+.status-dot.cancelled { background: #94a3b8; }
+
+/* Deposit/advance ribbon */
+.info-ribbon {
+    border-radius: 12px;
+    background: linear-gradient(90deg, #4ED6C108, #4ED6C122);
+    border: 1.5px solid #4ED6C133;
+    padding: .75rem 1rem;
+}
+</style>
+
+<div class="container-fluid px-3 px-md-4 mt-3 pb-4 tenant-ui">
 
     <?php if (isset($success)): ?>
-    <div class="alert alert-success alert-dismissible fade show">
+    <div class="alert alert-success alert-dismissible fade show rounded-3 border-0 shadow-sm mb-3">
         <i class="fas fa-check-circle me-2"></i><?= $success ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     <?php endif; ?>
     <?php if (isset($error)): ?>
-    <div class="alert alert-danger alert-dismissible fade show">
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 border-0 shadow-sm mb-3">
         <i class="fas fa-exclamation-circle me-2"></i><?= $error ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     <?php endif; ?>
 
-    <!-- ═══════ BILLING SUMMARY ═══════ -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row align-items-center g-3">
-                <div class="col-md-3 text-center border-end">
-                    <small class="text-muted d-block">Unit</small>
-                    <h4 class="mb-0 text-primary fw-bold"><?= htmlspecialchars($unit_number) ?></h4>
-                </div>
-                <div class="col-md-3 text-center border-end">
-                    <small class="text-muted d-block">Month</small>
-                    <h5 class="mb-0"><?= date('F Y') ?></h5>
-                </div>
-                <div class="col-md-3 text-center border-end">
-                    <small class="text-muted d-block">Amount Due</small>
-                    <h4 class="mb-0 <?= $balance_due > 0 ? 'text-danger' : 'text-success' ?> fw-bold">
-                        ₱<?= number_format($balance_due, 2) ?>
-                    </h4>
+    <!-- ═══════ HERO BILLING BANNER ═══════ -->
+    <div class="pay-hero mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-sm-7">
+                <div class="hero-label mb-1">My Payments · Unit <?= htmlspecialchars($unit_number) ?></div>
+                <div class="hero-amount">
+                    ₱<?= number_format($balance_due, 2) ?>
                     <?php if ($credit_amount > 0): ?>
-                    <small class="text-success"><i class="fas fa-arrow-down me-1"></i>₱<?= number_format($credit_amount, 2) ?> credit</small>
-                    <?php elseif ($paid_this_month > 0 && $balance_due > 0): ?>
-                    <small class="text-muted">₱<?= number_format($paid_this_month, 2) ?> paid</small>
+                    <span class="balance-pill credit ms-2" style="font-size:1rem;">
+                        <i class="fas fa-arrow-down"></i> ₱<?= number_format($credit_amount, 2) ?> credit
+                    </span>
+                    <?php elseif ($balance_due <= 0): ?>
+                    <span class="balance-pill paid ms-2" style="font-size:1rem;">
+                        <i class="fas fa-check"></i> Fully Paid
+                    </span>
+                    <?php else: ?>
+                    <span class="balance-pill due ms-2" style="font-size:1rem;">
+                        <i class="fas fa-exclamation"></i> Due
+                    </span>
                     <?php endif; ?>
                 </div>
-                <div class="col-md-3 text-center">
-                    <small class="text-muted d-block">Due Date</small>
-                    <h5 class="mb-0"><?= date('M d, Y', strtotime($due_date)) ?></h5>
+                <div class="hero-unit mt-1"><?= date('F Y') ?> · Due by <?= date('M d', strtotime($due_date)) ?></div>
+            </div>
+            <div class="col-sm-5">
+                <div class="row g-2 text-center">
+                    <div class="col-6">
+                        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:.6rem .5rem;">
+                            <div style="font-size:1.2rem;font-weight:800;"><?= (int)$stats['verified_count'] ?></div>
+                            <div style="font-size:.7rem;opacity:.7;">Verified</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:.6rem .5rem;">
+                            <div style="font-size:1.2rem;font-weight:800;"><?= (int)$stats['pending_count'] ?></div>
+                            <div style="font-size:.7rem;opacity:.7;">Pending</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div style="background:rgba(78,214,193,.15);border-radius:10px;padding:.6rem .5rem;">
+                            <div style="font-size:1.1rem;font-weight:800;color:#4ED6C1;">₱<?= number_format((float)$stats['total_paid'], 2) ?></div>
+                            <div style="font-size:.7rem;opacity:.7;">Total Paid</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <?php if ($advance_credit > 0 || ($deposit_paid && $deposit_amount > 0)): ?>
-    <!-- ═══════ DEPOSIT & ADVANCE INFO ═══════ -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body py-2">
-            <div class="row g-2 text-center">
-                <?php if ($deposit_paid && $deposit_amount > 0): ?>
-                <div class="col-md-6">
-                    <small class="text-muted"><i class="fas fa-shield-alt me-1"></i>Security Deposit</small>
-                    <div class="fw-bold">₱<?= number_format($deposit_amount, 2) ?></div>
-                    <small class="text-muted">Held — returned at lease end</small>
-                </div>
-                <?php endif; ?>
-                <?php if ($advance_credit > 0): ?>
-                <div class="col-md-6">
-                    <small class="text-muted"><i class="fas fa-forward me-1"></i>Advance Payment</small>
-                    <div class="fw-bold text-success">₱<?= number_format($advance_credit, 2) ?></div>
-                    <small class="text-muted">Covers <?= $advance_months_covered ?> month<?= $advance_months_covered != 1 ? 's' : '' ?> of rent</small>
-                </div>
-                <?php endif; ?>
+    <!-- Deposit & Advance Ribbon -->
+    <div class="info-ribbon mb-4 d-flex flex-wrap gap-3">
+        <?php if ($deposit_paid && $deposit_amount > 0): ?>
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:34px;height:34px;border-radius:9px;background:#4ED6C120;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-shield-alt" style="color:#4ED6C1;"></i>
+            </div>
+            <div>
+                <div style="font-size:.72rem;color:#94a3b8;">Security Deposit</div>
+                <div style="font-weight:700;">₱<?= number_format($deposit_amount, 2) ?> <span style="font-size:.75rem;font-weight:400;color:#94a3b8;">· held, returned at lease end</span></div>
             </div>
         </div>
+        <?php endif; ?>
+        <?php if ($advance_credit > 0): ?>
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:34px;height:34px;border-radius:9px;background:#22c55e20;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-forward" style="color:#22c55e;"></i>
+            </div>
+            <div>
+                <div style="font-size:.72rem;color:#94a3b8;">Advance Payment</div>
+                <div style="font-weight:700;color:#22c55e;">₱<?= number_format($advance_credit, 2) ?> <span style="font-size:.75rem;font-weight:400;color:#94a3b8;">· covers <?= $advance_months_covered ?> month<?= $advance_months_covered != 1 ? 's' : '' ?></span></div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
-    <!-- ═══════ STATS ROW ═══════ -->
-    <div class="row g-3 mb-4">
-        <div class="col-4">
-            <div class="card text-center border-0 shadow-sm">
-                <div class="card-body py-3">
-                    <div class="text-success mb-1"><i class="fas fa-check-circle fa-lg"></i></div>
-                    <h5 class="mb-0"><?= (int)$stats['verified_count'] ?></h5>
-                    <small class="text-muted">Verified</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card text-center border-0 shadow-sm">
-                <div class="card-body py-3">
-                    <div class="text-warning mb-1"><i class="fas fa-clock fa-lg"></i></div>
-                    <h5 class="mb-0"><?= (int)$stats['pending_count'] ?></h5>
-                    <small class="text-muted">Pending</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card text-center border-0 shadow-sm">
-                <div class="card-body py-3">
-                    <div class="text-info mb-1"><i class="fas fa-wallet fa-lg"></i></div>
-                    <h5 class="mb-0">₱<?= number_format((float)$stats['total_paid'], 2) ?></h5>
-                    <small class="text-muted">Total Paid</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row g-4">
-        <!-- LEFT: Make a Payment -->
-        <div class="col-lg-5 order-lg-2">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2 text-primary"></i>Make a Payment</h5>
-                </div>
-                <div class="card-body">
 
-                    <!-- Method Selector -->
-                    <div class="d-flex gap-2 mb-3" id="methodSelector">
+        <!-- ═══════ MAKE A PAYMENT ═══════ -->
+        <div class="col-lg-5 order-lg-2">
+            <div class="pay-form-card card mb-3">
+                <div class="card-body p-3 p-md-4">
+                    <h6 class="fw-bold mb-3" style="font-size:.95rem;">
+                        <i class="fas fa-plus-circle me-2" style="color:#007DFE;"></i>Make a Payment
+                    </h6>
+
+                    <!-- Method tabs -->
+                    <div class="method-tabs">
                         <?php if ($paymongo_ready): ?>
-                        <button type="button" class="btn btn-outline-primary flex-fill method-btn active" data-method="gcash_online" style="border-color:#007DFE; color:#007DFE;">
-                            <i class="fas fa-mobile-alt me-1"></i>GCash
+                        <button type="button" class="method-tab active" data-method="gcash_online">
+                            <i class="fas fa-mobile-alt" style="color:#007DFE;"></i>
+                            <span>GCash</span>
                         </button>
                         <?php endif; ?>
                         <?php if ($gcash_enabled): ?>
-                        <button type="button" class="btn btn-outline-secondary flex-fill method-btn <?= !$paymongo_ready ? 'active' : '' ?>" data-method="gcash_manual">
-                            <i class="fas fa-upload me-1"></i>Manual GCash
+                        <button type="button" class="method-tab <?= !$paymongo_ready ? 'active' : '' ?>" data-method="gcash_manual">
+                            <i class="fas fa-upload" style="color:#007DFE;"></i>
+                            <span>Manual</span>
                         </button>
                         <?php endif; ?>
-                        <button type="button" class="btn btn-outline-dark flex-fill method-btn <?= !$paymongo_ready && !$gcash_enabled ? 'active' : '' ?>" data-method="cash">
-                            <i class="fas fa-money-bill-wave me-1"></i>Cash
+                        <button type="button" class="method-tab cash-tab <?= !$paymongo_ready && !$gcash_enabled ? 'active' : '' ?>" data-method="cash">
+                            <i class="fas fa-money-bill-wave" style="color:#22c55e;"></i>
+                            <span>Cash</span>
                         </button>
                     </div>
 
-                    <!-- ====== PAY VIA GCASH (PayMongo) ====== -->
+                    <!-- ── GCash Online (PayMongo) ── -->
                     <?php if ($paymongo_ready): ?>
                     <div class="method-panel" id="panel-gcash_online">
-                        <div class="text-center mb-3">
-                            <span class="badge px-3 py-2 text-white" style="background:#007DFE;">
-                                <i class="fas fa-bolt me-1"></i> Pay via GCash — Auto-Verified
-                            </span>
-                        </div>
-
                         <?php if ($credit_amount > 0): ?>
-                        <div class="alert alert-success border small mb-3">
+                        <div class="alert alert-success border-0 rounded-3 small py-2 mb-3">
                             <i class="fas fa-check-circle me-1"></i>
-                            This month is <strong>fully covered</strong> by your ₱<?= number_format($credit_amount, 2) ?> credit from overpayment. You can still pay ahead for future months.
+                            This month is <strong>fully covered</strong> by your ₱<?= number_format($credit_amount, 2) ?> credit. You can still pay ahead.
                         </div>
                         <?php else: ?>
-                        <div class="alert alert-light border small mb-3">
-                            <i class="fas fa-info-circle text-primary me-1"></i>
-                            You'll be redirected to GCash to pay. Once paid, your payment is <strong>automatically verified</strong> — no screenshot needed.
+                        <div class="d-flex align-items-center gap-2 mb-3 small" style="color:#60a5fa;">
+                            <i class="fas fa-bolt"></i>
+                            <span>Redirects to GCash · <strong>Auto-verified instantly</strong></span>
                         </div>
                         <?php endif; ?>
-
                         <form method="POST" id="gcashPayForm">
                             <?= csrf_input() ?>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Amount (₱) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control form-control-lg text-center fw-bold" 
-                                       name="amount" step="0.01" min="100" 
-                                       value="<?= $balance_due > 0 ? number_format($balance_due, 2, '.', '') : number_format($rent_amount, 2, '.', '') ?>" required>
-                                <div class="form-text">Minimum ₱100.00<?php if ($credit_amount > 0): ?> · Overpayments carry forward to next month<?php endif; ?></div>
+                                <label class="form-label fw-semibold small mb-1">Amount (₱) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text fw-bold">₱</span>
+                                    <input type="number" class="form-control form-control-lg fw-bold text-center"
+                                           name="amount" step="0.01" min="100"
+                                           value="<?= $balance_due > 0 ? number_format($balance_due, 2, '.', '') : number_format($rent_amount, 2, '.', '') ?>" required>
+                                </div>
+                                <div class="form-text">Min ₱100 · Overpayments carry forward</div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">For Month <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold small mb-1">For Month <span class="text-danger">*</span></label>
                                 <input type="month" class="form-control" name="for_month" value="<?= $current_month ?>" required>
                             </div>
-                            <button type="submit" name="pay_gcash" class="btn w-100 text-white fw-semibold py-2" style="background:#007DFE; font-size: 1.05rem;">
+                            <button type="submit" name="pay_gcash" class="btn w-100 text-white fw-bold py-2 rounded-3" style="background:#007DFE; font-size:1rem;">
                                 <i class="fas fa-mobile-alt me-2"></i>Pay via GCash
                             </button>
                         </form>
                     </div>
                     <?php endif; ?>
 
-                    <!-- ====== MANUAL GCASH ====== -->
+                    <!-- ── Manual GCash ── -->
                     <?php if ($gcash_enabled): ?>
                     <div class="method-panel d-none" id="panel-gcash_manual">
-                        <div class="text-center mb-3">
-                            <span class="badge px-3 py-2 text-white" style="background:#007DFE;">
-                                <i class="fas fa-upload me-1"></i> Manual GCash — Upload Proof
-                            </span>
-                        </div>
-
-                        <div class="border rounded-3 p-3 mb-3" style="background: linear-gradient(135deg, #007DFE08, #007DFE15);">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="gcash-info-box mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
-                                    <small class="text-muted d-block">Send to GCash Number</small>
-                                    <span class="fs-5 fw-bold" id="gcashNumberDisplay"><?= htmlspecialchars($gcash_number) ?></span>
+                                    <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Send to</div>
+                                    <div class="fw-bold fs-5" id="gcashNumberDisplay"><?= htmlspecialchars($gcash_number) ?></div>
+                                    <div style="font-size:.8rem;color:#94a3b8;"><?= htmlspecialchars($gcash_name) ?></div>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="copyGcashNumber()" title="Copy">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-2" onclick="copyGcashNumber()" title="Copy number">
                                     <i class="fas fa-copy" id="copyIcon"></i>
                                 </button>
                             </div>
-                            <div>
-                                <small class="text-muted">Account Name</small><br>
-                                <strong><?= htmlspecialchars($gcash_name) ?></strong>
-                            </div>
                             <?php if (!empty($gcash_qr_image)): ?>
-                            <div class="text-center mt-3">
-                                <img src="../uploads/<?= htmlspecialchars($gcash_qr_image) ?>" 
-                                     alt="GCash QR" class="img-fluid rounded border" style="max-width: 160px; cursor:pointer;" 
-                                     onclick="this.style.maxWidth = this.style.maxWidth === '160px' ? '300px' : '160px'">
-                                <div class="form-text">Tap QR to enlarge</div>
+                            <div class="text-center mt-2">
+                                <img src="../uploads/<?= htmlspecialchars($gcash_qr_image) ?>"
+                                     alt="GCash QR" class="img-fluid rounded-2 border" style="max-width:140px;cursor:pointer;"
+                                     onclick="this.style.maxWidth = this.style.maxWidth === '140px' ? '280px' : '140px'">
+                                <div class="form-text">Tap to enlarge</div>
                             </div>
                             <?php endif; ?>
                         </div>
-
                         <form method="POST" enctype="multipart/form-data">
                             <?= csrf_input() ?>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Amount (₱) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" name="amount" step="0.01" min="1" 
-                                       value="<?= number_format($rent_amount, 2, '.', '') ?>" required>
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label fw-semibold">For Month</label>
-                                    <input type="month" class="form-control" name="for_month" value="<?= $current_month ?>" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label fw-semibold">Payment Date</label>
-                                    <input type="date" class="form-control" name="payment_date" value="<?= date('Y-m-d') ?>" required>
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small mb-1">Amount (₱) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" class="form-control" name="amount" step="0.01" min="1"
+                                           value="<?= number_format($rent_amount, 2, '.', '') ?>" required>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">GCash Reference No.</label>
-                                <input type="text" class="form-control" name="reference_no" placeholder="e.g. 1234 567 890">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small mb-1">For Month</label>
+                                    <input type="month" class="form-control form-control-sm" name="for_month" value="<?= $current_month ?>" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small mb-1">Date Paid</label>
+                                    <input type="date" class="form-control form-control-sm" name="payment_date" value="<?= date('Y-m-d') ?>" required>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small mb-1">Reference No.</label>
+                                <input type="text" class="form-control form-control-sm" name="reference_no" placeholder="e.g. 1234 567 890">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">GCash Screenshot <span class="text-danger">*</span></label>
-                                <input type="file" class="form-control" name="proof_file" accept=".jpg,.jpeg,.png,.pdf,.webp" required>
+                                <label class="form-label fw-semibold small mb-1">GCash Screenshot <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control form-control-sm" name="proof_file" accept=".jpg,.jpeg,.png,.pdf,.webp" required>
                             </div>
-                            <button type="submit" name="upload_manual_gcash" class="btn w-100 text-white" style="background:#007DFE;">
-                                <i class="fas fa-paper-plane me-2"></i>Submit GCash Payment
+                            <button type="submit" name="upload_manual_gcash" class="btn w-100 text-white rounded-3 fw-semibold" style="background:#007DFE;">
+                                <i class="fas fa-paper-plane me-2"></i>Submit GCash Proof
                             </button>
                         </form>
                     </div>
                     <?php endif; ?>
 
-                    <!-- ====== CASH ====== -->
+                    <!-- ── Cash ── -->
                     <div class="method-panel d-none" id="panel-cash">
-                        <div class="text-center mb-3">
-                            <span class="badge bg-dark bg-opacity-10 text-dark px-3 py-2">
-                                <i class="fas fa-hand-holding-usd me-1"></i> Cash Payment — No fees
-                            </span>
+                        <div class="d-flex align-items-center gap-2 mb-3 small" style="color:#22c55e;">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            <span>Cash payment · No fees · Admin verifies within 24h</span>
                         </div>
                         <form method="POST" enctype="multipart/form-data">
                             <?= csrf_input() ?>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Amount (₱) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" name="amount" step="0.01" min="1" 
-                                       value="<?= number_format($rent_amount, 2, '.', '') ?>" required>
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label fw-semibold">For Month</label>
-                                    <input type="month" class="form-control" name="for_month" value="<?= $current_month ?>" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label fw-semibold">Payment Date</label>
-                                    <input type="date" class="form-control" name="payment_date" value="<?= date('Y-m-d') ?>" required>
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small mb-1">Amount (₱) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" class="form-control" name="amount" step="0.01" min="1"
+                                           value="<?= number_format($rent_amount, 2, '.', '') ?>" required>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Receipt / Proof <small class="text-muted fw-normal">(optional)</small></label>
-                                <input type="file" class="form-control" name="proof_file" accept=".jpg,.jpeg,.png,.pdf,.webp">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small mb-1">For Month</label>
+                                    <input type="month" class="form-control form-control-sm" name="for_month" value="<?= $current_month ?>" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small mb-1">Date Paid</label>
+                                    <input type="date" class="form-control form-control-sm" name="payment_date" value="<?= date('Y-m-d') ?>" required>
+                                </div>
                             </div>
-                            <button type="submit" name="upload_cash" class="btn btn-dark w-100">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small mb-1">Receipt / Proof <small class="text-muted fw-normal">(optional)</small></label>
+                                <input type="file" class="form-control form-control-sm" name="proof_file" accept=".jpg,.jpeg,.png,.pdf,.webp">
+                            </div>
+                            <button type="submit" name="upload_cash" class="btn btn-dark w-100 rounded-3 fw-semibold">
                                 <i class="fas fa-paper-plane me-2"></i>Submit Cash Payment
                             </button>
                         </form>
                     </div>
 
                     <?php if (!$paymongo_ready && !$gcash_enabled): ?>
-                    <div class="form-text text-center mt-2">
-                        <i class="fas fa-info-circle me-1"></i>GCash online payment coming soon.
-                    </div>
+                    <p class="text-center text-muted small mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>GCash online payment coming soon.</p>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Tips -->
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-body">
-                    <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Tips</h6>
-                    <ul class="list-unstyled small text-muted mb-0">
+            <!-- Quick Tips -->
+            <div class="card border-0 rounded-3" style="background:rgba(0,0,0,.03);">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex flex-column gap-1" style="font-size:.78rem;color:#94a3b8;">
                         <?php if ($paymongo_ready): ?>
-                        <li class="mb-1"><i class="fas fa-bolt text-primary me-2"></i><strong>GCash</strong> online payments are instant and auto-verified.</li>
+                        <div><i class="fas fa-bolt me-2" style="color:#007DFE;"></i><strong style="color:inherit;">GCash Online</strong> — instant, auto-verified</div>
                         <?php endif; ?>
-                        <li class="mb-1"><i class="fas fa-clock text-warning me-2"></i>Manual/cash payments are verified within 24 hours.</li>
-                        <li class="mb-1"><i class="fas fa-file-pdf text-danger me-2"></i>A PDF receipt is emailed after payment is confirmed.</li>
-                        <li><i class="fas fa-ban text-danger me-2"></i>You can cancel pending payments anytime.</li>
-                    </ul>
+                        <div><i class="fas fa-clock me-2" style="color:#f59e0b;"></i>Manual/Cash verified within 24 hours</div>
+                        <div><i class="fas fa-file-pdf me-2" style="color:#ef4444;"></i>PDF receipt emailed on confirmation</div>
+                        <div><i class="fas fa-ban me-2" style="color:#ef4444;"></i>Pending payments can be cancelled anytime</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT: Payment History -->
+        <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-history me-2 text-primary"></i>Payment History</h5>
+            <div class="pay-form-card card">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3 px-3 px-md-4">
+                    <h6 class="fw-bold mb-0" style="font-size:.95rem;">
+                        <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
+                    </h6>
                     <?php if ($payments->num_rows > 0): ?>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="exportPaymentsCsv" title="Export CSV">
-                        <i class="fas fa-download me-1"></i>CSV
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" id="exportPaymentsCsv">
+                        <i class="fas fa-download me-1"></i><span class="d-none d-sm-inline">Export </span>CSV
                     </button>
                     <?php endif; ?>
                 </div>
-                <div class="card-body p-0">
-                    <?php if ($payments->num_rows > 0): ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="tenantPaymentsTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Month</th>
-                                    <th>Amount</th>
-                                    <th>Method</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                    <th class="text-end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($p = $payments->fetch_assoc()): 
-                                    $pMethod = $p['payment_method'] ?? 'cash';
-                                    $methodMap = [
-                                        'cash'           => ['Cash',         'fa-money-bill-wave', 'bg-dark bg-opacity-75'],
-                                        'manual_gcash'   => ['GCash',        'fa-mobile-alt',      'text-white', '#007DFE'],
-                                        'paymongo_gcash' => ['GCash Online', 'fa-mobile-alt',      'text-white', '#007DFE'],
-                                    ];
-                                    $pm = $methodMap[$pMethod] ?? $methodMap['cash'];
-                                    $pmStyle = isset($pm[3]) ? "background:{$pm[3]};" : '';
-                                ?>
-                                <tr>
-                                    <td>
-                                        <?php 
-                                            $fm = $p['for_month'] ?? '';
-                                            echo $fm ? date('M Y', strtotime($fm . '-01')) : '<span class="text-muted">—</span>';
-                                        ?>
-                                    </td>
-                                    <td class="fw-semibold">₱<?= number_format($p['amount'], 2) ?></td>
-                                    <td>
-                                        <span class="badge <?= $pm[2] ?>" <?php if ($pmStyle) echo "style=\"$pmStyle\""; ?>>
-                                            <i class="fas <?= $pm[1] ?> me-1"></i><?= $pm[0] ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php
-                                            $statusClass = [
-                                                'pending'   => 'bg-warning text-dark',
-                                                'verified'  => 'bg-success',
-                                                'rejected'  => 'bg-danger',
-                                                'cancelled' => 'bg-secondary',
-                                            ];
-                                            $statusLabel = [
-                                                'pending'   => 'Pending',
-                                                'verified'  => 'Paid',
-                                                'rejected'  => 'Rejected',
-                                                'cancelled' => 'Cancelled',
-                                            ];
-                                        ?>
-                                        <span class="badge <?= $statusClass[$p['status']] ?? 'bg-secondary' ?>">
-                                            <?= $statusLabel[$p['status']] ?? ucfirst($p['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td><small><?= date('M d, Y', strtotime($p['payment_date'])) ?></small></td>
-                                    <td class="text-end">
-                                        <?php if ($p['proof_file']): ?>
-                                        <a href="../uploads/payments/<?= $p['proof_file'] ?>" target="_blank" 
-                                           class="btn btn-sm btn-outline-secondary me-1" title="View proof">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <?php endif; ?>
-                                        <?php if ($p['status'] === 'verified' && !empty($p['paymongo_checkout_id'])): ?>
-                                        <a href="payment_success.php?link_id=<?= urlencode($p['paymongo_checkout_id']) ?>" 
-                                           class="btn btn-sm btn-outline-success me-1" title="View receipt">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </a>
-                                        <?php endif; ?>
-                                        <?php if ($p['status'] === 'pending'): ?>
-                                        <button type="button" class="btn btn-sm btn-outline-danger cancel-payment-btn" 
-                                                data-id="<?= $p['payment_id'] ?>" title="Cancel">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                <div class="card-body p-0" id="historyList">
+                    <?php if ($payments->num_rows > 0):
+                        $methodMap = [
+                            'cash'           => ['Cash',         'fa-money-bill-wave', '#22c55e20', '#22c55e'],
+                            'manual_gcash'   => ['GCash',        'fa-mobile-alt',      '#007DFE20', '#007DFE'],
+                            'paymongo_gcash' => ['GCash Online', 'fa-bolt',            '#007DFE20', '#007DFE'],
+                        ];
+                        $statusLabel = ['pending'=>'Pending','verified'=>'Paid','rejected'=>'Rejected','cancelled'=>'Cancelled'];
+                        $statusColor = ['pending'=>'#f59e0b','verified'=>'#22c55e','rejected'=>'#ef4444','cancelled'=>'#94a3b8'];
+                        while ($p = $payments->fetch_assoc()):
+                            $pm = $methodMap[$p['payment_method'] ?? 'cash'] ?? $methodMap['cash'];
+                            $st = $p['status'] ?? 'pending';
+                            $fm = $p['for_month'] ?? '';
+                    ?>
+                    <div class="history-item" id="hist-<?= $p['payment_id'] ?>">
+                        <div class="history-icon" style="background:<?= $pm[2] ?>; color:<?= $pm[3] ?>;">
+                            <i class="fas <?= $pm[1] ?>"></i>
+                        </div>
+                        <div class="history-meta">
+                            <div class="month"><?= $fm ? date('F Y', strtotime($fm.'-01')) : '—' ?></div>
+                            <div class="detail">
+                                <span class="status-dot <?= $st ?>"></span>
+                                <span><?= $statusLabel[$st] ?? ucfirst($st) ?></span>
+                                <span class="mx-1">·</span>
+                                <span><?= $pm[0] ?></span>
+                                <span class="mx-1">·</span>
+                                <span><?= date('M d, Y', strtotime($p['payment_date'])) ?></span>
+                            </div>
+                        </div>
+                        <div class="history-amount">
+                            <div>₱<?= number_format($p['amount'], 2) ?></div>
+                            <div style="font-size:.7rem;font-weight:400;color:<?= $statusColor[$st] ?? '#94a3b8' ?>;"><?= $statusLabel[$st] ?? ucfirst($st) ?></div>
+                        </div>
+                        <div class="history-actions">
+                            <?php if ($p['proof_file']): ?>
+                            <a href="../uploads/payments/<?= $p['proof_file'] ?>" target="_blank"
+                               class="btn btn-sm btn-outline-secondary rounded-2 p-1" title="View proof" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                                <i class="fas fa-eye" style="font-size:.75rem;"></i>
+                            </a>
+                            <?php endif; ?>
+                            <?php if ($st === 'verified' && !empty($p['paymongo_checkout_id'])): ?>
+                            <a href="payment_success.php?link_id=<?= urlencode($p['paymongo_checkout_id']) ?>"
+                               class="btn btn-sm btn-outline-success rounded-2 p-1" title="Receipt" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                                <i class="fas fa-file-pdf" style="font-size:.75rem;"></i>
+                            </a>
+                            <?php endif; ?>
+                            <?php if ($st === 'pending'): ?>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-2 cancel-payment-btn p-1"
+                                    data-id="<?= $p['payment_id'] ?>" title="Cancel" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+                                <i class="fas fa-times" style="font-size:.75rem;"></i>
+                            </button>
+                            <?php endif; ?>
+                        </div>
                     </div>
+                    <?php endwhile; ?>
                     <?php else: ?>
-                    <div class="text-center py-5">
-                        <i class="fas fa-receipt fa-3x text-muted mb-3 d-block"></i>
-                        <h6 class="text-muted">No payments yet</h6>
-                        <p class="text-muted small mb-0">Click "Pay via GCash" to make your first payment.</p>
+                    <div class="text-center py-5 px-3">
+                        <div style="width:64px;height:64px;border-radius:16px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="fas fa-receipt" style="font-size:1.5rem;color:#94a3b8;"></i>
+                        </div>
+                        <h6 class="text-muted mb-1">No payments yet</h6>
+                        <p class="text-muted small mb-0">Make your first payment using the form.</p>
                     </div>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
-    </div>
+
+    </div><!-- /row -->
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ===== Method Selector =====
-    document.querySelectorAll('.method-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.method-btn').forEach(function(b) { b.classList.remove('active'); });
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Method tabs ──
+    document.querySelectorAll('.method-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.method-tab').forEach(function (t) { t.classList.remove('active'); });
             this.classList.add('active');
-            document.querySelectorAll('.method-panel').forEach(function(p) { p.classList.add('d-none'); });
+            document.querySelectorAll('.method-panel').forEach(function (p) { p.classList.add('d-none'); });
             var panel = document.getElementById('panel-' + this.dataset.method);
             if (panel) panel.classList.remove('d-none');
         });
     });
 
-    // ===== Cancel Payment (AJAX) =====
-    document.querySelectorAll('.cancel-payment-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    // ── Cancel payment (AJAX) ──
+    document.querySelectorAll('.cancel-payment-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
             if (!confirm('Cancel this payment?')) return;
-            var paymentId = this.dataset.id;
-            var button = this;
-            var row = button.closest('tr');
+            var id = this.dataset.id, button = this;
             button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:.75rem;"></i>';
 
-            var formData = new FormData();
-            formData.append('cancel_payment', '1');
-            formData.append('payment_id', paymentId);
+            var fd = new FormData();
+            fd.append('cancel_payment', '1');
+            fd.append('payment_id', id);
 
             fetch('payments.php', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
+                body: fd
             })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
                 if (data.success) {
-                    var badge = row.querySelector('td:nth-child(4) .badge');
-                    if (badge) { badge.className = 'badge bg-secondary'; badge.textContent = 'Cancelled'; }
-                    button.remove();
+                    var item = document.getElementById('hist-' + id);
+                    if (item) {
+                        var dot  = item.querySelector('.status-dot');
+                        var lbl  = item.querySelector('.history-meta .detail');
+                        var amt  = item.querySelector('.history-amount div:last-child');
+                        if (dot) { dot.className = 'status-dot cancelled'; }
+                        if (amt) { amt.textContent = 'Cancelled'; amt.style.color = '#94a3b8'; }
+                        button.remove();
+                    }
                 } else {
                     button.disabled = false;
-                    button.innerHTML = '<i class="fas fa-times"></i>';
+                    button.innerHTML = '<i class="fas fa-times" style="font-size:.75rem;"></i>';
                     alert('Unable to cancel.');
                 }
             })
-            .catch(function() {
+            .catch(function () {
                 button.disabled = false;
-                button.innerHTML = '<i class="fas fa-times"></i>';
+                button.innerHTML = '<i class="fas fa-times" style="font-size:.75rem;"></i>';
             });
         });
     });
 
-    // ===== Export CSV =====
+    // ── Export CSV ──
     var exportBtn = document.getElementById('exportPaymentsCsv');
     if (exportBtn) {
-        exportBtn.addEventListener('click', function() {
-            var table = document.getElementById('tenantPaymentsTable');
-            if (!table) return;
-            var rows = table.querySelectorAll('tbody tr');
+        exportBtn.addEventListener('click', function () {
+            var items = document.querySelectorAll('#historyList .history-item');
             var csv = 'Month,Amount,Method,Status,Date\n';
-            rows.forEach(function(row) {
-                var cells = row.cells;
-                csv += [0,1,2,3,4].map(function(i) {
-                    return '"' + cells[i].textContent.trim().replace(/"/g, '""') + '"';
+            items.forEach(function (item) {
+                var month  = item.querySelector('.month')?.textContent.trim() || '';
+                var amount = item.querySelector('.history-amount div')?.textContent.trim() || '';
+                var detail = item.querySelector('.detail')?.textContent.trim().split('·') || [];
+                var status = (detail[0] || '').trim();
+                var method = (detail[1] || '').trim();
+                var date   = (detail[2] || '').trim();
+                csv += [month, amount, method, status, date].map(function (v) {
+                    return '"' + v.replace(/"/g, '""') + '"';
                 }).join(',') + '\n';
             });
             var blob = new Blob([csv], { type: 'text/csv' });
             var a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'payments_' + new Date().toISOString().slice(0,10) + '.csv';
+            a.download = 'payments_' + new Date().toISOString().slice(0, 10) + '.csv';
             a.click();
         });
     }
@@ -813,10 +890,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function copyGcashNumber() {
     var num = document.getElementById('gcashNumberDisplay');
     if (!num) return;
-    navigator.clipboard.writeText(num.textContent.trim()).then(function() {
+    navigator.clipboard.writeText(num.textContent.trim()).then(function () {
         var icon = document.getElementById('copyIcon');
         icon.className = 'fas fa-check text-success';
-        setTimeout(function() { icon.className = 'fas fa-copy'; }, 1500);
+        setTimeout(function () { icon.className = 'fas fa-copy'; }, 1500);
     });
 }
 </script>
