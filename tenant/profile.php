@@ -4,14 +4,24 @@ set_secure_session_cookies();
 session_start();
 require_once '../config/db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'tenant') {
     header("Location: ../index.php");
     exit();
 }
 
-$page_title = "Admin Profile";
+$page_title = "My Profile";
 
-$stmt = $conn->prepare("SELECT username, full_name, middle_name, profile_photo, email FROM users WHERE id = ?");
+// Fetch user + tenant info
+$stmt = $conn->prepare("
+    SELECT u.username, u.full_name, u.email, u.profile_photo,
+           u.middle_name,
+           t.unit_number, t.rent_amount, t.lease_start_date, t.lease_end_date,
+           t.deposit_amount, t.advance_amount, t.deposit_paid, t.advance_paid,
+           t.contact, t.tenant_id
+    FROM users u
+    LEFT JOIN tenants t ON t.user_id = u.id
+    WHERE u.id = ?
+");
 if (!$stmt) die('Database prepare failed: ' . $conn->error);
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -56,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $middle     = trim($_POST['middle_name']        ?? '');
     $last       = trim($_POST['last_name']          ?? '');
     $email      = trim($_POST['email']              ?? '');
+    $phone      = trim($_POST['phone']              ?? '');
     $full_name  = trim("$first $last");
 
     if (empty($first) || empty($last) || empty($email)) {
@@ -66,10 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         $stmt = $conn->prepare("UPDATE users SET full_name=?, middle_name=?, email=? WHERE id=?");
         $stmt->bind_param("sssi", $full_name, $middle, $email, $_SESSION['user_id']);
         if ($stmt->execute()) {
+            $sync = $conn->prepare("UPDATE tenants SET name=?, email=?, contact=? WHERE user_id=?");
+            if ($sync) { $sync->bind_param("sssi", $full_name, $email, $phone, $_SESSION['user_id']); $sync->execute(); $sync->close(); }
             $success = "Profile updated successfully.";
-            $user['full_name']  = $full_name;
+            $user['full_name']   = $full_name;
             $user['middle_name'] = $middle;
-            $user['email']      = $email;
+            $user['email']       = $email;
             $firstName = $first; $middleName = $middle; $lastName = $last;
         } else { $error = "Failed to update profile."; }
         $stmt->close();
