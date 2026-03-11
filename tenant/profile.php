@@ -4,24 +4,15 @@ set_secure_session_cookies();
 session_start();
 require_once '../config/db.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'tenant') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../index.php");
     exit();
 }
 
-$page_title = "My Profile";
+$page_title = "Admin Profile";
 
-// Fetch user + tenant info
-$stmt = $conn->prepare("
-    SELECT u.username, u.full_name, u.email, u.profile_photo,
-           u.middle_name, u.company_name, u.display_as_company,
-           t.unit_number, t.rent_amount, t.lease_start_date, t.lease_end_date,
-           t.deposit_amount, t.advance_amount, t.deposit_paid, t.advance_paid,
-           t.contact, t.tenant_id
-    FROM users u
-    LEFT JOIN tenants t ON t.user_id = u.id
-    WHERE u.id = ?
-");
+$stmt = $conn->prepare("SELECT username, full_name, middle_name, profile_photo, email FROM users WHERE id = ?");
+if (!$stmt) die('Database prepare failed: ' . $conn->error);
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
@@ -30,17 +21,14 @@ $stmt->close();
 if (!$user) { header("Location: ../logout.php"); exit(); }
 
 $success = $error = '';
+$nameParts  = explode(' ', trim($user['full_name'] ?? ''), 2);
+$firstName  = $nameParts[0] ?? '';
+$lastName   = $nameParts[1] ?? '';
+$middleName = $user['middle_name'] ?? '';
 
-// Split full name
-$nameParts = explode(' ', trim($user['full_name'] ?? ''), 2);
-$firstName = $nameParts[0] ?? '';
-$lastName  = $nameParts[1] ?? '';
-
-// Handle profile photo upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_photo'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
     if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === 0) {
-        $allowed_mime = ['image/jpeg','image/png','image/webp','image/gif'];
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime  = $finfo->file($_FILES['profile_photo']['tmp_name']);
         $extMap = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];
@@ -62,50 +50,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_photo'])) {
     }
 }
 
-// Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
-    $first       = trim($_POST['first_name']        ?? '');
-    $middle      = trim($_POST['middle_name']        ?? '');
-    $last        = trim($_POST['last_name']          ?? '');
-    $email       = trim($_POST['email']              ?? '');
-        $phone       = trim($_POST['phone']              ?? '');
-    $company     = trim($_POST['company_name']       ?? '');
-    $as_company  = isset($_POST['display_as_company']) ? 1 : 0;
-    $full_name   = trim("$first $last");
+    $first      = trim($_POST['first_name']        ?? '');
+    $middle     = trim($_POST['middle_name']        ?? '');
+    $last       = trim($_POST['last_name']          ?? '');
+    $email      = trim($_POST['email']              ?? '');
+    $full_name  = trim("$first $last");
 
     if (empty($first) || empty($last) || empty($email)) {
         $error = "First name, last name and email are required.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email format.";
     } else {
-        $stmt = $conn->prepare("UPDATE users SET full_name=?, middle_name=?, email=?, company_name=?, display_as_company=? WHERE id=?");
-        $stmt->bind_param("ssssii", $full_name, $middle, $email, $company, $as_company, $_SESSION['user_id']);
+        $stmt = $conn->prepare("UPDATE users SET full_name=?, middle_name=?, email=? WHERE id=?");
+        $stmt->bind_param("sssi", $full_name, $middle, $email, $_SESSION['user_id']);
         if ($stmt->execute()) {
-            $sync = $conn->prepare("UPDATE tenants SET name = ?, email = ?, contact = ? WHERE user_id = ?");
-            if ($sync) { $sync->bind_param("sssi", $full_name, $email, $phone, $_SESSION['user_id']); $sync->execute(); $sync->close(); }
             $success = "Profile updated successfully.";
-            $user['full_name']          = $full_name;
-            $user['middle_name']        = $middle;
-            $user['email']              = $email;
-            $user['phone'] = $phone; // maps from contact column
-            $user['company_name']       = $company;
-            $user['display_as_company'] = $as_company;
+            $user['full_name']  = $full_name;
+            $user['middle_name'] = $middle;
+            $user['email']      = $email;
             $firstName = $first; $middleName = $middle; $lastName = $last;
         } else { $error = "Failed to update profile."; }
         $stmt->close();
     }
 }
 
+
 $profilePhoto = $user['profile_photo'] ?? '';
 $initials = strtoupper(substr($firstName ?: $user['username'], 0, 1) . substr($lastName ?: ($user['username'] ?? ''), 0, 1));
-// Split middle name from last name parts if stored
-$middleName = '';
-if (count($nameParts) > 2) {
-  $middleName = $nameParts[1] ?? '';
-  $lastName   = $nameParts[2] ?? '';
-}
-
 $activeTab = $_GET['tab'] ?? 'profile';
 
 include '../includes/header.php';
@@ -113,25 +86,17 @@ include '../includes/header.php';
 
 <style>
 .profile-wrap { max-width: 920px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
-
-/* ── Page heading ── */
-.acct-heading {
-  font-size: 1.45rem; font-weight: 700; margin-bottom: 1.5rem;
-}
+.acct-heading { font-size: 1.45rem; font-weight: 700; margin-bottom: 1.5rem; }
 body:not(.dark-mode) .acct-heading { color: #111827; }
 body.dark-mode .acct-heading { color: #f1f5f9; }
 
-/* ── Tabs ── */
-.profile-tabs {
-  display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem; gap: 0;
-}
+.profile-tabs { display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem; }
 body.dark-mode .profile-tabs { border-bottom-color: #2d3748; }
 .profile-tab {
   padding: .7rem 1.35rem; font-size: .88rem; font-weight: 600;
   border: none; background: none; cursor: pointer;
   border-bottom: 3px solid transparent; margin-bottom: -2px;
-  transition: color .15s, border-color .15s; color: #64748b;
-  white-space: nowrap;
+  transition: color .15s, border-color .15s; color: #64748b; white-space: nowrap;
 }
 .profile-tab:hover { color: #0f172a; }
 .profile-tab.active { color: #16a34a; border-bottom-color: #16a34a; }
@@ -139,165 +104,109 @@ body.dark-mode .profile-tab { color: #94a3b8; }
 body.dark-mode .profile-tab:hover { color: #e2e8f0; }
 body.dark-mode .profile-tab.active { color: #4ED6C1; border-bottom-color: #4ED6C1; }
 
-/* ── Panels ── */
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
-/* ── Headings ── */
 .section-title { font-weight: 700; font-size: 1rem; margin-bottom: .2rem; }
 .section-sub { font-size: .82rem; color: #94a3b8; margin-bottom: 1.75rem; }
 body:not(.dark-mode) .section-title { color: #111827; }
 body.dark-mode .section-title { color: #f1f5f9; }
 
-/* ── Inputs ── */
-.tc-label {
-  display: block; font-size: .78rem; font-weight: 600;
-  color: #6b7280; margin-bottom: 5px;
+/* Profile header row */
+.profile-header-row { display: flex; align-items: center; gap: 20px; margin-bottom: 1.5rem; }
+.profile-header-info { flex: 1; }
+.profile-header-name { font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
+body:not(.dark-mode) .profile-header-name { color: #111827; }
+body.dark-mode .profile-header-name { color: #f1f5f9; }
+.profile-header-meta { font-size: .8rem; color: #94a3b8; margin-top: 3px; }
+
+/* Divider */
+.profile-divider { border: none; border-top: 1px solid #e2e8f0; margin: 1.25rem 0; }
+body.dark-mode .profile-divider { border-top-color: #2d3748; }
+
+/* Photo circle */
+.photo-circle {
+  width: 88px; height: 88px; border-radius: 50%; background: #64748b;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0;
 }
+.photo-circle img { width: 100%; height: 100%; object-fit: cover; }
+.photo-circle-initials { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
+.photo-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.photo-circle:hover .photo-overlay { opacity: 1; }
+.photo-overlay i { color: #fff; font-size: 1.1rem; }
+.photo-overlay span { color: #fff; font-size: .65rem; margin-top: 4px; font-weight: 600; }
+
+/* Inputs */
+.tc-label { display: block; font-size: .78rem; font-weight: 600; color: #6b7280; margin-bottom: 5px; }
 body.dark-mode .tc-label { color: #94a3b8; }
 .tc-input {
-  width: 100%; padding: .65rem .9rem;
-  border: 1.5px solid #d1d5db; border-radius: 8px;
+  width: 100%; padding: .65rem .9rem; border: 1.5px solid #d1d5db; border-radius: 8px;
   font-size: .88rem; color: #111827; background: #fff;
-  transition: border-color .15s, box-shadow .15s; outline: none;
-  font-family: inherit;
+  transition: border-color .15s, box-shadow .15s; outline: none; font-family: inherit;
 }
 .tc-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
 .tc-input:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
 body.dark-mode .tc-input { background: #1e293b; border-color: #374151; color: #e2e8f0; }
 body.dark-mode .tc-input:focus { border-color: #4ED6C1; box-shadow: 0 0 0 3px rgba(78,214,193,.1); }
 body.dark-mode .tc-input:disabled { background: #111827; color: #4b5563; }
-
-/* ── Checkbox row ── */
-.tc-check-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: .5rem 0;
-}
-.tc-check-row input[type=checkbox] {
-  width: 16px; height: 16px; accent-color: #16a34a; cursor: pointer; flex-shrink: 0;
-}
+.tc-check-row { display: flex; align-items: center; gap: 10px; padding: .5rem 0; }
+.tc-check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #16a34a; cursor: pointer; flex-shrink: 0; }
 .tc-check-label { font-size: .88rem; font-weight: 500; cursor: pointer; }
 body:not(.dark-mode) .tc-check-label { color: #374151; }
 body.dark-mode .tc-check-label { color: #d1d5db; }
 
-/* ── Save btn ── */
 .btn-tc-save {
-  background: #16a34a; color: #fff; border: none;
-  padding: .6rem 1.75rem; border-radius: 8px;
-  font-weight: 600; font-size: .88rem; cursor: pointer;
-  font-family: inherit; transition: background .15s;
+  background: #16a34a; color: #fff; border: none; padding: .6rem 1.75rem; border-radius: 8px;
+  font-weight: 600; font-size: .88rem; cursor: pointer; font-family: inherit; transition: background .15s;
 }
 .btn-tc-save:hover { background: #15803d; }
 
-/* ── Profile header row (photo + name) ── */
-.profile-header-row {
-  display: flex; align-items: center; gap: 20px; margin-bottom: 1.5rem;
-}
-.profile-header-info { flex: 1; }
-.profile-header-name {
-  font-size: 1.2rem; font-weight: 700; line-height: 1.2;
-}
-body:not(.dark-mode) .profile-header-name { color: #111827; }
-body.dark-mode .profile-header-name { color: #f1f5f9; }
-.profile-header-meta { font-size: .8rem; color: #94a3b8; margin-top: 3px; }
-
-/* ── Divider ── */
-.profile-divider {
-  border: none; border-top: 1px solid #e2e8f0; margin: 1.25rem 0;
-}
-body.dark-mode .profile-divider { border-top-color: #2d3748; }
-
-/* ── Photo circle ── */
-.photo-wrap { display: flex; flex-direction: column; align-items: center; gap: .6rem; }
-.photo-circle {
-  width: 108px; height: 108px; border-radius: 50%;
-  background: #64748b; display: flex; align-items: center;
-  justify-content: center; position: relative; overflow: hidden;
-  cursor: pointer; flex-shrink: 0;
-}
-.photo-circle img { width: 100%; height: 100%; object-fit: cover; }
-.photo-circle-initials { font-size: 2.2rem; font-weight: 700; color: #fff; line-height: 1; }
-.photo-overlay {
-  position: absolute; inset: 0; background: rgba(0,0,0,.45);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  opacity: 0; transition: opacity .2s;
-}
-.photo-circle:hover .photo-overlay { opacity: 1; }
-.photo-overlay i { color: #fff; font-size: 1.25rem; }
-.photo-overlay span { color: #fff; font-size: .68rem; margin-top: 5px; font-weight: 600; letter-spacing: .02em; }
-
-/* ── My Cards ── */
-.cards-empty {
-  text-align: center; padding: 3rem 1rem;
-}
-.cards-empty i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem; display: block; }
-.cards-empty p { color: #94a3b8; font-size: .88rem; margin: 0; }
-.card-item {
-  display: flex; align-items: center; gap: 14px;
-  padding: 1rem; border-radius: 12px; margin-bottom: .75rem;
-  border: 1.5px solid #e2e8f0;
-}
-body.dark-mode .card-item { border-color: #2d3748; background: #1e293b; }
-.card-logo { width: 48px; height: 32px; border-radius: 6px; background: linear-gradient(135deg,#1e40af,#3b82f6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.card-logo i { color: #fff; font-size: 1.1rem; }
-.card-number { font-size: .88rem; font-weight: 600; }
-body:not(.dark-mode) .card-number { color: #111827; }
-body.dark-mode .card-number { color: #e2e8f0; }
-.card-exp { font-size: .76rem; color: #94a3b8; }
-
-/* ── Security rows ── */
+/* Security rows */
 .sec-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.1rem 0; border-bottom: 1px solid #f1f5f9;
 }
 .sec-row:last-child { border-bottom: none; }
 body.dark-mode .sec-row { border-bottom-color: #1e293b; }
-.sec-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
+.sec-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .btn-outline-tc {
-  border: 1.5px solid #d1d5db; background: none; color: #374151;
-  padding: .4rem 1rem; border-radius: 8px;
-  font-weight: 600; font-size: .8rem; cursor: pointer;
-  font-family: inherit; text-decoration: none;
+  border: 1.5px solid #d1d5db; background: none; color: #374151; padding: .4rem 1rem; border-radius: 8px;
+  font-weight: 600; font-size: .8rem; cursor: pointer; font-family: inherit; text-decoration: none;
   transition: border-color .15s, color .15s; display: inline-block;
 }
 .btn-outline-tc:hover { border-color: #16a34a; color: #16a34a; }
 body.dark-mode .btn-outline-tc { border-color: #374151; color: #94a3b8; }
 body.dark-mode .btn-outline-tc:hover { border-color: #4ED6C1; color: #4ED6C1; }
 .btn-danger-tc {
-  border: 1.5px solid #fecaca; background: none; color: #dc2626;
-  padding: .4rem 1rem; border-radius: 8px;
-  font-weight: 600; font-size: .8rem; cursor: pointer;
-  font-family: inherit; text-decoration: none; display: inline-block;
+  border: 1.5px solid #fecaca; background: none; color: #dc2626; padding: .4rem 1rem; border-radius: 8px;
+  font-weight: 600; font-size: .8rem; cursor: pointer; font-family: inherit; text-decoration: none; display: inline-block;
   transition: background .15s;
 }
-.btn-danger-tc:hover { background: #fef2f2; color: #dc2626; }
+.btn-danger-tc:hover { background: #fef2f2; }
 
-/* ── Toggle switch ── */
-.tog {
-  width: 42px; height: 24px; border-radius: 12px; position: relative;
-  cursor: pointer; border: none; flex-shrink: 0; transition: background .2s;
+/* Tenant photos grid */
+.tenant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; margin-top: 1rem; }
+.tenant-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px 10px; border-radius: 12px; text-align: center;
+  border: 1.5px solid #e2e8f0;
 }
-.tog.on  { background: #16a34a; }
-.tog.off { background: #d1d5db; }
-body.dark-mode .tog.off { background: #374151; }
-.tog::after {
-  content: ''; position: absolute; top: 3px; left: 3px;
-  width: 18px; height: 18px; border-radius: 50%; background: #fff;
-  transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+body.dark-mode .tenant-card { border-color: #2d3748; background: #1e293b; }
+.tenant-avatar {
+  width: 60px; height: 60px; border-radius: 50%; background: #64748b;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 700; color: #fff; overflow: hidden; flex-shrink: 0;
 }
-.tog.on::after { transform: translateX(18px); }
-
-/* ── Notif rows ── */
-.notif-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 0; border-bottom: 1px solid #f1f5f9;
-}
-.notif-row:last-child { border-bottom: none; }
-body.dark-mode .notif-row { border-bottom-color: #1e293b; }
+.tenant-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.tenant-card-name { font-size: .8rem; font-weight: 600; line-height: 1.2; }
+body:not(.dark-mode) .tenant-card-name { color: #111827; }
+body.dark-mode .tenant-card-name { color: #e2e8f0; }
+.tenant-card-unit { font-size: .72rem; color: #94a3b8; }
 </style>
 
 <div class="profile-wrap">
@@ -317,7 +226,6 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
   </div>
   <?php endif; ?>
 
-  <!-- Tabs -->
   <div class="profile-tabs">
     <button class="profile-tab <?= $activeTab==='profile'?'active':'' ?>" data-tab="profile">Profile</button>
     <button class="profile-tab <?= $activeTab==='security'?'active':'' ?>" data-tab="security">Security</button>
@@ -326,7 +234,7 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
   <!-- ══ PROFILE ══ -->
   <div class="tab-panel <?= $activeTab==='profile'?'active':'' ?>" id="tab-profile">
 
-    <!-- Photo + name header row -->
+    <!-- Photo + name header -->
     <div class="profile-header-row">
       <form method="POST" enctype="multipart/form-data" style="flex-shrink:0;">
         <?= csrf_input() ?>
@@ -338,15 +246,12 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
           <?php else: ?>
             <div class="photo-circle-initials"><?= $initials ?></div>
           <?php endif; ?>
-          <div class="photo-overlay">
-            <i class="fas fa-camera"></i>
-            <span>Update</span>
-          </div>
+          <div class="photo-overlay"><i class="fas fa-camera"></i><span>Update</span></div>
         </div>
       </form>
       <div class="profile-header-info">
         <div class="profile-header-name"><?= htmlspecialchars($user['full_name'] ?: $user['username']) ?></div>
-        <div class="profile-header-meta"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; Unit <?= htmlspecialchars($user['unit_number'] ?? '—') ?></div>
+        <div class="profile-header-meta"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; <?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?></div>
         <div style="font-size:.72rem;color:#94a3b8;margin-top:4px;">Click photo to update</div>
       </div>
     </div>
@@ -365,34 +270,16 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
         </div>
         <div class="col-sm-6">
           <label class="tc-label">Middle name</label>
-          <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>" placeholder="">
+          <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>">
         </div>
         <div class="col-12" style="margin-bottom:.5rem;">
           <label class="tc-label">Last name <span style="color:#ef4444">*</span></label>
           <input type="text" name="last_name" class="tc-input" required value="<?= htmlspecialchars($lastName) ?>">
         </div>
 
-        <!-- Spacer divider between name and company -->
         <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
 
         <div class="col-12">
-          <label class="tc-label">Company name</label>
-          <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
-        </div>
-        <div class="col-12">
-          <div class="tc-check-row">
-            <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
-            <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
-          </div>
-        </div>
-
-        <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
-
-        <div class="col-sm-6">
-          <label class="tc-label">Phone number</label>
-          <input type="tel" name="phone" class="tc-input" placeholder="09XX XXX XXXX" value="<?= htmlspecialchars($user['contact'] ?? '') ?>">
-        </div>
-        <div class="col-sm-6">
           <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
           <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
         </div>
@@ -401,8 +288,8 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
           <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['username']) ?>">
         </div>
         <div class="col-sm-6">
-          <label class="tc-label">Unit number</label>
-          <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['unit_number'] ?? '—') ?>">
+          <label class="tc-label">Role</label>
+          <input type="text" class="tc-input" disabled value="<?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?>">
         </div>
       </div>
       <div class="mt-4">
@@ -449,6 +336,8 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
       <a href="../logout.php" class="btn-danger-tc">Sign out</a>
     </div>
   </div>
+
+</div>
 
 <script>
 document.querySelectorAll('.profile-tab').forEach(function(tab) {
