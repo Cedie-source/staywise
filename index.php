@@ -301,8 +301,8 @@ $page_title = "Welcome";
                     form.classList.add('was-validated');
                 });
             }
-            username.addEventListener('input', validateUsername);
-            password.addEventListener('input', function(e){ validatePassword(); updateCapsLock(e); });
+            username.addEventListener('input', function(){ username.classList.remove('is-invalid'); });
+            password.addEventListener('input', function(e){ password.classList.remove('is-invalid'); updateCapsLock(e); });
             password.addEventListener('keydown', updateCapsLock);
             password.addEventListener('keyup', updateCapsLock);
             password.addEventListener('focus', function(e){ updateCapsLock(e); });
