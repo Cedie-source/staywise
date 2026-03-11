@@ -228,8 +228,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         $stmt->close();
     } else {
+        // User not found — increment attempts same as wrong password
+        $attempts = isset($_SESSION['login_attempts'][$identifier]) ? intval($_SESSION['login_attempts'][$identifier]) : 0;
+        $attempts++;
+        $_SESSION['login_attempts'][$identifier] = $attempts;
         $_SESSION['last_login_identifier'] = $username_input;
-        header("Location: index.php?error=Invalid username or password");
+        if ($attempts >= 5) {
+            $_SESSION['login_lock_until'][$identifier] = time() + 30;
+            $remaining = 30;
+            header("Location: index.php?lock=1&remain=$remaining");
+        } else {
+            header("Location: index.php?error=Invalid username or password");
+        }
         exit();
     }
 }
