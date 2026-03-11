@@ -372,42 +372,24 @@ include '../includes/header.php';
 <style>
 /* ── Payments Page Redesign ── */
 .pay-hero {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
+    background: #f8fafc;
     border-radius: 16px;
-    border: 1.5px solid #bae6fd;
+    border: 1.5px solid #e2e8f0;
     padding: 1.5rem 1.75rem;
     margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
 }
 body.dark-mode .pay-hero {
-    background: linear-gradient(135deg, #0f2744 0%, #0c3d2e 100%);
-    border-color: #1e4d6b;
+    background: #1a1a1a;
+    border-color: rgba(255,255,255,.08);
 }
-.pay-hero::before {
-    content: '';
-    position: absolute;
-    top: -50px; right: -50px;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: rgba(14, 165, 233, 0.07);
-    pointer-events: none;
-}
-.pay-hero::after {
-    content: '';
-    position: absolute;
-    bottom: -30px; left: 30%;
-    width: 120px; height: 120px;
-    border-radius: 50%;
-    background: rgba(34, 197, 94, 0.05);
-    pointer-events: none;
-}
-.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #0369a1; font-weight: 600; }
-body.dark-mode .pay-hero .hero-label { color: rgba(255,255,255,.6); }
+.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
+body.dark-mode .pay-hero .hero-label { color: rgba(255,255,255,.5); }
 .pay-hero .hero-amount { font-size: 2.6rem; font-weight: 800; line-height: 1.1; color: #0f172a; }
-body.dark-mode .pay-hero .hero-amount { color: #fff; }
+body.dark-mode .pay-hero .hero-amount { color: #f1f5f9; }
 .pay-hero .hero-unit  { font-size: .88rem; color: #64748b; }
-body.dark-mode .pay-hero .hero-unit { color: rgba(255,255,255,.6); }
+body.dark-mode .pay-hero .hero-unit { color: rgba(255,255,255,.5); }
 .balance-pill {
     display: inline-flex; align-items: center; gap: .4rem;
     padding: .3rem .8rem; border-radius: 50px;
@@ -416,6 +398,9 @@ body.dark-mode .pay-hero .hero-unit { color: rgba(255,255,255,.6); }
 .balance-pill.due    { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 .balance-pill.paid   { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
 .balance-pill.credit { background: #d1fae5; color: #059669; border: 1px solid #6ee7b7; }
+body.dark-mode .balance-pill.due    { background: rgba(220,38,38,.15); color: #f87171; border-color: rgba(220,38,38,.3); }
+body.dark-mode .balance-pill.paid   { background: rgba(22,163,74,.15); color: #4ade80; border-color: rgba(22,163,74,.3); }
+body.dark-mode .balance-pill.credit { background: rgba(5,150,105,.15); color: #34d399; border-color: rgba(5,150,105,.3); }
 
 /* Hero stat mini-cards */
 .hero-stat {
@@ -425,13 +410,16 @@ body.dark-mode .pay-hero .hero-unit { color: rgba(255,255,255,.6); }
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 4px rgba(0,0,0,.04);
 }
-body.dark-mode .hero-stat { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.1); }
+body.dark-mode .hero-stat { background: #222222; border-color: rgba(255,255,255,.08); }
 .hero-stat-value { font-size: 1.2rem; font-weight: 800; color: #0f172a; }
-body.dark-mode .hero-stat-value { color: #fff; }
+body.dark-mode .hero-stat-value { color: #f1f5f9; }
 .hero-stat-label { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
-.hero-stat-total { background: linear-gradient(135deg, #0ea5e9, #22c55e); border-color: transparent; }
-.hero-stat-total .hero-stat-value { color: #fff; }
-.hero-stat-total .hero-stat-label { color: rgba(255,255,255,.8); }
+.hero-stat-total { background: #f1f5f9; border-color: #e2e8f0; }
+.hero-stat-total .hero-stat-value { color: #0f172a; }
+.hero-stat-total .hero-stat-label { color: #64748b; }
+body.dark-mode .hero-stat-total { background: #2a2a2a; border-color: rgba(255,255,255,.08); }
+body.dark-mode .hero-stat-total .hero-stat-value { color: #f1f5f9; }
+body.dark-mode .hero-stat-total .hero-stat-label { color: #94a3b8; }
 
 /* Stat cards */
 .stat-card {
@@ -517,12 +505,10 @@ body.dark-mode #payHistoryHeader {
 }
 body.dark-mode #payHistoryHeader h6 { color: #e2e8f0 !important; }
 body.dark-mode #payHistoryHeader .btn-outline-secondary {
-    color: #94a3b8 !important;
-    border-color: #444 !important;
+    color: #94a3b8 !important; border-color: #444 !important;
 }
 body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
-    background: rgba(255,255,255,.08) !important;
-    color: #e2e8f0 !important;
+    background: rgba(255,255,255,.08) !important; color: #e2e8f0 !important;
 }
 
 /* Filter tabs */
