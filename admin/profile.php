@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $page_title = "Admin Profile";
 
-$stmt = $conn->prepare("SELECT username, full_name, middle_name, company_name, display_as_company, profile_photo, email FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT username, full_name, middle_name, profile_photo, email FROM users WHERE id = ?");
 if (!$stmt) die('Database prepare failed: ' . $conn->error);
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -56,8 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $middle     = trim($_POST['middle_name']        ?? '');
     $last       = trim($_POST['last_name']          ?? '');
     $email      = trim($_POST['email']              ?? '');
-    $company    = trim($_POST['company_name']       ?? '');
-    $as_company = isset($_POST['display_as_company']) ? 1 : 0;
     $full_name  = trim("$first $last");
 
     if (empty($first) || empty($last) || empty($email)) {
@@ -65,27 +63,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email format.";
     } else {
-        $stmt = $conn->prepare("UPDATE users SET full_name=?, middle_name=?, email=?, company_name=?, display_as_company=? WHERE id=?");
-        $stmt->bind_param("ssssii", $full_name, $middle, $email, $company, $as_company, $_SESSION['user_id']);
+        $stmt = $conn->prepare("UPDATE users SET full_name=?, middle_name=?, email=? WHERE id=?");
+        $stmt->bind_param("sssi", $full_name, $middle, $email, $_SESSION['user_id']);
         if ($stmt->execute()) {
             $success = "Profile updated successfully.";
-            $user['full_name']          = $full_name;
-            $user['middle_name']        = $middle;
-            $user['email']              = $email;
-            $user['company_name']       = $company;
-            $user['display_as_company'] = $as_company;
+            $user['full_name']  = $full_name;
+            $user['middle_name'] = $middle;
+            $user['email']      = $email;
             $firstName = $first; $middleName = $middle; $lastName = $last;
         } else { $error = "Failed to update profile."; }
         $stmt->close();
     }
 }
 
-// Fetch tenant photos for admin view
-$tenantPhotos = [];
-$tpResult = $conn->query("SELECT u.id, u.full_name, u.username, u.profile_photo, t.unit_number FROM users u JOIN tenants t ON t.user_id = u.id WHERE u.role = 'tenant' AND t.deleted_at IS NULL ORDER BY t.unit_number ASC");
-if ($tpResult) {
-    while ($row = $tpResult->fetch_assoc()) $tenantPhotos[] = $row;
-}
 
 $profilePhoto = $user['profile_photo'] ?? '';
 $initials = strtoupper(substr($firstName ?: $user['username'], 0, 1) . substr($lastName ?: ($user['username'] ?? ''), 0, 1));
@@ -238,7 +228,6 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
 
   <div class="profile-tabs">
     <button class="profile-tab <?= $activeTab==='profile'?'active':'' ?>" data-tab="profile">Profile</button>
-    <button class="profile-tab <?= $activeTab==='tenants'?'active':'' ?>" data-tab="tenants">Tenant Photos</button>
     <button class="profile-tab <?= $activeTab==='security'?'active':'' ?>" data-tab="security">Security</button>
   </div>
 
@@ -291,19 +280,6 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
         <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
 
         <div class="col-12">
-          <label class="tc-label">Company name</label>
-          <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
-        </div>
-        <div class="col-12">
-          <div class="tc-check-row">
-            <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
-            <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
-          </div>
-        </div>
-
-        <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
-
-        <div class="col-12">
           <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
           <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
         </div>
@@ -320,41 +296,6 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
         <button type="submit" name="update_profile" class="btn-tc-save">Save changes</button>
       </div>
     </form>
-  </div>
-
-  <!-- ══ TENANT PHOTOS ══ -->
-  <div class="tab-panel <?= $activeTab==='tenants'?'active':'' ?>" id="tab-tenants">
-    <div class="section-title">Tenant Photos</div>
-    <div class="section-sub">Profile photos of all active tenants.</div>
-
-    <?php if (empty($tenantPhotos)): ?>
-      <div style="text-align:center;padding:3rem;color:#94a3b8;">
-        <i class="fas fa-users" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>
-        No active tenants found.
-      </div>
-    <?php else: ?>
-      <div class="tenant-grid">
-        <?php foreach ($tenantPhotos as $t):
-          $tInitials = strtoupper(substr($t['full_name'] ?: $t['username'], 0, 2));
-          $tPhoto = '';
-          if (!empty($t['profile_photo']) && file_exists('../uploads/profiles/' . $t['profile_photo'])) {
-            $tPhoto = '../uploads/profiles/' . $t['profile_photo'];
-          }
-        ?>
-        <div class="tenant-card">
-          <div class="tenant-avatar">
-            <?php if ($tPhoto): ?>
-              <img src="<?= htmlspecialchars($tPhoto) ?>" alt="<?= htmlspecialchars($t['full_name']) ?>">
-            <?php else: ?>
-              <?= $tInitials ?>
-            <?php endif; ?>
-          </div>
-          <div class="tenant-card-name"><?= htmlspecialchars($t['full_name'] ?: $t['username']) ?></div>
-          <div class="tenant-card-unit">Unit <?= htmlspecialchars($t['unit_number']) ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
   </div>
 
   <!-- ══ SECURITY ══ -->
