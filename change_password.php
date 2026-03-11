@@ -252,99 +252,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($new !== $confirm) $errors[] = 'New password and confirm password do not match.';
 
             if (empty($errors)) {
+                // ── Verify current password ──────────────────────────────────
+                $row = null;
                 try {
                     $stmt = $conn->prepare('SELECT password FROM users WHERE id = ?');
-                    if (!$stmt) throw new RuntimeException('DB prepare failed');
-                    $stmt->bind_param('i', (int)$_SESSION['user_id']);
-                    $stmt->execute();
-                    $row = $stmt->get_result()->fetch_assoc();
-                    $stmt->close();
-
-                    if (!$row) {
-                        $errors[] = 'Account not found.';
+                    if ($stmt) {
+                        $stmt->bind_param('i', (int)$_SESSION['user_id']);
+                        $stmt->execute();
+                        $row = $stmt->get_result()->fetch_assoc();
+                        $stmt->close();
                     } else {
-                        $stored = (string)$row['password'];
-                        $ok = false;
+                        $errors[] = 'Database error. Please try again.';
+                    }
+                } catch (Throwable $e) {
+                    error_log('Fetch password error: ' . $e->getMessage());
+                    $errors[] = 'Database error. Please try again.';
+                }
 
-                        if (!empty($stored) && (str_starts_with($stored, '$2y$') || str_starts_with($stored, '$argon2'))) {
-                            $ok = password_verify($current, $stored);
-                        } elseif (preg_match('/^[a-f0-9]{32}$/i', $stored)) {
-                            $ok = hash_equals(strtolower($stored), md5($current));
-                        } elseif (preg_match('/^[a-f0-9]{40}$/i', $stored)) {
-                            $ok = hash_equals(strtolower($stored), sha1($current));
-                        } else {
-                            $ok = hash_equals($stored, $current);
+                if (empty($errors) && !$row) {
+                    $errors[] = 'Account not found.';
+                }
+
+                if (empty($errors) && $row) {
+                    $stored = (string)$row['password'];
+                    $ok = false;
+                    if (!empty($stored) && (str_starts_with($stored, '$2y$') || str_starts_with($stored, '$argon2'))) {
+                        $ok = password_verify($current, $stored);
+                    } elseif (preg_match('/^[a-f0-9]{32}$/i', $stored)) {
+                        $ok = hash_equals(strtolower($stored), md5($current));
+                    } elseif (preg_match('/^[a-f0-9]{40}$/i', $stored)) {
+                        $ok = hash_equals(strtolower($stored), sha1($current));
+                    } else {
+                        $ok = hash_equals($stored, $current);
+                    }
+
+                    if (!$ok) {
+                        $errors[] = 'Current password is incorrect.';
+                    }
+                }
+
+                if (empty($errors)) {
+                    $newHash = password_hash($new, PASSWORD_DEFAULT);
+
+                    if (!$newHash) {
+                        $errors[] = 'Failed to process new password. Please try again.';
+
+                    } elseif (!empty($_SESSION['must_change_password'])) {
+                        // ── Forced change — skip OTP ─────────────────────────
+                        $uid = (int)$_SESSION['user_id'];
+                        $updated = false;
+                        try {
+                            if (function_exists('db_column_exists') && db_column_exists($conn, 'users', 'password_changed_at')) {
+                                $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
+                            } else {
+                                $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
+                            }
+                            if ($upd) {
+                                $upd->bind_param('si', $newHash, $uid);
+                                $updated = $upd->execute();
+                                $upd->close();
+                            }
+                        } catch (Throwable $e) {
+                            error_log('Forced password update error: ' . $e->getMessage());
                         }
 
-                        if (!$ok) {
-                            $errors[] = 'Current password is incorrect.';
+                        if ($updated) {
+                            try { logAdminAction($conn, $uid, 'password_change', 'User changed password (forced)'); } catch (Throwable $e) {}
+                            unset($_SESSION['must_change_password']);
+                            $role = strtolower((string)($_SESSION['role'] ?? ''));
+                            ob_end_clean();
+                            header('Location: ' . ($role === 'tenant' ? 'tenant/dashboard.php' : 'admin/dashboard.php'));
+                            exit();
                         } else {
-                            $newHash = password_hash($new, PASSWORD_DEFAULT);
+                            $errors[] = 'Failed to update password. Please try again.';
+                        }
 
-                            if (!$newHash) {
-                                $errors[] = 'Failed to process new password. Please try again.';
-                            } elseif (!empty($_SESSION['must_change_password'])) {
-                                // Forced change — skip OTP
-                                try {
-                                    $uid = (int)$_SESSION['user_id'];
-                                    if (function_exists('db_column_exists') && db_column_exists($conn, 'users', 'password_changed_at')) {
-                                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
-                                    } else {
-                                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
-                                    }
-                                    if (!$upd) throw new RuntimeException('Prepare failed');
-                                    $upd->bind_param('si', $newHash, $uid);
+                    } else {
+                        // ── Normal change — get user email ───────────────────
+                        $userInfo = ['email' => null, 'name' => '', 'role' => 'tenant', 'username' => ''];
+                        try {
+                            $userInfo = _get_user_email_for_otp($conn, (int)$_SESSION['user_id']);
+                        } catch (Throwable $e) {
+                            error_log('Get user email error: ' . $e->getMessage());
+                        }
 
-                                    if ($upd->execute()) {
-                                        $upd->close();
-                                        try {
-                                            $userInfo = _get_user_email_for_otp($conn, $uid);
-                                            logAdminAction($conn, $uid, 'password_change',
-                                                ucfirst($userInfo['role']) . ' "' . $userInfo['username'] . '" changed password (forced)');
-                                        } catch (Throwable $e) { /* ignore */ }
-                                        unset($_SESSION['must_change_password']);
-                                        $role = strtolower((string)($_SESSION['role'] ?? ''));
-                                        ob_end_clean();
-                                        header('Location: ' . ($role === 'tenant' ? 'tenant/dashboard.php' : 'admin/dashboard.php'));
-                                        exit();
-                                    } else {
-                                        $upd->close();
-                                        $errors[] = 'Failed to update password. Please try again.';
-                                    }
-                                } catch (Throwable $e) {
-                                    error_log('Forced password change error: ' . $e->getMessage());
-                                    $errors[] = 'An error occurred. Please try again.';
-                                }
-                            } else {
-                                // Normal change — send OTP
-                                try {
-                                    $userInfo = _get_user_email_for_otp($conn, (int)$_SESSION['user_id']);
-                                    if (empty($userInfo['email'])) {
-                                        $errors[] = 'No email address on file. Please ask your administrator to add one.';
-                                    } else {
-                                        $otpCode = _generate_otp();
-                                        $_SESSION['pw_otp_code']     = $otpCode;
-                                        $_SESSION['pw_otp_expires']  = time() + 600;
-                                        $_SESSION['pw_new_hash']     = $newHash;
-                                        $_SESSION['pw_otp_email']    = $userInfo['email'];
-                                        $_SESSION['pw_otp_attempts'] = 0;
+                        if (empty($userInfo['email'])) {
+                            $errors[] = 'No email address on file. Please ask your administrator to add one.';
+                        } else {
+                            // Save OTP to session FIRST (before trying to send email)
+                            $otpCode = _generate_otp();
+                            $_SESSION['pw_otp_code']     = $otpCode;
+                            $_SESSION['pw_otp_expires']  = time() + 600;
+                            $_SESSION['pw_new_hash']     = $newHash;
+                            $_SESSION['pw_otp_email']    = $userInfo['email'];
+                            $_SESSION['pw_otp_attempts'] = 0;
+                            $otp_sent = true;
 
-                                        $emailSent = notify_password_otp($conn, $userInfo['email'], $userInfo['name'], $otpCode, 10);
-                                        $otp_sent  = true;
-                                        if ($emailSent === false) {
-                                            $errors[] = 'Code generated but email may not have arrived. Use "Resend Code" if needed.';
-                                        }
-                                    }
-                                } catch (Throwable $e) {
-                                    error_log('Send OTP error: ' . $e->getMessage());
-                                    $errors[] = 'Failed to send verification code. Please try again.';
-                                }
+                            // Try to send email — failure just shows a warning, doesn't block
+                            $emailSent = false;
+                            try {
+                                $emailSent = notify_password_otp($conn, $userInfo['email'], $userInfo['name'], $otpCode, 10);
+                            } catch (Throwable $e) {
+                                error_log('Send OTP email error: ' . $e->getMessage());
+                            }
+
+                            if (!$emailSent) {
+                                // OTP is saved in session — user can use Resend Code button
+                                $errors[] = 'Verification code saved but the email could not be sent. Please use the "Resend Code" button below, or check your spam folder.';
                             }
                         }
                     }
-                } catch (Throwable $e) {
-                    error_log('Password validate error: ' . $e->getMessage());
-                    $errors[] = 'An unexpected error occurred. Please try again.';
                 }
             }
         }
