@@ -621,33 +621,32 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
 
     <?php if (empty($_SESSION['must_change_password'])): ?>
     <!-- Loading overlay shown while email is being sent -->
-    <div id="pwSendingOverlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.92);border-radius:14px;z-index:10;display:none;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;">
+    <div id="pwSendingOverlay" style="position:absolute;inset:0;background:rgba(255,255,255,.92);border-radius:14px;z-index:10;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;display:none;">
         <div style="width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#16a34a;border-radius:50%;animation:cpwSpin .75s linear infinite;"></div>
         <div style="font-size:.9rem;font-weight:600;color:#374151;">Sending verification code&hellip;</div>
         <div style="font-size:.78rem;color:#94a3b8;">Please wait, this may take a few seconds.</div>
     </div>
     <style>
         @keyframes cpwSpin { to { transform: rotate(360deg); } }
-        #pwSendingOverlay { display: none; }
-        #pwSendingOverlay.active { display: flex !important; }
         .cpw-card { position: relative; overflow: hidden; }
     </style>
     <script>
     (function() {
-        var form = document.querySelector('form[method="post"] input[name="action"][value="validate"]');
-        if (!form) return;
-        var parentForm = form.closest('form');
+        var actionInput = document.querySelector('input[name="action"][value="validate"]');
+        if (!actionInput) return;
+        var parentForm = actionInput.closest('form');
         if (!parentForm) return;
-        parentForm.addEventListener('submit', function(e) {
-            var newPw  = (document.getElementById('new_password') || {}).value || '';
-            var conf   = (document.getElementById('confirm_password') || {}).value || '';
-            var curr   = (document.getElementById('current_password') || {}).value || '';
+        parentForm.addEventListener('submit', function() {
+            var newPw = (document.getElementById('new_password') || {}).value || '';
+            var conf  = (document.getElementById('confirm_password') || {}).value || '';
+            var curr  = (document.getElementById('current_password') || {}).value || '';
             // Only show loader if basic client-side checks pass
             if (!curr || !newPw || !conf || newPw !== conf || newPw.length < 8) return;
             var overlay = document.getElementById('pwSendingOverlay');
             var btn     = document.getElementById('submitPwBtn');
-            if (overlay) overlay.classList.add('active');
-            if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+            if (overlay) overlay.style.display = 'flex';
+            if (btn) btn.style.opacity = '0.6';
+            // NOTE: do NOT disable the button — that blocks form submission
         });
     })();
     </script>
