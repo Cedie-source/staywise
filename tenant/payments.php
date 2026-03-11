@@ -341,33 +341,66 @@ include '../includes/header.php';
 <style>
 /* ── Payments Page Redesign ── */
 .pay-hero {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0d6efd22 100%);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
     border-radius: 16px;
-    color: #fff;
+    border: 1.5px solid #bae6fd;
     padding: 1.5rem 1.75rem;
     margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
 }
+body.dark-mode .pay-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0d6efd22 100%);
+    border-color: #1e3a5f;
+}
 .pay-hero::before {
     content: '';
     position: absolute;
-    top: -40px; right: -40px;
-    width: 180px; height: 180px;
+    top: -50px; right: -50px;
+    width: 200px; height: 200px;
     border-radius: 50%;
-    background: rgba(78, 214, 193, 0.08);
+    background: rgba(14, 165, 233, 0.07);
+    pointer-events: none;
 }
-.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
-.pay-hero .hero-amount { font-size: 2.4rem; font-weight: 800; line-height: 1.1; }
-.pay-hero .hero-unit  { font-size: .9rem; opacity: .7; }
+.pay-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; left: 30%;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.05);
+    pointer-events: none;
+}
+.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #0369a1; font-weight: 600; }
+body.dark-mode .pay-hero .hero-label { color: rgba(255,255,255,.6); }
+.pay-hero .hero-amount { font-size: 2.6rem; font-weight: 800; line-height: 1.1; color: #0f172a; }
+body.dark-mode .pay-hero .hero-amount { color: #fff; }
+.pay-hero .hero-unit  { font-size: .88rem; color: #64748b; }
+body.dark-mode .pay-hero .hero-unit { color: rgba(255,255,255,.6); }
 .balance-pill {
     display: inline-flex; align-items: center; gap: .4rem;
-    padding: .35rem .9rem; border-radius: 50px;
-    font-size: .8rem; font-weight: 600;
+    padding: .3rem .8rem; border-radius: 50px;
+    font-size: .75rem; font-weight: 700;
 }
-.balance-pill.due   { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
-.balance-pill.paid  { background: rgba(34,197,94,.15); color: #86efac;  border: 1px solid rgba(34,197,94,.3); }
-.balance-pill.credit{ background: rgba(78,214,193,.15); color: #4ED6C1; border: 1px solid rgba(78,214,193,.3); }
+.balance-pill.due    { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.balance-pill.paid   { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+.balance-pill.credit { background: #d1fae5; color: #059669; border: 1px solid #6ee7b7; }
+
+/* Hero stat mini-cards */
+.hero-stat {
+    background: #fff;
+    border-radius: 10px;
+    padding: .6rem .75rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+body.dark-mode .hero-stat { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.1); }
+.hero-stat-value { font-size: 1.2rem; font-weight: 800; color: #0f172a; }
+body.dark-mode .hero-stat-value { color: #fff; }
+.hero-stat-label { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
+.hero-stat-total { background: linear-gradient(135deg, #0ea5e9, #22c55e); border-color: transparent; }
+.hero-stat-total .hero-stat-value { color: #fff; }
+.hero-stat-total .hero-stat-label { color: rgba(255,255,255,.8); }
 
 /* Stat cards */
 .stat-card {
@@ -489,21 +522,21 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
             <div class="col-sm-5">
                 <div class="row g-2 text-center">
                     <div class="col-6">
-                        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:.6rem .5rem;">
-                            <div style="font-size:1.2rem;font-weight:800;"><?= (int)$stats['verified_count'] ?></div>
-                            <div style="font-size:.7rem;opacity:.7;">Verified</div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-value" style="color:#16a34a;"><?= (int)$stats['verified_count'] ?></div>
+                            <div class="hero-stat-label">Verified</div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:.6rem .5rem;">
-                            <div style="font-size:1.2rem;font-weight:800;"><?= (int)$stats['pending_count'] ?></div>
-                            <div style="font-size:.7rem;opacity:.7;">Pending</div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-value" style="color:#d97706;"><?= (int)$stats['pending_count'] ?></div>
+                            <div class="hero-stat-label">Pending</div>
                         </div>
                     </div>
                     <div class="col-12">
-                        <div style="background:rgba(78,214,193,.15);border-radius:10px;padding:.6rem .5rem;">
-                            <div style="font-size:1.1rem;font-weight:800;color:#4ED6C1;">₱<?= number_format((float)$stats['total_paid'], 2) ?></div>
-                            <div style="font-size:.7rem;opacity:.7;">Total Paid</div>
+                        <div class="hero-stat hero-stat-total">
+                            <div class="hero-stat-value">₱<?= number_format((float)$stats['total_paid'], 2) ?></div>
+                            <div class="hero-stat-label">Total Paid</div>
                         </div>
                     </div>
                 </div>
@@ -539,6 +572,30 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
     </div>
     <?php endif; ?>
 
+    <?php
+    // Check if there are stuck pending PayMongo records (paymongo not ready = these will never auto-verify)
+    $stuck_count = 0;
+    if (!$paymongo_ready) {
+        $stuck_check = $conn->prepare("SELECT COUNT(*) as cnt FROM payments WHERE tenant_id = ? AND status = 'pending' AND payment_method = 'paymongo_gcash'");
+        $stuck_check->bind_param("i", $tenant_id);
+        $stuck_check->execute();
+        $stuck_count = (int)$stuck_check->get_result()->fetch_assoc()['cnt'];
+        $stuck_check->close();
+    }
+    ?>
+    <?php if ($stuck_count > 0): ?>
+    <div class="alert alert-warning alert-dismissible fade show rounded-3 border-0 shadow-sm mb-3" role="alert">
+        <div class="d-flex align-items-start gap-2">
+            <i class="fas fa-exclamation-triangle mt-1 flex-shrink-0"></i>
+            <div>
+                <strong>GCash Online payments pending</strong><br>
+                <span class="small">You have <?= $stuck_count ?> pending GCash Online payment<?= $stuck_count > 1 ? 's' : '' ?> that cannot be verified right now because online GCash payment is temporarily unavailable. These will be verified automatically once it's enabled, or you can cancel them and re-submit using Manual GCash or Cash.</span>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
+
     <div class="row g-4">
 
         <!-- ═══════ MAKE A PAYMENT ═══════ -->
@@ -558,16 +615,23 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
                         </button>
                         <?php endif; ?>
                         <?php if ($gcash_enabled): ?>
-                        <button type="button" class="method-tab <?= !$paymongo_ready ? 'active' : '' ?>" data-method="gcash_manual">
+                        <button type="button" class="method-tab <?= (!$paymongo_ready) ? 'active' : '' ?>" data-method="gcash_manual">
                             <i class="fas fa-upload" style="color:#007DFE;"></i>
                             <span>Manual</span>
                         </button>
                         <?php endif; ?>
-                        <button type="button" class="method-tab cash-tab <?= !$paymongo_ready && !$gcash_enabled ? 'active' : '' ?>" data-method="cash">
+                        <button type="button" class="method-tab cash-tab <?= (!$paymongo_ready && !$gcash_enabled) ? 'active' : '' ?>" data-method="cash">
                             <i class="fas fa-money-bill-wave" style="color:#22c55e;"></i>
                             <span>Cash</span>
                         </button>
                     </div>
+
+                    <?php if (!$paymongo_ready): ?>
+                    <div class="d-flex align-items-center gap-2 rounded-3 px-3 py-2 mb-3 small" style="background:#fef9c3;border:1px solid #fde047;color:#854d0e;">
+                        <i class="fas fa-clock flex-shrink-0"></i>
+                        <span><strong>GCash Online</strong> is temporarily unavailable — GCash business verification is in progress. Use Manual GCash or Cash for now.</span>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- ── GCash Online (PayMongo) ── -->
                     <?php if ($paymongo_ready): ?>
@@ -709,9 +773,9 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
             <!-- Quick Tips -->
             <div class="card border-0 rounded-3" style="background:rgba(0,0,0,.03);">
                 <div class="card-body py-2 px-3">
-                    <div class="d-flex flex-column gap-1" style="font-size:.78rem;color:#94a3b8;">
+                    <div class="d-flex flex-column gap-1" style="font-size:.78rem;color:#64748b;">
                         <?php if ($paymongo_ready): ?>
-                        <div><i class="fas fa-bolt me-2" style="color:#007DFE;"></i><strong style="color:inherit;">GCash Online</strong> — instant, auto-verified</div>
+                        <div><i class="fas fa-bolt me-2" style="color:#007DFE;"></i><strong>GCash Online</strong> — instant, auto-verified</div>
                         <?php endif; ?>
                         <div><i class="fas fa-clock me-2" style="color:#f59e0b;"></i>Manual/Cash verified within 24 hours</div>
                         <div><i class="fas fa-file-pdf me-2" style="color:#ef4444;"></i>PDF receipt emailed on confirmation</div>
