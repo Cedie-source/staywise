@@ -75,8 +75,8 @@ if ($billing_months < 1) $billing_months = 1;
 
 $total_rent_owed = $billing_months * $rent_amount;
 
-// Sum ALL verified payments (across every month)
-$total_paid_stmt = $conn->prepare("SELECT COALESCE(SUM(amount), 0) as total_paid FROM payments WHERE tenant_id = ? AND status = 'verified'");
+// Sum ONLY rent payments (exclude deposit and advance payment types)
+$total_paid_stmt = $conn->prepare("SELECT COALESCE(SUM(amount), 0) as total_paid FROM payments WHERE tenant_id = ? AND status = 'verified' AND (payment_type IS NULL OR payment_type NOT IN ('deposit','advance'))");
 $total_paid_stmt->bind_param("i", $tenant_id);
 $total_paid_stmt->execute();
 $total_paid = (float)$total_paid_stmt->get_result()->fetch_assoc()['total_paid'];
