@@ -302,9 +302,7 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
   <!-- Tabs -->
   <div class="profile-tabs">
     <button class="profile-tab <?= $activeTab==='profile'?'active':'' ?>" data-tab="profile">Profile</button>
-    <button class="profile-tab <?= $activeTab==='mycards'?'active':'' ?>" data-tab="mycards">My cards</button>
     <button class="profile-tab <?= $activeTab==='security'?'active':'' ?>" data-tab="security">Security</button>
-    <button class="profile-tab <?= $activeTab==='notifications'?'active':'' ?>" data-tab="notifications">Notifications</button>
   </div>
 
   <!-- ══ PROFILE ══ -->
@@ -386,37 +384,6 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
     </div>
   </div>
 
-  <!-- ══ MY CARDS ══ -->
-  <div class="tab-panel <?= $activeTab==='mycards'?'active':'' ?>" id="tab-mycards">
-    <div class="section-title">My cards</div>
-    <div class="section-sub">Manage your saved payment methods for rent payments.</div>
-
-    <?php
-    // Check if tenant has GCash or saved payment info
-    $hasCard = false;
-    ?>
-
-    <?php if ($hasCard): ?>
-      <div class="card-item">
-        <div class="card-logo"><i class="fas fa-credit-card"></i></div>
-        <div class="flex-grow-1">
-          <div class="card-number">•••• •••• •••• 4242</div>
-          <div class="card-exp">Expires 12/27</div>
-        </div>
-        <button class="btn-outline-tc" style="color:#dc2626;border-color:#fecaca;">Remove</button>
-      </div>
-    <?php else: ?>
-      <div class="cards-empty">
-        <i class="fas fa-credit-card"></i>
-        <p style="font-weight:600;color:#374151;font-size:.95rem;margin-bottom:.4rem;">No saved cards</p>
-        <p>Payment methods used for rent will appear here. Pay via GCash or online payment to save a method.</p>
-        <a href="payments.php" class="btn-tc-save mt-3" style="display:inline-block;text-decoration:none;padding:.55rem 1.5rem;">
-          <i class="fas fa-arrow-right me-2"></i>Go to Payments
-        </a>
-      </div>
-    <?php endif; ?>
-  </div>
-
   <!-- ══ SECURITY ══ -->
   <div class="tab-panel <?= $activeTab==='security'?'active':'' ?>" id="tab-security">
     <div class="section-title">Security</div>
@@ -455,33 +422,6 @@ body.dark-mode .notif-row { border-bottom-color: #1e293b; }
       <a href="../logout.php" class="btn-danger-tc">Sign out</a>
     </div>
   </div>
-
-  <!-- ══ NOTIFICATIONS ══ -->
-  <div class="tab-panel <?= $activeTab==='notifications'?'active':'' ?>" id="tab-notifications">
-    <div class="section-title">Notifications</div>
-    <div class="section-sub">Choose what updates you want to be notified about.</div>
-
-    <?php
-    $notifItems = [
-      ['Payment verified',   'When admin verifies your payment',      true],
-      ['Payment rejected',   'When admin rejects your payment',       true],
-      ['New announcements',  'When admin posts a new announcement',   true],
-      ['Complaint updates',  'When your complaint status changes',    true],
-      ['Payment reminders',  'Remind me before rent is due',         false],
-    ];
-    foreach ($notifItems as $n):
-    ?>
-    <div class="notif-row">
-      <div>
-        <div style="font-weight:600;font-size:.88rem;"><?= $n[0] ?></div>
-        <div style="font-size:.78rem;color:#94a3b8;"><?= $n[1] ?></div>
-      </div>
-      <button class="tog <?= $n[2]?'on':'off' ?>" onclick="this.classList.toggle('on');this.classList.toggle('off');"></button>
-    </div>
-    <?php endforeach; ?>
-  </div>
-
-</div>
 
 <script>
 document.querySelectorAll('.profile-tab').forEach(function(tab) {
