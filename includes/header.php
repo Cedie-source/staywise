@@ -31,6 +31,10 @@ if (!empty($_SESSION['must_change_password'])) {
         header('Location: ' . $base_url . 'change_password.php'); exit();
     }
 }
+
+// Fetch display name for header avatar
+$_headerName = $_SESSION['username'] ?? '';
+$_headerInitials = strtoupper(substr($_headerName, 0, 2));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,60 +45,309 @@ if (!empty($_SESSION['must_change_password'])) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
 <link href="<?php echo $base_url; ?>assets/css/style.css?v=2026030602" rel="stylesheet"/>
-<!-- Favicon & PWA -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="<?php echo $base_url; ?>assets/favicon.svg"/>
 <link rel="alternate icon" type="image/png" href="<?php echo $base_url; ?>assets/favicon-32.png"/>
 <link rel="apple-touch-icon" href="<?php echo $base_url; ?>assets/icon-192.png"/>
 <link rel="manifest" href="<?php echo $base_url; ?>site.webmanifest"/>
 <meta name="theme-color" content="#4ED6C1"/>
 <style>
-/* ── Sidebar overlay ── */
-#sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1039;backdrop-filter:blur(2px)}
-#sidebarOverlay.active{display:block}
-/* ── Sidebar ── */
-.sidebar-custom{position:fixed;left:0;top:0;bottom:0;width:240px;z-index:1040;display:flex;flex-direction:column;transition:transform .28s cubic-bezier(.4,0,.2,1);overflow:hidden}
-.sidebar-scroll{flex:1;overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
-.sidebar-scroll::-webkit-scrollbar{width:4px}
-.sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
-/* Desktop */
-@media(min-width:769px){
-  .sidebar-custom{transform:translateX(0)!important}
-  #mainContent{margin-left:240px!important}
-  #sidebarToggle{display:none!important}
-  #sidebarOverlay{display:none!important}
-  #mobileBottomNav{display:none!important}
+/* ── Variables ── */
+:root {
+  --topbar-h: 58px;
+  --sidebar-w: 230px;
+  --brand-teal: #4ED6C1;
+  --brand-dark: #0D1B2A;
+  --brand-blue: #007DFE;
+  --nav-active-bg: rgba(78,214,193,.13);
+  --nav-active-color: #4ED6C1;
 }
-/* Mobile */
-@media(max-width:768px){
-  .sidebar-custom{transform:translateX(-100%)}
-  .sidebar-custom.open{transform:translateX(0)}
-  #mainContent{margin-left:0!important;padding-bottom:70px!important}
-  .admin-ui,.dashboard-ui{transform:none!important;width:100%!important;zoom:1!important}
-  .container,.container-fluid{padding-left:12px!important;padding-right:12px!important}
-  h1{font-size:1.35rem!important} h2{font-size:1.15rem!important}
-  .table-responsive{font-size:.82rem}
+
+/* ── Reset font ── */
+body, button, input { font-family: 'DM Sans', sans-serif; }
+
+/* ── TOP BAR ── */
+#topBar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  z-index: 1045;
+  display: flex; align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0,0,0,.07);
+  transition: background .2s;
 }
-/* Hamburger */
-#sidebarToggle{position:fixed;top:12px;left:12px;z-index:1050;width:40px;height:40px;border-radius:10px;border:none;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer}
-body.dark-mode #sidebarToggle{background:#0D1B2A;color:#4ED6C1}
-body:not(.dark-mode) #sidebarToggle{background:#fff;color:#0f172a;border:1px solid #cbd5e1}
-/* Notif bell */
-#notifBellWrap{position:fixed;top:12px;right:12px;z-index:1050}
-#notifPanel{width:min(360px,95vw);right:0;left:auto;border-radius:12px}
-/* Mobile bottom nav */
-#mobileBottomNav{display:none;position:fixed;bottom:0;left:0;right:0;height:62px;z-index:1038;padding:6px 0 4px}
-body.dark-mode #mobileBottomNav{background:#1B263B;border-top:1px solid #2d3748}
-body:not(.dark-mode) #mobileBottomNav{background:#f1f5f9;border-top:1px solid #cbd5e1}
-#mobileBottomNav .mnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;font-size:.62rem;font-weight:500;padding:2px 4px;border-radius:8px;transition:color .2s}
-body.dark-mode #mobileBottomNav .mnav-item{color:#94a3b8}
-body:not(.dark-mode) #mobileBottomNav .mnav-item{color:#64748b}
-#mobileBottomNav .mnav-item i{font-size:1.15rem}
-body.dark-mode #mobileBottomNav .mnav-item.active,body.dark-mode #mobileBottomNav .mnav-item:hover{color:#4ED6C1}
-body:not(.dark-mode) #mobileBottomNav .mnav-item.active,body:not(.dark-mode) #mobileBottomNav .mnav-item:hover{color:#0d9488}
-@media(max-width:768px){#mobileBottomNav{display:flex!important}}
-/* Topbar spacer */
-.mobile-topbar-spacer{height:0}
-@media(max-width:768px){.mobile-topbar-spacer{height:58px}}
+body:not(.dark-mode) #topBar {
+  background: #fff;
+  box-shadow: 0 1px 8px rgba(0,0,0,.06);
+}
+body.dark-mode #topBar {
+  background: #0D1B2A;
+  border-bottom-color: rgba(255,255,255,.08);
+}
+
+/* Brand */
+.topbar-brand {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; flex-shrink: 0;
+  font-weight: 700; font-size: 1.15rem; letter-spacing: -.01em;
+}
+.topbar-brand .brand-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #4ED6C1, #007DFE);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .85rem;
+}
+body:not(.dark-mode) .topbar-brand { color: #0f172a; }
+body.dark-mode .topbar-brand { color: #fff; }
+
+/* Divider */
+.topbar-divider {
+  width: 1px; height: 22px; background: rgba(0,0,0,.1); flex-shrink: 0;
+}
+body.dark-mode .topbar-divider { background: rgba(255,255,255,.1); }
+
+/* Page title area */
+.topbar-title {
+  font-size: .88rem; font-weight: 600; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+body:not(.dark-mode) .topbar-title { color: #374151; }
+body.dark-mode .topbar-title { color: #e2e8f0; }
+
+/* Right controls */
+.topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* Icon buttons */
+.topbar-btn {
+  width: 36px; height: 36px; border-radius: 9px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; cursor: pointer; position: relative;
+  transition: background .15s;
+}
+body:not(.dark-mode) .topbar-btn { background: #f1f5f9; color: #475569; }
+body:not(.dark-mode) .topbar-btn:hover { background: #e2e8f0; }
+body.dark-mode .topbar-btn { background: rgba(255,255,255,.07); color: #94a3b8; }
+body.dark-mode .topbar-btn:hover { background: rgba(255,255,255,.12); }
+
+/* Avatar button */
+.topbar-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #4ED6C1, #007DFE);
+  color: #fff; font-weight: 700; font-size: .75rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color .15s;
+  flex-shrink: 0;
+}
+.topbar-avatar:hover { border-color: #4ED6C1; }
+
+/* Dropdown menu */
+.topbar-dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  min-width: 200px; border-radius: 12px;
+  padding: 6px;
+  z-index: 2000;
+  display: none;
+}
+body:not(.dark-mode) .topbar-dropdown {
+  background: #fff; border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+body.dark-mode .topbar-dropdown {
+  background: #1B263B; border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.topbar-dropdown.open { display: block; }
+.topbar-dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 8px;
+  text-decoration: none; font-size: .84rem; font-weight: 500;
+  transition: background .12s; cursor: pointer; border: none; width: 100%;
+  background: transparent; text-align: left;
+}
+body:not(.dark-mode) .topbar-dropdown-item { color: #374151; }
+body:not(.dark-mode) .topbar-dropdown-item:hover { background: #f1f5f9; }
+body.dark-mode .topbar-dropdown-item { color: #e2e8f0; }
+body.dark-mode .topbar-dropdown-item:hover { background: rgba(255,255,255,.06); }
+.topbar-dropdown-item.danger { color: #ef4444 !important; }
+.topbar-dropdown-header {
+  padding: 10px 12px 6px; font-size: .75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+body:not(.dark-mode) .topbar-dropdown-header { color: #94a3b8; }
+body.dark-mode .topbar-dropdown-header { color: #64748b; }
+.topbar-dropdown hr { margin: 4px 0; border-color: rgba(0,0,0,.06); }
+body.dark-mode .topbar-dropdown hr { border-color: rgba(255,255,255,.06); }
+
+/* Notif badge */
+.topbar-badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ef4444; border: 2px solid #fff;
+  display: none;
+}
+body.dark-mode .topbar-badge { border-color: #0D1B2A; }
+.topbar-badge.visible { display: block; }
+
+/* Notif panel */
+#notifPanel {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: min(360px, 95vw); border-radius: 14px;
+  z-index: 2001; display: none;
+  max-height: 480px; overflow: hidden;
+  flex-direction: column;
+}
+body:not(.dark-mode) #notifPanel {
+  background: #fff; border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+body.dark-mode #notifPanel {
+  background: #1B263B; border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+#notifPanel.open { display: flex; }
+.notif-header {
+  padding: 14px 16px 10px; font-weight: 700; font-size: .9rem;
+  border-bottom: 1px solid rgba(0,0,0,.06); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+body.dark-mode .notif-header { border-bottom-color: rgba(255,255,255,.06); }
+.notif-body { overflow-y: auto; flex: 1; }
+.notif-item {
+  padding: 10px 16px; border-bottom: 1px solid rgba(0,0,0,.04);
+  cursor: pointer; transition: background .12s;
+}
+.notif-item:hover { background: rgba(0,0,0,.02); }
+body.dark-mode .notif-item:hover { background: rgba(255,255,255,.03); }
+body.dark-mode .notif-item { border-bottom-color: rgba(255,255,255,.04); }
+.notif-unread { background: rgba(78,214,193,.05); }
+
+/* ── LEFT SIDEBAR ── */
+#sidebar {
+  position: fixed; left: 0; top: var(--topbar-h); bottom: 0;
+  width: var(--sidebar-w); z-index: 1040;
+  display: flex; flex-direction: column;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+  border-right: 1px solid rgba(0,0,0,.07);
+}
+body:not(.dark-mode) #sidebar { background: #fff; }
+body.dark-mode #sidebar { background: #0D1B2A; border-right-color: rgba(255,255,255,.06); }
+
+.sidebar-scroll {
+  flex: 1; overflow-y: auto; padding: 10px 8px;
+  scrollbar-width: thin; scrollbar-color: rgba(0,0,0,.1) transparent;
+}
+body.dark-mode .sidebar-scroll { scrollbar-color: rgba(255,255,255,.08) transparent; }
+
+/* Nav links */
+.nav-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 9px;
+  font-size: .84rem; font-weight: 500;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+body:not(.dark-mode) .nav-link { color: #475569; }
+body:not(.dark-mode) .nav-link:hover { background: #f1f5f9; color: #0f172a; }
+body:not(.dark-mode) .nav-link.active { background: var(--nav-active-bg); color: #0d9488; font-weight: 600; }
+body.dark-mode .nav-link { color: #94a3b8; }
+body.dark-mode .nav-link:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+body.dark-mode .nav-link.active { background: var(--nav-active-bg); color: var(--nav-active-color); font-weight: 600; }
+.nav-link i { width: 18px; text-align: center; font-size: .88rem; flex-shrink: 0; }
+
+/* Nav section label */
+.nav-section-label {
+  font-size: .67rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .09em; padding: 14px 12px 4px;
+}
+body:not(.dark-mode) .nav-section-label { color: #94a3b8; }
+body.dark-mode .nav-section-label { color: #475569; }
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 10px 8px; border-top: 1px solid rgba(0,0,0,.07); flex-shrink: 0;
+}
+body.dark-mode .sidebar-footer { border-top-color: rgba(255,255,255,.06); }
+
+/* Dark mode toggle */
+.dark-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 9px; cursor: pointer;
+  font-size: .84rem; font-weight: 500; border: none; width: 100%;
+  transition: background .15s;
+}
+body:not(.dark-mode) .dark-toggle { background: #f1f5f9; color: #475569; }
+body:not(.dark-mode) .dark-toggle:hover { background: #e2e8f0; }
+body.dark-mode .dark-toggle { background: rgba(255,255,255,.07); color: #94a3b8; }
+body.dark-mode .dark-toggle:hover { background: rgba(255,255,255,.12); }
+
+/* Toggle pill */
+.dark-toggle-pill {
+  width: 32px; height: 18px; border-radius: 9px; position: relative;
+  transition: background .2s; flex-shrink: 0;
+}
+body:not(.dark-mode) .dark-toggle-pill { background: #cbd5e1; }
+body.dark-mode .dark-toggle-pill { background: #4ED6C1; }
+.dark-toggle-pill::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  transition: transform .2s;
+}
+body.dark-mode .dark-toggle-pill::after { transform: translateX(14px); }
+
+/* ── MAIN CONTENT ── */
+#mainContent {
+  margin-left: var(--sidebar-w);
+  padding-top: var(--topbar-h);
+  min-height: 100vh;
+}
+
+/* ── OVERLAY ── */
+#sidebarOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 1039;
+  backdrop-filter: blur(2px);
+}
+#sidebarOverlay.active { display: block; }
+
+/* ── MOBILE BOTTOM NAV ── */
+#mobileBottomNav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  height: 60px; z-index: 1038;
+  padding: 4px 8px 4px;
+}
+body:not(.dark-mode) #mobileBottomNav { background: #fff; border-top: 1px solid #e2e8f0; }
+body.dark-mode #mobileBottomNav { background: #0D1B2A; border-top: 1px solid rgba(255,255,255,.07); }
+#mobileBottomNav .mnav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  text-decoration: none; font-size: .62rem; font-weight: 500;
+  padding: 2px 4px; border-radius: 8px; transition: color .15s;
+}
+body:not(.dark-mode) #mobileBottomNav .mnav-item { color: #94a3b8; }
+body.dark-mode #mobileBottomNav .mnav-item { color: #64748b; }
+#mobileBottomNav .mnav-item i { font-size: 1.1rem; }
+body:not(.dark-mode) #mobileBottomNav .mnav-item.active,
+body:not(.dark-mode) #mobileBottomNav .mnav-item:hover { color: #0d9488; }
+body.dark-mode #mobileBottomNav .mnav-item.active,
+body.dark-mode #mobileBottomNav .mnav-item:hover { color: #4ED6C1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); top: 0; }
+  #sidebar.open { transform: translateX(0); }
+  #mainContent { margin-left: 0 !important; padding-bottom: 68px !important; }
+  #mobileBottomNav { display: flex !important; }
+  .topbar-title { display: none; }
+  .topbar-divider { display: none; }
+}
+@media (min-width: 769px) {
+  #sidebarOverlay { display: none !important; }
+  #mobileBottomNav { display: none !important; }
+}
 </style>
 </head>
 <?php $initialDark = isset($_COOKIE['darkMode']) && $_COOKIE['darkMode'] === 'true'; ?>
@@ -102,86 +355,139 @@ body:not(.dark-mode) #mobileBottomNav .mnav-item.active,body:not(.dark-mode) #mo
 
 <div id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-<button id="sidebarToggle" onclick="toggleSidebar()" aria-label="Menu">
-  <i class="fas fa-bars" id="toggleIcon"></i>
-</button>
+<!-- ══════════════ TOP BAR ══════════════ -->
+<header id="topBar">
 
-<?php if (isset($_SESSION['user_id'])): ?>
-<div id="notifBellWrap">
-  <button class="btn btn-outline-secondary position-relative" id="notifBellBtn" onclick="toggleNotifPanel()" title="Notifications">
-    <i class="fas fa-bell"></i>
-    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge">0</span>
+  <!-- Hamburger (mobile only) -->
+  <button class="topbar-btn d-md-none" onclick="toggleSidebar()" aria-label="Menu" id="sidebarToggle">
+    <i class="fas fa-bars" id="toggleIcon"></i>
   </button>
-  <div class="card shadow-lg position-absolute d-none" id="notifPanel" style="max-height:500px;z-index:2002;">
-    <div class="card-header py-2">
-      <strong><i class="fas fa-bell me-1"></i> Notifications</strong>
-    </div>
-    <div class="card-body p-0" style="max-height:400px;overflow-y:auto;" id="notifList">
-      <p class="text-center text-muted py-4 mb-0" id="notifEmpty">No notifications</p>
-    </div>
-    <div class="card-footer text-center py-2 d-none" id="notifFooter">
-      <a href="<?php echo $userRole==='admin' ? $base_url.'admin/ai_insights.php' : $base_url.'tenant/dashboard.php'; ?>" class="small">View all</a>
-    </div>
-  </div>
-</div>
-<?php endif; ?>
 
-<!-- SIDEBAR -->
-<nav class="sidebar-custom" id="sidebar">
-  <div class="sidebar-scroll">
-    <a class="navbar-brand d-block py-3 px-4 mb-1 border-bottom" href="<?php echo $base_url; ?>">
-      <i class="fas fa-home me-2 sidebar-home-icon"></i><span class="brand-stay">Stay</span><span class="brand-wise">Wise</span>
-    </a>
-    <div class="px-3 mb-2">
-      <button class="btn btn-sm btn-dark w-100" id="darkModeToggle" onclick="toggleDarkMode()">Dark Mode</button>
+  <!-- Brand -->
+  <a href="<?php echo $base_url; ?>" class="topbar-brand">
+    <div class="brand-icon"><i class="fas fa-home"></i></div>
+    <span><span style="color:#4ED6C1;">Stay</span><span>Wise</span></span>
+  </a>
+
+  <div class="topbar-divider"></div>
+
+  <!-- Page title -->
+  <span class="topbar-title"><?php echo isset($page_title) ? htmlspecialchars($page_title) : ''; ?></span>
+
+  <!-- Right actions -->
+  <div class="topbar-actions">
+
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <!-- Notifications -->
+    <div style="position:relative;">
+      <button class="topbar-btn" id="notifBellBtn" onclick="toggleNotifPanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="topbar-badge" id="notifBadge"></span>
+      </button>
+      <div id="notifPanel">
+        <div class="notif-header">
+          <span><i class="fas fa-bell me-2" style="color:#4ED6C1;"></i>Notifications</span>
+          <button onclick="markAllNotificationsRead()" style="font-size:.75rem;background:none;border:none;color:#4ED6C1;cursor:pointer;font-weight:600;">Mark all read</button>
+        </div>
+        <div class="notif-body" id="notifList">
+          <p class="text-center py-4 mb-0" id="notifEmpty" style="font-size:.84rem;color:#94a3b8;">No notifications</p>
+        </div>
+      </div>
     </div>
-    <ul class="nav flex-column mb-2 px-2">
+
+    <!-- User avatar dropdown -->
+    <div style="position:relative;">
+      <div class="topbar-avatar" id="avatarBtn" onclick="toggleAvatarDropdown()" title="Account">
+        <?php echo $_headerInitials; ?>
+      </div>
+      <div class="topbar-dropdown" id="avatarDropdown">
+        <div class="topbar-dropdown-header"><?php echo htmlspecialchars($_headerName); ?></div>
+        <hr>
+        <?php if ($userRole === 'tenant'): ?>
+        <a href="<?php echo $base_url; ?>tenant/profile.php" class="topbar-dropdown-item">
+          <i class="fas fa-user" style="color:#4ED6C1;width:16px;"></i> My Profile
+        </a>
+        <?php else: ?>
+        <a href="<?php echo $base_url; ?>admin/profile.php" class="topbar-dropdown-item">
+          <i class="fas fa-user" style="color:#4ED6C1;width:16px;"></i> My Profile
+        </a>
+        <?php endif; ?>
+        <button class="topbar-dropdown-item" onclick="applyDarkModeState(!document.body.classList.contains('dark-mode'))">
+          <i class="fas fa-moon" style="color:#94a3b8;width:16px;" id="dropdownDarkIcon"></i>
+          <span id="dropdownDarkLabel">Dark Mode</span>
+        </button>
+        <hr>
+        <a href="<?php echo $base_url; ?>logout.php" class="topbar-dropdown-item danger">
+          <i class="fas fa-sign-out-alt" style="width:16px;"></i> Logout
+        </a>
+      </div>
+    </div>
+    <?php endif; ?>
+  </div>
+</header>
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-scroll">
+    <ul class="nav flex-column mb-2">
       <?php if (isset($_SESSION['user_id'])): ?>
         <?php if ($userRole === 'admin'): ?>
+          <li><span class="nav-section-label">Overview</span></li>
           <?php if ($adminRoleNav === 'super_admin'): ?>
-            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='super_dashboard.php'?'active':'';?>" href="<?php echo $base_url;?>admin/super_dashboard.php" onclick="closeSidebar()"><i class="fas fa-house me-2"></i>Super Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='super_dashboard.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/super_dashboard.php" onclick="closeSidebar()"><i class="fas fa-house"></i>Super Dashboard</a></li>
           <?php else: ?>
-            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='dashboard.php'?'active':'';?>" href="<?php echo $base_url;?>admin/dashboard.php" onclick="closeSidebar()"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='dashboard.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/dashboard.php" onclick="closeSidebar()"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
           <?php endif; ?>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_monitoring.php'?'active':'';?>" href="<?php echo $base_url;?>admin/payment_monitoring.php" onclick="closeSidebar()"><i class="fas fa-chart-line me-2"></i>Payment Tracker</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='reports.php'?'active':'';?>" href="<?php echo $base_url;?>admin/reports.php" onclick="closeSidebar()"><i class="fas fa-file-alt me-2"></i>Reports</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':'';?>" href="<?php echo $base_url;?>admin/profile.php" onclick="closeSidebar()"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_monitoring.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/payment_monitoring.php" onclick="closeSidebar()"><i class="fas fa-chart-line"></i>Payment Tracker</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='reports.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/reports.php" onclick="closeSidebar()"><i class="fas fa-file-alt"></i>Reports</a></li>
+
+          <li><span class="nav-section-label">Manage</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='tenants.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/tenants.php" onclick="closeSidebar()"><i class="fas fa-users"></i>Tenants</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payments.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/payments.php" onclick="closeSidebar()"><i class="fas fa-credit-card"></i>Payments</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_settings.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/payment_settings.php" onclick="closeSidebar()"><i class="fas fa-wallet"></i>Payment Settings</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='complaints.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/complaints.php" onclick="closeSidebar()"><i class="fas fa-exclamation-triangle"></i>Complaints</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='announcements.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/announcements.php" onclick="closeSidebar()"><i class="fas fa-bullhorn"></i>Announcements</a></li>
+
+          <li><span class="nav-section-label">Intelligence</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='ai_insights.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/ai_insights.php" onclick="closeSidebar()"><i class="fas fa-brain"></i>AI Insights</a></li>
+
           <?php if ($adminRoleNav === 'super_admin'): ?>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_logs.php'?'active':'';?>" href="<?php echo $base_url;?>admin/admin_logs.php" onclick="closeSidebar()"><i class="fas fa-clipboard-list me-2"></i>Admin Logs</a></li>
+          <li><span class="nav-section-label">System</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_management.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/admin_management.php" onclick="closeSidebar()"><i class="fas fa-users-cog"></i>Admin Management</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='role_manager.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/role_manager.php" onclick="closeSidebar()"><i class="fas fa-user-shield"></i>Role Manager</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_logs.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/admin_logs.php" onclick="closeSidebar()"><i class="fas fa-clipboard-list"></i>Admin Logs</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='system_settings.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/system_settings.php" onclick="closeSidebar()"><i class="fas fa-cogs"></i>System Settings</a></li>
           <?php endif; ?>
-          <?php if ($adminRoleNav === 'super_admin'): ?>
-            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_management.php'?'active':'';?>" href="<?php echo $base_url;?>admin/admin_management.php" onclick="closeSidebar()"><i class="fas fa-users-cog me-2"></i>Admin Management</a></li>
-            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='role_manager.php'?'active':'';?>" href="<?php echo $base_url;?>admin/role_manager.php" onclick="closeSidebar()"><i class="fas fa-user-shield me-2"></i>Role Manager</a></li>
-            <li class="nav-item"><a class="nav-link <?php echo $currentPage==='system_settings.php'?'active':'';?>" href="<?php echo $base_url;?>admin/system_settings.php" onclick="closeSidebar()"><i class="fas fa-cogs me-2"></i>System Settings</a></li>
-          <?php endif; ?>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='tenants.php'?'active':'';?>" href="<?php echo $base_url;?>admin/tenants.php" onclick="closeSidebar()"><i class="fas fa-users me-2"></i>Tenants</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payments.php'?'active':'';?>" href="<?php echo $base_url;?>admin/payments.php" onclick="closeSidebar()"><i class="fas fa-credit-card me-2"></i>Payments</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_settings.php'?'active':'';?>" href="<?php echo $base_url;?>admin/payment_settings.php" onclick="closeSidebar()"><i class="fas fa-wallet me-2"></i>Payment Settings</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='complaints.php'?'active':'';?>" href="<?php echo $base_url;?>admin/complaints.php" onclick="closeSidebar()"><i class="fas fa-exclamation-triangle me-2"></i>Complaints</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='announcements.php'?'active':'';?>" href="<?php echo $base_url;?>admin/announcements.php" onclick="closeSidebar()"><i class="fas fa-bullhorn me-2"></i>Announcements</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='ai_insights.php'?'active':'';?>" href="<?php echo $base_url;?>admin/ai_insights.php" onclick="closeSidebar()"><i class="fas fa-brain me-2"></i>AI Insights</a></li>
+
+          <li><span class="nav-section-label">Account</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':''; ?>" href="<?php echo $base_url; ?>admin/profile.php" onclick="closeSidebar()"><i class="fas fa-user-edit"></i>Profile</a></li>
+
         <?php else: ?>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='dashboard.php'?'active':'';?>" href="<?php echo $base_url;?>tenant/dashboard.php" onclick="closeSidebar()"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':'';?>" href="<?php echo $base_url;?>tenant/profile.php" onclick="closeSidebar()"><i class="fas fa-user me-2"></i>Profile</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payments.php'?'active':'';?>" href="<?php echo $base_url;?>tenant/payments.php" onclick="closeSidebar()"><i class="fas fa-credit-card me-2"></i>Payments</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='complaints.php'?'active':'';?>" href="<?php echo $base_url;?>tenant/complaints.php" onclick="closeSidebar()"><i class="fas fa-exclamation-triangle me-2"></i>Complaints</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='announcements.php'?'active':'';?>" href="<?php echo $base_url;?>tenant/announcements.php" onclick="closeSidebar()"><i class="fas fa-bullhorn me-2"></i>Announcements</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='chatbot.php'?'active':'';?>" href="<?php echo $base_url;?>tenant/chatbot.php" onclick="closeSidebar()"><i class="fas fa-robot me-2"></i>AI Assistant</a></li>
+          <li><span class="nav-section-label">Home</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='dashboard.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/dashboard.php" onclick="closeSidebar()"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+
+          <li><span class="nav-section-label">My Unit</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payments.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/payments.php" onclick="closeSidebar()"><i class="fas fa-credit-card"></i>Payments</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='complaints.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/complaints.php" onclick="closeSidebar()"><i class="fas fa-exclamation-triangle"></i>Complaints</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='announcements.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/announcements.php" onclick="closeSidebar()"><i class="fas fa-bullhorn"></i>Announcements</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='chatbot.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/chatbot.php" onclick="closeSidebar()"><i class="fas fa-robot"></i>AI Assistant</a></li>
+
+          <li><span class="nav-section-label">Account</span></li>
+          <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':''; ?>" href="<?php echo $base_url; ?>tenant/profile.php" onclick="closeSidebar()"><i class="fas fa-user"></i>Profile</a></li>
         <?php endif; ?>
       <?php endif; ?>
     </ul>
   </div>
-  <div class="border-top p-3 flex-shrink-0">
-    <?php if (isset($_SESSION['user_id'])): ?>
-    <div class="dropup">
-      <a class="d-flex align-items-center text-decoration-none dropdown-toggle" href="#" id="sidebarDropdown" data-bs-toggle="dropdown" style="color:inherit;">
-        <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-      </a>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="<?php echo $base_url;?>logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-      </ul>
-    </div>
-    <?php endif; ?>
+
+  <!-- Dark mode toggle in sidebar -->
+  <div class="sidebar-footer">
+    <button class="dark-toggle" onclick="applyDarkModeState(!document.body.classList.contains('dark-mode'))">
+      <span style="display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-moon" style="font-size:.85rem;"></i>
+        <span id="sidebarDarkLabel">Dark Mode</span>
+      </span>
+      <div class="dark-toggle-pill" id="darkTogglePill"></div>
+    </button>
   </div>
 </nav>
 
@@ -189,58 +495,122 @@ body:not(.dark-mode) #mobileBottomNav .mnav-item.active,body:not(.dark-mode) #mo
 <?php if (isset($_SESSION['user_id'])): ?>
 <nav id="mobileBottomNav">
   <?php if ($userRole === 'admin'): ?>
-    <a href="<?php echo $base_url;?>admin/<?php echo $adminRoleNav==='super_admin'?'super_dashboard':'dashboard';?>.php" class="mnav-item <?php echo in_array($currentPage,['dashboard.php','super_dashboard.php'])?'active':'';?>"><i class="fas fa-home"></i><span>Home</span></a>
-    <a href="<?php echo $base_url;?>admin/tenants.php" class="mnav-item <?php echo $currentPage==='tenants.php'?'active':'';?>"><i class="fas fa-users"></i><span>Tenants</span></a>
-    <a href="<?php echo $base_url;?>admin/payments.php" class="mnav-item <?php echo $currentPage==='payments.php'?'active':'';?>"><i class="fas fa-credit-card"></i><span>Payments</span></a>
-    <a href="<?php echo $base_url;?>admin/complaints.php" class="mnav-item <?php echo $currentPage==='complaints.php'?'active':'';?>"><i class="fas fa-exclamation-triangle"></i><span>Complaints</span></a>
+    <a href="<?php echo $base_url; ?>admin/<?php echo $adminRoleNav==='super_admin'?'super_dashboard':'dashboard'; ?>.php" class="mnav-item <?php echo in_array($currentPage,['dashboard.php','super_dashboard.php'])?'active':''; ?>"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="<?php echo $base_url; ?>admin/tenants.php" class="mnav-item <?php echo $currentPage==='tenants.php'?'active':''; ?>"><i class="fas fa-users"></i><span>Tenants</span></a>
+    <a href="<?php echo $base_url; ?>admin/payments.php" class="mnav-item <?php echo $currentPage==='payments.php'?'active':''; ?>"><i class="fas fa-credit-card"></i><span>Payments</span></a>
+    <a href="<?php echo $base_url; ?>admin/complaints.php" class="mnav-item <?php echo $currentPage==='complaints.php'?'active':''; ?>"><i class="fas fa-exclamation-triangle"></i><span>Issues</span></a>
     <a href="#" class="mnav-item" onclick="toggleSidebar();return false;"><i class="fas fa-ellipsis-h"></i><span>More</span></a>
   <?php else: ?>
-    <a href="<?php echo $base_url;?>tenant/dashboard.php" class="mnav-item <?php echo $currentPage==='dashboard.php'?'active':'';?>"><i class="fas fa-home"></i><span>Home</span></a>
-    <a href="<?php echo $base_url;?>tenant/payments.php" class="mnav-item <?php echo $currentPage==='payments.php'?'active':'';?>"><i class="fas fa-credit-card"></i><span>Payments</span></a>
-    <a href="<?php echo $base_url;?>tenant/complaints.php" class="mnav-item <?php echo $currentPage==='complaints.php'?'active':'';?>"><i class="fas fa-exclamation-triangle"></i><span>Complaints</span></a>
-    <a href="<?php echo $base_url;?>tenant/announcements.php" class="mnav-item <?php echo $currentPage==='announcements.php'?'active':'';?>"><i class="fas fa-bullhorn"></i><span>News</span></a>
-    <a href="<?php echo $base_url;?>tenant/chatbot.php" class="mnav-item <?php echo $currentPage==='chatbot.php'?'active':'';?>"><i class="fas fa-robot"></i><span>AI Chat</span></a>
+    <a href="<?php echo $base_url; ?>tenant/dashboard.php" class="mnav-item <?php echo $currentPage==='dashboard.php'?'active':''; ?>"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="<?php echo $base_url; ?>tenant/payments.php" class="mnav-item <?php echo $currentPage==='payments.php'?'active':''; ?>"><i class="fas fa-credit-card"></i><span>Payments</span></a>
+    <a href="<?php echo $base_url; ?>tenant/complaints.php" class="mnav-item <?php echo $currentPage==='complaints.php'?'active':''; ?>"><i class="fas fa-exclamation-triangle"></i><span>Issues</span></a>
+    <a href="<?php echo $base_url; ?>tenant/announcements.php" class="mnav-item <?php echo $currentPage==='announcements.php'?'active':''; ?>"><i class="fas fa-bullhorn"></i><span>News</span></a>
+    <a href="<?php echo $base_url; ?>tenant/profile.php" class="mnav-item <?php echo $currentPage==='profile.php'?'active':''; ?>"><i class="fas fa-user"></i><span>Profile</span></a>
   <?php endif; ?>
 </nav>
 <?php endif; ?>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN CONTENT WRAPPER -->
 <div class="flex-grow-1" id="mainContent">
-<div class="mobile-topbar-spacer"></div>
 
 <?php if (isset($_SESSION['user_id'])): ?>
 <script>
-let notifPanelOpen=false;
-function toggleNotifPanel(){const p=document.getElementById('notifPanel');notifPanelOpen=!notifPanelOpen;p.classList.toggle('d-none',!notifPanelOpen);if(notifPanelOpen){loadNotifications();markAllNotificationsRead();}}
-document.addEventListener('click',function(e){const w=document.getElementById('notifBellWrap');if(notifPanelOpen&&w&&!w.contains(e.target)){notifPanelOpen=false;document.getElementById('notifPanel').classList.add('d-none');}});
-function loadNotifications(){fetch('<?php echo $base_url;?>api/notifications.php').then(r=>r.json()).then(data=>{const list=document.getElementById('notifList'),empty=document.getElementById('notifEmpty'),footer=document.getElementById('notifFooter');if(!data.notifications||!data.notifications.length){list.innerHTML='';list.appendChild(empty);empty.classList.remove('d-none');footer.classList.add('d-none');return;}empty.classList.add('d-none');footer.classList.remove('d-none');list.innerHTML=data.notifications.map(n=>`<div class="notif-item px-3 py-2 border-bottom${n.is_read==0?' notif-unread':''}" style="cursor:pointer" onclick="readNotification(${n.notification_id},'${n.action_url||''}')"><div class="d-flex align-items-start"><i class="fas fa-bell me-2 mt-1" style="color:#4ED6C1"></i><div><div class="fw-semibold small">${escHtml(n.title)}</div><div class="small text-muted text-truncate">${escHtml(n.message)}</div><small class="text-muted">${n.time_ago||''}</small></div></div></div>`).join('');}).catch(()=>{});}
-function readNotification(id,url){fetch('<?php echo $base_url;?>api/notifications.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'mark_read',notification_id:id})}).then(()=>{fetchNotifCount();if(url)window.location.href=url;});}
-function markAllNotificationsRead(){fetch('<?php echo $base_url;?>api/notifications.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'mark_all_read'})}).then(()=>{fetchNotifCount();loadNotifications();});}
-function fetchNotifCount(){fetch('<?php echo $base_url;?>api/notifications.php?count=1').then(r=>r.json()).then(data=>{const b=document.getElementById('notifBadge');if(data.unread>0){b.textContent=data.unread>99?'99+':data.unread;b.classList.remove('d-none');}else b.classList.add('d-none');}).catch(()=>{});}
-function escHtml(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
-fetchNotifCount();setInterval(fetchNotifCount,60000);
+// ── Notifications ──────────────────────────────────────────────
+let notifPanelOpen = false;
+function toggleNotifPanel() {
+  notifPanelOpen = !notifPanelOpen;
+  document.getElementById('notifPanel').classList.toggle('open', notifPanelOpen);
+  if (notifPanelOpen) { loadNotifications(); markAllNotificationsRead(); }
+}
+document.addEventListener('click', function(e) {
+  const bellWrap = document.getElementById('notifBellBtn')?.closest('div');
+  if (notifPanelOpen && bellWrap && !bellWrap.contains(e.target)) {
+    notifPanelOpen = false;
+    document.getElementById('notifPanel').classList.remove('open');
+  }
+});
+function loadNotifications() {
+  fetch('<?php echo $base_url; ?>api/notifications.php').then(r => r.json()).then(data => {
+    const list = document.getElementById('notifList'), empty = document.getElementById('notifEmpty');
+    if (!data.notifications || !data.notifications.length) {
+      list.innerHTML = ''; list.appendChild(empty); empty.style.display = 'block'; return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = data.notifications.map(n => `
+      <div class="notif-item${n.is_read==0?' notif-unread':''}" onclick="readNotification(${n.notification_id},'${n.action_url||''}')">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <i class="fas fa-bell mt-1" style="color:#4ED6C1;font-size:.8rem;flex-shrink:0;"></i>
+          <div>
+            <div style="font-weight:600;font-size:.83rem;">${escHtml(n.title)}</div>
+            <div style="font-size:.78rem;color:#94a3b8;margin-top:1px;">${escHtml(n.message)}</div>
+            <div style="font-size:.72rem;color:#cbd5e1;margin-top:2px;">${n.time_ago||''}</div>
+          </div>
+        </div>
+      </div>`).join('');
+  }).catch(() => {});
+}
+function readNotification(id, url) {
+  fetch('<?php echo $base_url; ?>api/notifications.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'mark_read',notification_id:id}) })
+    .then(() => { fetchNotifCount(); if (url) window.location.href = url; });
+}
+function markAllNotificationsRead() {
+  fetch('<?php echo $base_url; ?>api/notifications.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'mark_all_read'}) })
+    .then(() => { fetchNotifCount(); loadNotifications(); });
+}
+function fetchNotifCount() {
+  fetch('<?php echo $base_url; ?>api/notifications.php?count=1').then(r => r.json()).then(data => {
+    const b = document.getElementById('notifBadge');
+    if (data.unread > 0) { b.textContent = data.unread > 99 ? '99+' : data.unread; b.classList.add('visible'); b.style.width=''; b.style.height=''; }
+    else b.classList.remove('visible');
+  }).catch(() => {});
+}
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+fetchNotifCount(); setInterval(fetchNotifCount, 60000);
+
+// ── Avatar dropdown ──────────────────────────────────────────────
+let avatarDropOpen = false;
+function toggleAvatarDropdown() {
+  avatarDropOpen = !avatarDropOpen;
+  document.getElementById('avatarDropdown').classList.toggle('open', avatarDropOpen);
+}
+document.addEventListener('click', function(e) {
+  const avatarWrap = document.getElementById('avatarBtn')?.closest('div');
+  if (avatarDropOpen && avatarWrap && !avatarWrap.contains(e.target)) {
+    avatarDropOpen = false;
+    document.getElementById('avatarDropdown').classList.remove('open');
+  }
+});
 </script>
 <?php endif; ?>
 
 <script>
-const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('sidebarOverlay'),toggleIcon=document.getElementById('toggleIcon');
-let sidebarOpen=false;
-function openSidebar(){sidebarOpen=true;sidebar.classList.add('open');overlay.classList.add('active');toggleIcon.className='fas fa-times';document.body.style.overflow='hidden';}
-function closeSidebar(){sidebarOpen=false;sidebar.classList.remove('open');overlay.classList.remove('active');toggleIcon.className='fas fa-bars';document.body.style.overflow='';}
-function toggleSidebar(){sidebarOpen?closeSidebar():openSidebar();}
-let txStart=0;
-sidebar.addEventListener('touchstart',e=>{txStart=e.touches[0].clientX;},{passive:true});
-sidebar.addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-txStart<-60)closeSidebar();},{passive:true});
-(function(){try{const sc=sidebar.querySelector('.sidebar-scroll'),sv=sessionStorage.getItem('sidebarScroll');if(sc&&sv)sc.scrollTop=parseInt(sv,10)||0;}catch(_){}})();
+// ── Sidebar ──────────────────────────────────────────────────────
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+let sidebarOpen = false;
+function openSidebar()  { sidebarOpen=true;  sidebar.classList.add('open');    overlay.classList.add('active');    document.getElementById('toggleIcon').className='fas fa-times'; document.body.style.overflow='hidden'; }
+function closeSidebar() { sidebarOpen=false; sidebar.classList.remove('open'); overlay.classList.remove('active'); document.getElementById('toggleIcon').className='fas fa-bars';  document.body.style.overflow=''; }
+function toggleSidebar() { sidebarOpen ? closeSidebar() : openSidebar(); }
+sidebar.addEventListener('touchstart', e => { window._txStart = e.touches[0].clientX; }, {passive:true});
+sidebar.addEventListener('touchend',   e => { if (e.changedTouches[0].clientX - (window._txStart||0) < -60) closeSidebar(); }, {passive:true});
 
-function applyDarkModeState(isDark){
-    document.body.classList.toggle('dark-mode',isDark);
-    sidebar.classList.toggle('dark-mode',isDark);
-    const btn=document.getElementById('darkModeToggle');
-    if(btn){btn.textContent=isDark?'Light Mode':'Dark Mode';btn.className=isDark?'btn btn-sm btn-light w-100':'btn btn-sm btn-dark w-100';}
-    try{localStorage.setItem('darkMode',String(isDark));}catch(_){}
-    try{document.cookie='darkMode='+(isDark?'true':'false')+'; path=/; max-age=31536000';}catch(_){}
+// ── Dark mode ────────────────────────────────────────────────────
+function applyDarkModeState(isDark) {
+  document.body.classList.toggle('dark-mode', isDark);
+  sidebar.classList.toggle('dark-mode', isDark);
+  // Update labels
+  const sLabel = document.getElementById('sidebarDarkLabel');
+  const dLabel = document.getElementById('dropdownDarkLabel');
+  const dIcon  = document.getElementById('dropdownDarkIcon');
+  if (sLabel) sLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  if (dLabel) dLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  if (dIcon)  dIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+  if (dIcon)  dIcon.style.color = isDark ? '#f59e0b' : '#94a3b8';
+  try { localStorage.setItem('darkMode', String(isDark)); } catch(_) {}
+  try { document.cookie = 'darkMode=' + (isDark?'true':'false') + '; path=/; max-age=31536000'; } catch(_) {}
 }
-function toggleDarkMode(){applyDarkModeState(!document.body.classList.contains('dark-mode'));}
-window.addEventListener('DOMContentLoaded',function(){applyDarkModeState(document.body.classList.contains('dark-mode'));});
+window.addEventListener('DOMContentLoaded', function() {
+  const isDark = document.body.classList.contains('dark-mode');
+  applyDarkModeState(isDark);
+});
 </script>
