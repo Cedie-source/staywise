@@ -741,7 +741,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
 
                     <!-- ── Manual GCash ── -->
                     <?php if ($gcash_enabled): ?>
-                    <div class="method-panel d-none" id="panel-gcash_manual">
+                    <div class="method-panel <?= (!$paymongo_ready) ? '' : 'd-none' ?>" id="panel-gcash_manual">
                         <div class="gcash-info-box mb-3">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
@@ -798,7 +798,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
                     <?php endif; ?>
 
                     <!-- ── Cash ── -->
-                    <div class="method-panel d-none" id="panel-cash">
+                    <div class="method-panel <?= (!$paymongo_ready && !$gcash_enabled) ? '' : 'd-none' ?>" id="panel-cash">
                         <div class="d-flex align-items-center gap-2 mb-3 small" style="color:#22c55e;">
                             <i class="fas fa-hand-holding-usd"></i>
                             <span>Cash payment · No fees · Admin verifies within 24h</span>
@@ -858,41 +858,23 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
                 <div class="card-header border-bottom px-3 px-md-4 pt-3 pb-0" id="payHistoryHeader" style="background:#fff !important;">
-                    <!-- Row 1: Title + action buttons -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold mb-0" style="font-size:.95rem;">
-                            <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
-                        </h6>
-                        <div class="d-flex gap-2 align-items-center">
-                            <?php
-                            $junk_stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM payments WHERE tenant_id = ? AND status IN ('cancelled','rejected')");
-                            $junk_stmt->bind_param("i", $tenant_id);
-                            $junk_stmt->execute();
-                            $junk_count = (int)$junk_stmt->get_result()->fetch_assoc()['cnt'];
-                            $junk_stmt->close();
-                            ?>
-                            <?php if ($junk_count > 0): ?>
-                            <form method="POST" class="d-inline" onsubmit="return confirm('Delete all <?= $junk_count ?> cancelled/rejected records? This cannot be undone.')">
-                                <?= csrf_input() ?>
-                                <input type="hidden" name="delete_all_cancelled" value="1">
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-2">
-                                    <i class="fas fa-trash me-1"></i>Clear <span class="badge bg-danger ms-1"><?= $junk_count ?></span>
-                                </button>
-                            </form>
-                            <?php endif; ?>
-                            <?php if ($payments->num_rows > 0): ?>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" id="exportPaymentsCsv">
-                                <i class="fas fa-download me-1"></i>CSV
-                            </button>
-                            <?php endif; ?>
+                    <!-- Row 1: Title -->
+                    <h6 class="fw-bold mb-3" style="font-size:.95rem;">
+                        <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
+                    </h6>
+                    <!-- Row 2: Filter tabs + CSV button -->
+                    <div class="d-flex justify-content-between align-items-center" id="historyFilterTabs">
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
+                            <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
+                            <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
+                            <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
                         </div>
-                    </div>
-                    <!-- Row 2: Filter tabs flush to bottom border -->
-                    <div class="d-flex gap-1" id="historyFilterTabs">
-                        <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
-                        <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
-                        <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
-                        <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
+                        <?php if ($payments->num_rows > 0): ?>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 mb-1" id="exportPaymentsCsv">
+                            <i class="fas fa-download me-1"></i>CSV
+                        </button>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="card-body p-0" id="historyList">
@@ -1077,11 +1059,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     var item = document.getElementById('hist-' + id);
                     if (item) {
                         var dot  = item.querySelector('.status-dot');
-                        var lbl  = item.querySelector('.history-meta .detail');
                         var amt  = item.querySelector('.history-amount div:last-child');
                         if (dot) { dot.className = 'status-dot cancelled'; }
                         if (amt) { amt.textContent = 'Cancelled'; amt.style.color = '#94a3b8'; }
+                        // Update data-status so filter tabs work correctly
+                        item.dataset.status = 'cancelled';
+                        // Remove cancel button and inject delete button immediately
                         button.remove();
+                        var actionsDiv = item.querySelector('.history-actions');
+                        if (actionsDiv) {
+                            var deleteBtn = document.createElement('button');
+                            deleteBtn.type = 'button';
+                            deleteBtn.className = 'btn btn-sm btn-outline-danger rounded-2 delete-payment-btn p-1';
+                            deleteBtn.dataset.id = id;
+                            deleteBtn.title = 'Delete record';
+                            deleteBtn.style.cssText = 'width:30px;height:30px;display:flex;align-items:center;justify-content:center;';
+                            deleteBtn.innerHTML = '<i class="fas fa-trash" style="font-size:.7rem;"></i>';
+                            actionsDiv.appendChild(deleteBtn);
+                        }
                     }
                 } else {
                     button.disabled = false;
