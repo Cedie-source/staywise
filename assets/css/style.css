@@ -639,6 +639,30 @@ body:not(.dark-mode) .tenant-ui .card-header i {
     color: #ffffff !important;
 }
 
+/* Exception: payments page cards use white header */
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header h4,
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header h5,
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header h6,
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header i {
+    color: #0f172a !important;
+}
+body.dark-mode .tenant-ui .pay-form-card .card-header {
+    background-color: #1f2530 !important;
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid #2d3748 !important;
+}
+body.dark-mode .tenant-ui .pay-form-card .card-header h4,
+body.dark-mode .tenant-ui .pay-form-card .card-header h5,
+body.dark-mode .tenant-ui .pay-form-card .card-header h6,
+body.dark-mode .tenant-ui .pay-form-card .card-header i {
+    color: #e2e8f0 !important;
+}
+
 body.dark-mode .tenant-ui .card {
     background-color: #1f2530;
     color: #e7e7ee;
