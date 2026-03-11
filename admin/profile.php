@@ -21,7 +21,6 @@ $stmt->close();
 if (!$user) { header("Location: ../logout.php"); exit(); }
 
 $success = $error = '';
-
 $nameParts  = explode(' ', trim($user['full_name'] ?? ''), 2);
 $firstName  = $nameParts[0] ?? '';
 $lastName   = $nameParts[1] ?? '';
@@ -81,6 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     }
 }
 
+// Fetch tenant photos for admin view
+$tenantPhotos = [];
+$tpResult = $conn->query("SELECT u.id, u.full_name, u.username, u.profile_photo, t.unit_number FROM users u JOIN tenants t ON t.user_id = u.id WHERE u.role = 'tenant' AND t.deleted_at IS NULL ORDER BY t.unit_number ASC");
+if ($tpResult) {
+    while ($row = $tpResult->fetch_assoc()) $tenantPhotos[] = $row;
+}
+
 $profilePhoto = $user['profile_photo'] ?? '';
 $initials = strtoupper(substr($firstName ?: $user['username'], 0, 1) . substr($lastName ?: ($user['username'] ?? ''), 0, 1));
 $activeTab = $_GET['tab'] ?? 'profile';
@@ -93,6 +99,7 @@ include '../includes/header.php';
 .acct-heading { font-size: 1.45rem; font-weight: 700; margin-bottom: 1.5rem; }
 body:not(.dark-mode) .acct-heading { color: #111827; }
 body.dark-mode .acct-heading { color: #f1f5f9; }
+
 .profile-tabs { display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem; }
 body.dark-mode .profile-tabs { border-bottom-color: #2d3748; }
 .profile-tab {
@@ -106,12 +113,45 @@ body.dark-mode .profile-tabs { border-bottom-color: #2d3748; }
 body.dark-mode .profile-tab { color: #94a3b8; }
 body.dark-mode .profile-tab:hover { color: #e2e8f0; }
 body.dark-mode .profile-tab.active { color: #4ED6C1; border-bottom-color: #4ED6C1; }
+
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
+
 .section-title { font-weight: 700; font-size: 1rem; margin-bottom: .2rem; }
 .section-sub { font-size: .82rem; color: #94a3b8; margin-bottom: 1.75rem; }
 body:not(.dark-mode) .section-title { color: #111827; }
 body.dark-mode .section-title { color: #f1f5f9; }
+
+/* Profile header row */
+.profile-header-row { display: flex; align-items: center; gap: 20px; margin-bottom: 1.5rem; }
+.profile-header-info { flex: 1; }
+.profile-header-name { font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
+body:not(.dark-mode) .profile-header-name { color: #111827; }
+body.dark-mode .profile-header-name { color: #f1f5f9; }
+.profile-header-meta { font-size: .8rem; color: #94a3b8; margin-top: 3px; }
+
+/* Divider */
+.profile-divider { border: none; border-top: 1px solid #e2e8f0; margin: 1.25rem 0; }
+body.dark-mode .profile-divider { border-top-color: #2d3748; }
+
+/* Photo circle */
+.photo-circle {
+  width: 88px; height: 88px; border-radius: 50%; background: #64748b;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0;
+}
+.photo-circle img { width: 100%; height: 100%; object-fit: cover; }
+.photo-circle-initials { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
+.photo-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.photo-circle:hover .photo-overlay { opacity: 1; }
+.photo-overlay i { color: #fff; font-size: 1.1rem; }
+.photo-overlay span { color: #fff; font-size: .65rem; margin-top: 4px; font-weight: 600; }
+
+/* Inputs */
 .tc-label { display: block; font-size: .78rem; font-weight: 600; color: #6b7280; margin-bottom: 5px; }
 body.dark-mode .tc-label { color: #94a3b8; }
 .tc-input {
@@ -129,27 +169,14 @@ body.dark-mode .tc-input:disabled { background: #111827; color: #4b5563; }
 .tc-check-label { font-size: .88rem; font-weight: 500; cursor: pointer; }
 body:not(.dark-mode) .tc-check-label { color: #374151; }
 body.dark-mode .tc-check-label { color: #d1d5db; }
+
 .btn-tc-save {
   background: #16a34a; color: #fff; border: none; padding: .6rem 1.75rem; border-radius: 8px;
   font-weight: 600; font-size: .88rem; cursor: pointer; font-family: inherit; transition: background .15s;
 }
 .btn-tc-save:hover { background: #15803d; }
-.photo-wrap { display: flex; flex-direction: column; align-items: center; gap: .6rem; }
-.photo-circle {
-  width: 108px; height: 108px; border-radius: 50%; background: #64748b;
-  display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0;
-}
-.photo-circle img { width: 100%; height: 100%; object-fit: cover; }
-.photo-circle-initials { font-size: 2.2rem; font-weight: 700; color: #fff; line-height: 1; }
-.photo-overlay {
-  position: absolute; inset: 0; background: rgba(0,0,0,.45);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity .2s;
-}
-.photo-circle:hover .photo-overlay { opacity: 1; }
-.photo-overlay i { color: #fff; font-size: 1.25rem; }
-.photo-overlay span { color: #fff; font-size: .68rem; margin-top: 5px; font-weight: 600; }
+
+/* Security rows */
 .sec-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.1rem 0; border-bottom: 1px solid #f1f5f9;
@@ -171,6 +198,25 @@ body.dark-mode .btn-outline-tc:hover { border-color: #4ED6C1; color: #4ED6C1; }
   transition: background .15s;
 }
 .btn-danger-tc:hover { background: #fef2f2; }
+
+/* Tenant photos grid */
+.tenant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; margin-top: 1rem; }
+.tenant-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px 10px; border-radius: 12px; text-align: center;
+  border: 1.5px solid #e2e8f0;
+}
+body.dark-mode .tenant-card { border-color: #2d3748; background: #1e293b; }
+.tenant-avatar {
+  width: 60px; height: 60px; border-radius: 50%; background: #64748b;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 700; color: #fff; overflow: hidden; flex-shrink: 0;
+}
+.tenant-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.tenant-card-name { font-size: .8rem; font-weight: 600; line-height: 1.2; }
+body:not(.dark-mode) .tenant-card-name { color: #111827; }
+body.dark-mode .tenant-card-name { color: #e2e8f0; }
+.tenant-card-unit { font-size: .72rem; color: #94a3b8; }
 </style>
 
 <div class="profile-wrap">
@@ -192,85 +238,126 @@ body.dark-mode .btn-outline-tc:hover { border-color: #4ED6C1; color: #4ED6C1; }
 
   <div class="profile-tabs">
     <button class="profile-tab <?= $activeTab==='profile'?'active':'' ?>" data-tab="profile">Profile</button>
+    <button class="profile-tab <?= $activeTab==='tenants'?'active':'' ?>" data-tab="tenants">Tenant Photos</button>
     <button class="profile-tab <?= $activeTab==='security'?'active':'' ?>" data-tab="security">Security</button>
   </div>
 
-  <!-- PROFILE -->
+  <!-- ══ PROFILE ══ -->
   <div class="tab-panel <?= $activeTab==='profile'?'active':'' ?>" id="tab-profile">
-    <div class="row g-5">
-      <div class="col-md-8">
-        <div class="section-title">Profile details</div>
-        <div class="section-sub">Your profile is visible to your connected users.</div>
-        <form method="POST">
-          <?= csrf_input() ?>
-          <div class="row g-3">
-            <div class="col-sm-6">
-              <label class="tc-label">First name <span style="color:#ef4444">*</span></label>
-              <input type="text" name="first_name" class="tc-input" required value="<?= htmlspecialchars($firstName) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Middle name</label>
-              <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Last name <span style="color:#ef4444">*</span></label>
-              <input type="text" name="last_name" class="tc-input" required value="<?= htmlspecialchars($lastName) ?>">
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Company name</label>
-              <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
-            </div>
-            <div class="col-12">
-              <div class="tc-check-row">
-                <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
-                <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
-              </div>
-            </div>
-            <div class="col-12">
-              <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
-              <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Username</label>
-              <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['username']) ?>">
-            </div>
-            <div class="col-sm-6">
-              <label class="tc-label">Role</label>
-              <input type="text" class="tc-input" disabled value="<?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?>">
-            </div>
-          </div>
-          <div class="mt-4">
-            <button type="submit" name="update_profile" class="btn-tc-save">Save changes</button>
-          </div>
-        </form>
-      </div>
 
-      <!-- Photo -->
-      <div class="col-md-4 d-flex flex-column align-items-center align-items-md-end pt-md-2">
-        <form method="POST" enctype="multipart/form-data">
-          <?= csrf_input() ?>
-          <input type="hidden" name="update_photo" value="1">
-          <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
-          <div class="photo-wrap">
-            <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
-              <?php if (!empty($profilePhoto) && file_exists('../uploads/profiles/' . $profilePhoto)): ?>
-                <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo">
-              <?php else: ?>
-                <div class="photo-circle-initials"><?= $initials ?></div>
-              <?php endif; ?>
-              <div class="photo-overlay">
-                <i class="fas fa-camera"></i>
-                <span>Update image</span>
-              </div>
-            </div>
-            <div style="font-size:.75rem;color:#94a3b8;text-align:center;">Click to update photo</div>
-          </div>
-        </form>
+    <!-- Photo + name header -->
+    <div class="profile-header-row">
+      <form method="POST" enctype="multipart/form-data" style="flex-shrink:0;">
+        <?= csrf_input() ?>
+        <input type="hidden" name="update_photo" value="1">
+        <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
+        <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
+          <?php if (!empty($profilePhoto) && file_exists('../uploads/profiles/' . $profilePhoto)): ?>
+            <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo">
+          <?php else: ?>
+            <div class="photo-circle-initials"><?= $initials ?></div>
+          <?php endif; ?>
+          <div class="photo-overlay"><i class="fas fa-camera"></i><span>Update</span></div>
+        </div>
+      </form>
+      <div class="profile-header-info">
+        <div class="profile-header-name"><?= htmlspecialchars($user['full_name'] ?: $user['username']) ?></div>
+        <div class="profile-header-meta"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; <?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?></div>
+        <div style="font-size:.72rem;color:#94a3b8;margin-top:4px;">Click photo to update</div>
       </div>
     </div>
+
+    <div class="profile-divider"></div>
+
+    <div class="section-title">Profile details</div>
+    <div class="section-sub">Your profile is visible to your connected users.</div>
+
+    <form method="POST">
+      <?= csrf_input() ?>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="tc-label">First name <span style="color:#ef4444">*</span></label>
+          <input type="text" name="first_name" class="tc-input" required value="<?= htmlspecialchars($firstName) ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Middle name</label>
+          <input type="text" name="middle_name" class="tc-input" value="<?= htmlspecialchars($middleName) ?>">
+        </div>
+        <div class="col-12" style="margin-bottom:.5rem;">
+          <label class="tc-label">Last name <span style="color:#ef4444">*</span></label>
+          <input type="text" name="last_name" class="tc-input" required value="<?= htmlspecialchars($lastName) ?>">
+        </div>
+
+        <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
+
+        <div class="col-12">
+          <label class="tc-label">Company name</label>
+          <input type="text" name="company_name" class="tc-input" placeholder="e.g. Acme Corporation" value="<?= htmlspecialchars($user['company_name'] ?? '') ?>">
+        </div>
+        <div class="col-12">
+          <div class="tc-check-row">
+            <input type="checkbox" id="displayAsCompany" name="display_as_company" <?= !empty($user['display_as_company']) ? 'checked' : '' ?>>
+            <label class="tc-check-label" for="displayAsCompany">Display as a company?</label>
+          </div>
+        </div>
+
+        <div class="col-12"><div class="profile-divider" style="margin:.25rem 0 .5rem;"></div></div>
+
+        <div class="col-12">
+          <label class="tc-label">Email address <span style="color:#ef4444">*</span></label>
+          <input type="email" name="email" class="tc-input" required value="<?= htmlspecialchars($user['email']) ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Username</label>
+          <input type="text" class="tc-input" disabled value="<?= htmlspecialchars($user['username']) ?>">
+        </div>
+        <div class="col-sm-6">
+          <label class="tc-label">Role</label>
+          <input type="text" class="tc-input" disabled value="<?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?>">
+        </div>
+      </div>
+      <div class="mt-4">
+        <button type="submit" name="update_profile" class="btn-tc-save">Save changes</button>
+      </div>
+    </form>
   </div>
 
-  <!-- SECURITY -->
+  <!-- ══ TENANT PHOTOS ══ -->
+  <div class="tab-panel <?= $activeTab==='tenants'?'active':'' ?>" id="tab-tenants">
+    <div class="section-title">Tenant Photos</div>
+    <div class="section-sub">Profile photos of all active tenants.</div>
+
+    <?php if (empty($tenantPhotos)): ?>
+      <div style="text-align:center;padding:3rem;color:#94a3b8;">
+        <i class="fas fa-users" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>
+        No active tenants found.
+      </div>
+    <?php else: ?>
+      <div class="tenant-grid">
+        <?php foreach ($tenantPhotos as $t):
+          $tInitials = strtoupper(substr($t['full_name'] ?: $t['username'], 0, 2));
+          $tPhoto = '';
+          if (!empty($t['profile_photo']) && file_exists('../uploads/profiles/' . $t['profile_photo'])) {
+            $tPhoto = '../uploads/profiles/' . $t['profile_photo'];
+          }
+        ?>
+        <div class="tenant-card">
+          <div class="tenant-avatar">
+            <?php if ($tPhoto): ?>
+              <img src="<?= htmlspecialchars($tPhoto) ?>" alt="<?= htmlspecialchars($t['full_name']) ?>">
+            <?php else: ?>
+              <?= $tInitials ?>
+            <?php endif; ?>
+          </div>
+          <div class="tenant-card-name"><?= htmlspecialchars($t['full_name'] ?: $t['username']) ?></div>
+          <div class="tenant-card-unit">Unit <?= htmlspecialchars($t['unit_number']) ?></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+
+  <!-- ══ SECURITY ══ -->
   <div class="tab-panel <?= $activeTab==='security'?'active':'' ?>" id="tab-security">
     <div class="section-title">Security</div>
     <div class="section-sub">Manage your password and account access.</div>
