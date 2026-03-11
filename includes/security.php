@@ -38,15 +38,13 @@ if (!function_exists('csrf_input')) {
 
 if (!function_exists('verify_csrf_token')) {
     function verify_csrf_token($token) {
-        if (!isset($_SESSION['csrf_token']) || !is_string($token)) {
+        if (!isset($_SESSION['csrf_token']) || !is_string($token) || empty($token)) {
             return false;
         }
-        $valid = hash_equals($_SESSION['csrf_token'], $token);
-        // Rotate token on success to limit replay
-        if ($valid) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        return $valid;
+        // Validate without rotating — rotating causes "Invalid token" errors
+        // when a form re-renders after a failed submission (e.g. wrong password)
+        // because the new token in the session no longer matches the form's token.
+        return hash_equals($_SESSION['csrf_token'], $token);
     }
 }
 
