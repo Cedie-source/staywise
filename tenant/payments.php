@@ -381,8 +381,8 @@ include '../includes/header.php';
     overflow: hidden;
 }
 body.dark-mode .pay-hero {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0d6efd22 100%);
-    border-color: #1e3a5f;
+    background: linear-gradient(135deg, #0f2744 0%, #0c3d2e 100%);
+    border-color: #1e4d6b;
 }
 .pay-hero::before {
     content: '';
@@ -503,11 +503,31 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.rejected  { background: #ef4444; }
 .status-dot.cancelled { background: #94a3b8; }
 
-/* Filter tabs */
-.filter-tab { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; transition: all .15s; }
-.filter-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
-body.dark-mode .filter-tab { background: #1e293b; color: #94a3b8; border-color: #334155; }
-body.dark-mode .filter-tab.active { background: #4ED6C1; color: #0f172a; border-color: #4ED6C1; }
+/* Override global blue card-header for this page */
+.tenant-ui .pay-form-card .card-header {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+.tenant-ui .pay-form-card .card-header h6,
+.tenant-ui .pay-form-card .card-header i {
+    color: inherit !important;
+}
+body.dark-mode .tenant-ui .pay-form-card .card-header {
+    background-color: #1f2530 !important;
+    color: #e2e8f0 !important;
+    border-bottom-color: #2d3748 !important;
+}
+.filter-tab {
+    background: transparent; color: #64748b; border: none; border-bottom: 2px solid transparent;
+    border-radius: 0; padding: .4rem .75rem; font-size: .8rem; font-weight: 500;
+    transition: all .15s; margin-bottom: -1px;
+}
+.filter-tab:hover { color: #0f172a; }
+.filter-tab.active { color: #007DFE; border-bottom-color: #007DFE; font-weight: 700; }
+body.dark-mode .filter-tab { color: #94a3b8; }
+body.dark-mode .filter-tab:hover { color: #e2e8f0; }
+body.dark-mode .filter-tab.active { color: #4ED6C1; border-bottom-color: #4ED6C1; }
 .history-item.hidden-by-filter { display: none !important; }
 .info-ribbon {
     border-radius: 12px;
@@ -824,14 +844,14 @@ body.dark-mode .filter-tab.active { background: #4ED6C1; color: #0f172a; border-
         <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
-                <div class="card-header bg-transparent border-bottom py-3 px-3 px-md-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="card-header bg-white border-bottom px-3 px-md-4 pt-3 pb-0">
+                    <!-- Row 1: Title + action buttons -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold mb-0" style="font-size:.95rem;">
                             <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
                         </h6>
                         <div class="d-flex gap-2 align-items-center">
                             <?php
-                            // Count cancelled+rejected for bulk clear badge
                             $junk_stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM payments WHERE tenant_id = ? AND status IN ('cancelled','rejected')");
                             $junk_stmt->bind_param("i", $tenant_id);
                             $junk_stmt->execute();
@@ -842,24 +862,24 @@ body.dark-mode .filter-tab.active { background: #4ED6C1; color: #0f172a; border-
                             <form method="POST" class="d-inline" onsubmit="return confirm('Delete all <?= $junk_count ?> cancelled/rejected records? This cannot be undone.')">
                                 <?= csrf_input() ?>
                                 <input type="hidden" name="delete_all_cancelled" value="1">
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-2" title="Clear all cancelled/rejected">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-2">
                                     <i class="fas fa-trash me-1"></i>Clear <span class="badge bg-danger ms-1"><?= $junk_count ?></span>
                                 </button>
                             </form>
                             <?php endif; ?>
                             <?php if ($payments->num_rows > 0): ?>
                             <button type="button" class="btn btn-sm btn-outline-secondary rounded-2" id="exportPaymentsCsv">
-                                <i class="fas fa-download me-1"></i><span class="d-none d-sm-inline">CSV</span>
+                                <i class="fas fa-download me-1"></i>CSV
                             </button>
                             <?php endif; ?>
                         </div>
                     </div>
-                    <!-- Filter tabs -->
+                    <!-- Row 2: Filter tabs flush to bottom border -->
                     <div class="d-flex gap-1" id="historyFilterTabs">
-                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab active" data-filter="all" style="font-size:.75rem;">All</button>
-                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab" data-filter="active" style="font-size:.75rem;">Active</button>
-                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab" data-filter="verified" style="font-size:.75rem;">Paid</button>
-                        <button type="button" class="btn btn-sm rounded-pill px-3 filter-tab" data-filter="cancelled" style="font-size:.75rem;">Cancelled</button>
+                        <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
+                        <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
+                        <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
+                        <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
                     </div>
                 </div>
                 <div class="card-body p-0" id="historyList">
