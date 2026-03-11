@@ -74,7 +74,7 @@ if (isset($_SESSION['user_id'])) {
   --topbar-h: 58px;
   --sidebar-w: 230px;
   --brand-teal: #4ED6C1;
-  --brand-dark: #0D1B2A;
+  --brand-dark: #111111;
   --brand-blue: #007DFE;
   --nav-active-bg: rgba(78,214,193,.13);
   --nav-active-color: #4ED6C1;
@@ -99,7 +99,7 @@ body:not(.dark-mode) #topBar {
   box-shadow: 0 1px 8px rgba(0,0,0,.06);
 }
 body.dark-mode #topBar {
-  background: #0D1B2A;
+  background: #111111;
   border-bottom-color: rgba(255,255,255,.08);
 }
 
@@ -173,7 +173,7 @@ body:not(.dark-mode) .topbar-dropdown {
   box-shadow: 0 8px 32px rgba(0,0,0,.12);
 }
 body.dark-mode .topbar-dropdown {
-  background: #1B263B; border: 1px solid rgba(255,255,255,.08);
+  background: #1a1a1a; border: 1px solid rgba(255,255,255,.08);
   box-shadow: 0 8px 32px rgba(0,0,0,.4);
 }
 .topbar-dropdown.open { display: block; }
@@ -205,7 +205,7 @@ body.dark-mode .topbar-dropdown hr { border-color: rgba(255,255,255,.06); }
   background: #ef4444; border: 2px solid #fff;
   display: none;
 }
-body.dark-mode .topbar-badge { border-color: #0D1B2A; }
+body.dark-mode .topbar-badge { border-color: #111111; }
 .topbar-badge.visible { display: block; }
 
 /* Notif panel */
@@ -221,7 +221,7 @@ body:not(.dark-mode) #notifPanel {
   box-shadow: 0 8px 32px rgba(0,0,0,.12);
 }
 body.dark-mode #notifPanel {
-  background: #1B263B; border: 1px solid rgba(255,255,255,.08);
+  background: #1a1a1a; border: 1px solid rgba(255,255,255,.08);
   box-shadow: 0 8px 32px rgba(0,0,0,.4);
 }
 #notifPanel.open { display: flex; }
@@ -248,7 +248,7 @@ body.dark-mode .notif-item { border-bottom-color: rgba(255,255,255,.04); }
   display: flex; flex-direction: column;
   transition: transform .25s cubic-bezier(.4,0,.2,1);
   overflow: hidden;
-  background: #0D1B2A;
+  background: #111111;
   border-right: 1px solid rgba(255,255,255,.06);
 }
 
@@ -328,7 +328,7 @@ body.dark-mode .dark-toggle-pill::after { transform: translateX(14px); }
   padding: 4px 8px 4px;
 }
 body:not(.dark-mode) #mobileBottomNav { background: #fff; border-top: 1px solid #e2e8f0; }
-body.dark-mode #mobileBottomNav { background: #0D1B2A; border-top: 1px solid rgba(255,255,255,.07); }
+body.dark-mode #mobileBottomNav { background: #111111; border-top: 1px solid rgba(255,255,255,.07); }
 #mobileBottomNav .mnav-item {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px;
