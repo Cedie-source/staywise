@@ -113,9 +113,8 @@ body:not(.dark-mode) #mobileBottomNav .mnav-item.active,body:not(.dark-mode) #mo
     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifBadge">0</span>
   </button>
   <div class="card shadow-lg position-absolute d-none" id="notifPanel" style="max-height:500px;z-index:2002;">
-    <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <div class="card-header py-2">
       <strong><i class="fas fa-bell me-1"></i> Notifications</strong>
-      <button class="btn btn-sm btn-outline-secondary" onclick="markAllNotificationsRead()">Mark all read</button>
     </div>
     <div class="card-body p-0" style="max-height:400px;overflow-y:auto;" id="notifList">
       <p class="text-center text-muted py-4 mb-0" id="notifEmpty">No notifications</p>
@@ -147,7 +146,9 @@ body:not(.dark-mode) #mobileBottomNav .mnav-item.active,body:not(.dark-mode) #mo
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='payment_monitoring.php'?'active':'';?>" href="<?php echo $base_url;?>admin/payment_monitoring.php" onclick="closeSidebar()"><i class="fas fa-chart-line me-2"></i>Payment Tracker</a></li>
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='reports.php'?'active':'';?>" href="<?php echo $base_url;?>admin/reports.php" onclick="closeSidebar()"><i class="fas fa-file-alt me-2"></i>Reports</a></li>
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='profile.php'?'active':'';?>" href="<?php echo $base_url;?>admin/profile.php" onclick="closeSidebar()"><i class="fas fa-user-edit me-2"></i>Profile</a></li>
+          <?php if ($adminRoleNav === 'super_admin'): ?>
           <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_logs.php'?'active':'';?>" href="<?php echo $base_url;?>admin/admin_logs.php" onclick="closeSidebar()"><i class="fas fa-clipboard-list me-2"></i>Admin Logs</a></li>
+          <?php endif; ?>
           <?php if ($adminRoleNav === 'super_admin'): ?>
             <li class="nav-item"><a class="nav-link <?php echo $currentPage==='admin_management.php'?'active':'';?>" href="<?php echo $base_url;?>admin/admin_management.php" onclick="closeSidebar()"><i class="fas fa-users-cog me-2"></i>Admin Management</a></li>
             <li class="nav-item"><a class="nav-link <?php echo $currentPage==='role_manager.php'?'active':'';?>" href="<?php echo $base_url;?>admin/role_manager.php" onclick="closeSidebar()"><i class="fas fa-user-shield me-2"></i>Role Manager</a></li>
@@ -210,7 +211,7 @@ body:not(.dark-mode) #mobileBottomNav .mnav-item.active,body:not(.dark-mode) #mo
 <?php if (isset($_SESSION['user_id'])): ?>
 <script>
 let notifPanelOpen=false;
-function toggleNotifPanel(){const p=document.getElementById('notifPanel');notifPanelOpen=!notifPanelOpen;p.classList.toggle('d-none',!notifPanelOpen);if(notifPanelOpen)loadNotifications();}
+function toggleNotifPanel(){const p=document.getElementById('notifPanel');notifPanelOpen=!notifPanelOpen;p.classList.toggle('d-none',!notifPanelOpen);if(notifPanelOpen){loadNotifications();markAllNotificationsRead();}}
 document.addEventListener('click',function(e){const w=document.getElementById('notifBellWrap');if(notifPanelOpen&&w&&!w.contains(e.target)){notifPanelOpen=false;document.getElementById('notifPanel').classList.add('d-none');}});
 function loadNotifications(){fetch('<?php echo $base_url;?>api/notifications.php').then(r=>r.json()).then(data=>{const list=document.getElementById('notifList'),empty=document.getElementById('notifEmpty'),footer=document.getElementById('notifFooter');if(!data.notifications||!data.notifications.length){list.innerHTML='';list.appendChild(empty);empty.classList.remove('d-none');footer.classList.add('d-none');return;}empty.classList.add('d-none');footer.classList.remove('d-none');list.innerHTML=data.notifications.map(n=>`<div class="notif-item px-3 py-2 border-bottom${n.is_read==0?' notif-unread':''}" style="cursor:pointer" onclick="readNotification(${n.notification_id},'${n.action_url||''}')"><div class="d-flex align-items-start"><i class="fas fa-bell me-2 mt-1" style="color:#4ED6C1"></i><div><div class="fw-semibold small">${escHtml(n.title)}</div><div class="small text-muted text-truncate">${escHtml(n.message)}</div><small class="text-muted">${n.time_ago||''}</small></div></div></div>`).join('');}).catch(()=>{});}
 function readNotification(id,url){fetch('<?php echo $base_url;?>api/notifications.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'mark_read',notification_id:id})}).then(()=>{fetchNotifCount();if(url)window.location.href=url;});}
