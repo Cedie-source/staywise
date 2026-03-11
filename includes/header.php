@@ -32,9 +32,25 @@ if (!empty($_SESSION['must_change_password'])) {
     }
 }
 
-// Fetch display name for header avatar
+// Fetch display name and profile photo for header avatar
 $_headerName = $_SESSION['username'] ?? '';
 $_headerInitials = strtoupper(substr($_headerName, 0, 2));
+$_headerPhoto = '';
+if (isset($_SESSION['user_id'])) {
+    try {
+        $__ps = $conn->prepare("SELECT profile_photo FROM users WHERE id = ?");
+        if ($__ps) {
+            $__ps->bind_param("i", $_SESSION['user_id']);
+            $__ps->execute();
+            $__pr = $__ps->get_result()->fetch_assoc();
+            $__ps->close();
+            if (!empty($__pr['profile_photo'])) {
+                $__path = __DIR__ . '/../uploads/profiles/' . $__pr['profile_photo'];
+                if (file_exists($__path)) $_headerPhoto = '/uploads/profiles/' . $__pr['profile_photo'];
+            }
+        }
+    } catch (Throwable $e) {}
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,7 +74,7 @@ $_headerInitials = strtoupper(substr($_headerName, 0, 2));
   --topbar-h: 58px;
   --sidebar-w: 230px;
   --brand-teal: #4ED6C1;
-  --brand-dark: #111111;
+  --brand-dark: #0D1B2A;
   --brand-blue: #007DFE;
   --nav-active-bg: rgba(78,214,193,.13);
   --nav-active-color: #4ED6C1;
@@ -83,7 +99,7 @@ body:not(.dark-mode) #topBar {
   box-shadow: 0 1px 8px rgba(0,0,0,.06);
 }
 body.dark-mode #topBar {
-  background: #111111;
+  background: #0D1B2A;
   border-bottom-color: rgba(255,255,255,.08);
 }
 
@@ -139,9 +155,10 @@ body.dark-mode .topbar-btn:hover { background: rgba(255,255,255,.12); }
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; border: 2px solid transparent;
   transition: border-color .15s;
-  flex-shrink: 0;
+  flex-shrink: 0; overflow: hidden;
 }
 .topbar-avatar:hover { border-color: #4ED6C1; }
+.topbar-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
 /* Dropdown menu */
 .topbar-dropdown {
@@ -188,7 +205,7 @@ body.dark-mode .topbar-dropdown hr { border-color: rgba(255,255,255,.06); }
   background: #ef4444; border: 2px solid #fff;
   display: none;
 }
-body.dark-mode .topbar-badge { border-color: #111111; }
+body.dark-mode .topbar-badge { border-color: #0D1B2A; }
 .topbar-badge.visible { display: block; }
 
 /* Notif panel */
@@ -224,54 +241,46 @@ body.dark-mode .notif-item:hover { background: rgba(255,255,255,.03); }
 body.dark-mode .notif-item { border-bottom-color: rgba(255,255,255,.04); }
 .notif-unread { background: rgba(78,214,193,.05); }
 
-/* ── LEFT SIDEBAR ── */
+/* ── LEFT SIDEBAR — always dark ── */
 #sidebar {
   position: fixed; left: 0; top: var(--topbar-h); bottom: 0;
   width: var(--sidebar-w); z-index: 1040;
   display: flex; flex-direction: column;
   transition: transform .25s cubic-bezier(.4,0,.2,1);
   overflow: hidden;
+  background: #0D1B2A;
+  border-right: 1px solid rgba(255,255,255,.06);
 }
-body:not(.dark-mode) #sidebar { background: #fff; border-right: 1px solid rgba(0,0,0,.07); }
-body.dark-mode #sidebar { background: #111111; border-right: 1px solid rgba(255,255,255,.06); }
 
 .sidebar-scroll {
   flex: 1; overflow-y: auto; padding: 10px 8px;
-  scrollbar-width: thin;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.08) transparent;
 }
-body:not(.dark-mode) .sidebar-scroll { scrollbar-color: rgba(0,0,0,.1) transparent; }
-body.dark-mode .sidebar-scroll { scrollbar-color: rgba(255,255,255,.08) transparent; }
 
-/* Nav links */
+/* Nav links — always dark style */
 .nav-link {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 12px; border-radius: 9px;
   font-size: .84rem; font-weight: 500;
   transition: background .15s, color .15s;
   white-space: nowrap;
+  color: #94a3b8;
 }
-body:not(.dark-mode) .nav-link { color: #475569; }
-body:not(.dark-mode) .nav-link:hover { background: #f1f5f9; color: #0f172a; }
-body:not(.dark-mode) .nav-link.active { background: var(--nav-active-bg); color: #0d9488; font-weight: 600; }
-body.dark-mode .nav-link { color: #94a3b8; }
-body.dark-mode .nav-link:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
-body.dark-mode .nav-link.active { background: var(--nav-active-bg); color: var(--nav-active-color); font-weight: 600; }
+.nav-link:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+.nav-link.active { background: var(--nav-active-bg); color: var(--nav-active-color); font-weight: 600; }
 .nav-link i { width: 18px; text-align: center; font-size: .88rem; flex-shrink: 0; }
 
 /* Nav section label */
 .nav-section-label {
   font-size: .67rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .09em; padding: 14px 12px 4px;
+  color: #475569;
 }
-body:not(.dark-mode) .nav-section-label { color: #94a3b8; }
-body.dark-mode .nav-section-label { color: #475569; }
 
 /* Sidebar footer */
 .sidebar-footer {
-  padding: 10px 8px; flex-shrink: 0;
+  padding: 10px 8px; border-top: 1px solid rgba(255,255,255,.06); flex-shrink: 0;
 }
-body:not(.dark-mode) .sidebar-footer { border-top: 1px solid rgba(0,0,0,.07); }
-body.dark-mode .sidebar-footer { border-top: 1px solid rgba(255,255,255,.06); }
 
 /* Dark mode toggle */
 .dark-toggle {
@@ -279,11 +288,9 @@ body.dark-mode .sidebar-footer { border-top: 1px solid rgba(255,255,255,.06); }
   padding: 8px 12px; border-radius: 9px; cursor: pointer;
   font-size: .84rem; font-weight: 500; border: none; width: 100%;
   transition: background .15s;
+  background: rgba(255,255,255,.07); color: #94a3b8;
 }
-body:not(.dark-mode) .dark-toggle { background: #f1f5f9; color: #475569; }
-body:not(.dark-mode) .dark-toggle:hover { background: #e2e8f0; }
-body.dark-mode .dark-toggle { background: rgba(255,255,255,.07); color: #94a3b8; }
-body.dark-mode .dark-toggle:hover { background: rgba(255,255,255,.12); }
+.dark-toggle:hover { background: rgba(255,255,255,.12); }
 
 /* Toggle pill */
 .dark-toggle-pill {
@@ -321,7 +328,7 @@ body.dark-mode .dark-toggle-pill::after { transform: translateX(14px); }
   padding: 4px 8px 4px;
 }
 body:not(.dark-mode) #mobileBottomNav { background: #fff; border-top: 1px solid #e2e8f0; }
-body.dark-mode #mobileBottomNav { background: #111111; border-top: 1px solid rgba(255,255,255,.07); }
+body.dark-mode #mobileBottomNav { background: #0D1B2A; border-top: 1px solid rgba(255,255,255,.07); }
 #mobileBottomNav .mnav-item {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px;
@@ -399,7 +406,11 @@ body.dark-mode #mobileBottomNav .mnav-item:hover { color: #4ED6C1; }
     <!-- User avatar dropdown -->
     <div style="position:relative;">
       <div class="topbar-avatar" id="avatarBtn" onclick="toggleAvatarDropdown()" title="Account">
-        <?php echo $_headerInitials; ?>
+        <?php if ($_headerPhoto): ?>
+          <img src="<?php echo htmlspecialchars($_headerPhoto); ?>" alt="avatar">
+        <?php else: ?>
+          <?php echo $_headerInitials; ?>
+        <?php endif; ?>
       </div>
       <div class="topbar-dropdown" id="avatarDropdown">
         <div class="topbar-dropdown-header"><?php echo htmlspecialchars($_headerName); ?></div>
