@@ -650,6 +650,37 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
     <?php endif; ?>
 
     <?php
+    // ── Show covered future months if credit/overpayment exists ─────────
+    if ($running_balance < 0 && $rent_amount > 0) {
+        $total_credit = abs($running_balance);
+        $covered_months = [];
+        $check_dt = clone $current_dt;
+        $remaining = $total_credit;
+        $max_lookahead = 12;
+        for ($i = 0; $i < $max_lookahead && $remaining >= $rent_amount; $i++) {
+            $check_dt->modify('+1 month');
+            $covered_months[] = $check_dt->format('F Y');
+            $remaining -= $rent_amount;
+        }
+        if (!empty($covered_months)):
+    ?>
+    <div class="alert border-0 rounded-3 shadow-sm mb-3 d-flex align-items-start gap-2" style="background:#dcfce7;color:#15803d;">
+        <i class="fas fa-calendar-check mt-1 flex-shrink-0"></i>
+        <div>
+            <strong>Future months already covered by your credit (₱<?= number_format($total_credit, 2) ?>):</strong>
+            <div class="d-flex flex-wrap gap-2 mt-1">
+                <?php foreach ($covered_months as $cm): ?>
+                <span style="background:#bbf7d0;border-radius:6px;padding:2px 10px;font-size:.8rem;font-weight:600;"><?= $cm ?></span>
+                <?php endforeach; ?>
+            </div>
+            <?php if ($remaining > 0 && $remaining < $rent_amount): ?>
+            <div style="font-size:.75rem;margin-top:4px;opacity:.8;">+ ₱<?= number_format($remaining, 2) ?> partial credit toward <?= $check_dt->modify('+1 month')->format('F Y') ?></div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; } ?>
+
+    <?php
     // Check if there are stuck pending PayMongo records (paymongo not ready = these will never auto-verify)
     $stuck_count = 0;
     if (!$paymongo_ready) {
