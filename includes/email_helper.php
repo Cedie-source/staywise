@@ -80,9 +80,7 @@ if (!function_exists('staywise_send_email')) {
                     $mail->SMTPSecure = SMTP_ENCRYPTION === 'ssl' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = SMTP_PORT;
                     $mail->CharSet    = 'UTF-8';
-                    // Prevent page from hanging on SMTP connection timeout
-                    $mail->Timeout    = 10;  // seconds to wait for SMTP connection
-                    $mail->SMTPKeepAlive = false;
+                    $mail->Timeout    = 10;
 
                     // Recipients
                     $mail->setFrom(SMTP_FROM_EMAIL, $from_name);
