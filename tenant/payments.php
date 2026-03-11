@@ -372,17 +372,17 @@ include '../includes/header.php';
 <style>
 /* ── Payments Page Redesign ── */
 .pay-hero {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
     border-radius: 16px;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid #bae6fd;
     padding: 1.5rem 1.75rem;
     margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
 }
 body.dark-mode .pay-hero {
-    background: #1a1a1a;
-    border-color: rgba(255,255,255,.08);
+    background: linear-gradient(135deg, #0f2744 0%, #0c3d2e 100%);
+    border-color: #1e4d6b;
 }
 .pay-hero::before {
     content: '';
@@ -402,7 +402,7 @@ body.dark-mode .pay-hero {
     background: rgba(34, 197, 94, 0.05);
     pointer-events: none;
 }
-.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
+.pay-hero .hero-label { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #0369a1; font-weight: 600; }
 body.dark-mode .pay-hero .hero-label { color: rgba(255,255,255,.6); }
 .pay-hero .hero-amount { font-size: 2.6rem; font-weight: 800; line-height: 1.1; color: #0f172a; }
 body.dark-mode .pay-hero .hero-amount { color: #fff; }
@@ -514,8 +514,8 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
     border-bottom: 1px solid #e2e8f0 !important;
 }
 body.dark-mode #payHistoryHeader {
-    background-color: #111111 !important;
-    border-bottom-color: rgba(255,255,255,.08) !important;
+    background-color: #1f2530 !important;
+    border-bottom-color: #2d3748 !important;
 }
 body.dark-mode #payHistoryHeader,
 body.dark-mode #payHistoryHeader h6 {
@@ -896,7 +896,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
         <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
-                <div class="card-header border-bottom px-3 px-md-4 pt-3 pb-0" id="payHistoryHeader" style="background:#fff !important;">
+                <div class="card-header border-bottom px-3 px-md-4 pt-3 pb-0" id="payHistoryHeader">
                     <!-- Row 1: Title -->
                     <h6 class="fw-bold mb-3" style="font-size:.95rem;">
                         <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
