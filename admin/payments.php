@@ -31,6 +31,27 @@ if (isset($_GET['history'])) {
     exit();
 }
 
+// ── AJAX polling endpoint: new payments since a given timestamp ──────
+if (isset($_GET['poll_since'])) {
+    $since = $_GET['poll_since'];
+    $stmt = $conn->prepare("
+        SELECT p.*, t.name, t.unit_number, t.email
+        FROM payments p
+        JOIN tenants t ON p.tenant_id = t.tenant_id
+        WHERE t.deleted_at IS NULL AND p.created_at > ?
+        ORDER BY p.created_at DESC
+    ");
+    $stmt->bind_param("s", $since);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $rows = [];
+    while ($row = $result->fetch_assoc()) $rows[] = $row;
+    $stmt->close();
+    header('Content-Type: application/json');
+    echo json_encode($rows);
+    exit();
+}
+
 // Handle payment status updates
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -162,7 +183,7 @@ include '../includes/header.php';
                         </thead>
                         <tbody>
                             <?php while ($payment = $payments->fetch_assoc()): ?>
-                                <tr data-status="<?php echo $payment['status']; ?>">
+                                <tr data-status="<?php echo $payment['status']; ?>" data-id="<?php echo $payment['payment_id']; ?>">
                                     <td class="align-middle">
                                         <div class="tenant-cell">
                                             <button class="btn btn-link p-0" onclick="viewTenantPayments('<?php echo addslashes($payment['tenant_id']); ?>', '<?php echo addslashes($payment['name']); ?>')">
@@ -320,73 +341,128 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updateStats() {
         const rows = table.querySelectorAll('tbody tr');
-        let pendingCount = 0;
-        let verifiedCount = 0;
-    let totalAmount = 0;
-        
+        let pendingCount = 0, verifiedCount = 0, totalAmount = 0;
         rows.forEach(row => {
             if (row.style.display !== 'none') {
                 const status = row.dataset.status;
-                // Robustly parse currency like "₱1,234.50" -> 1234.50
-                const amountText = row.cells[2].textContent || '';
-                const normalized = amountText.replace(/[^0-9.\-]/g, '');
-                const amount = parseFloat(normalized) || 0;
-
+                const amount = parseFloat((row.cells[2].textContent || '').replace(/[^0-9.\-]/g, '')) || 0;
                 if (status === 'pending') pendingCount++;
-                if (status === 'verified') {
-                    verifiedCount++;
-                    totalAmount += amount; // Only sum money that actually "went in"
-                }
+                if (status === 'verified') { verifiedCount++; totalAmount += amount; }
             }
         });
-        
         document.getElementById('pendingCount').textContent = pendingCount;
         document.getElementById('verifiedCount').textContent = verifiedCount;
-    document.getElementById('totalAmount').textContent = '₱' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('totalAmount').textContent = '₱' + totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
     
     function filterTable(status) {
-        const rows = table.querySelectorAll('tbody tr');
-        
-        rows.forEach(row => {
-            if (status === 'all' || row.dataset.status === status) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+        table.querySelectorAll('tbody tr').forEach(row => {
+            row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
         });
-        
         updateStats();
     }
     
     filterButtons.forEach(button => {
-        button.addEventListener('change', function() {
-            if (this.checked) {
-                filterTable(this.id);
-            }
-        });
+        button.addEventListener('change', function() { if (this.checked) filterTable(this.id); });
     });
     
-    // Initial stats calculation
     updateStats();
 
-    // Payment search: filter rows by text, respects active status filter
     const paymentSearch = document.getElementById('paymentSearch');
     if (paymentSearch) {
         paymentSearch.addEventListener('input', function() {
             const q = this.value.toLowerCase();
-            const activeFilter = document.querySelector('input[name="filter"]:checked');
-            const statusFilter = activeFilter ? activeFilter.id : 'all';
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const matchesText = !q || row.textContent.toLowerCase().includes(q);
-                const matchesStatus = statusFilter === 'all' || row.dataset.status === statusFilter;
-                row.style.display = (matchesText && matchesStatus) ? '' : 'none';
+            const statusFilter = (document.querySelector('input[name="filter"]:checked') || {id:'all'}).id;
+            table.querySelectorAll('tbody tr').forEach(row => {
+                row.style.display = ((!q || row.textContent.toLowerCase().includes(q)) && (statusFilter === 'all' || row.dataset.status === statusFilter)) ? '' : 'none';
             });
             updateStats();
         });
     }
+
+    // ── Real-time polling for new payments ──────────────────────────
+    var lastPollTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    var knownIds = new Set();
+    table.querySelectorAll('tbody tr[data-id]').forEach(function(r) { knownIds.add(r.dataset.id); });
+
+    var methodLabels = {
+        'cash':              { label: 'Cash',          icon: 'fa-money-bill-wave', cls: 'bg-dark bg-opacity-75' },
+        'manual_gcash':      { label: 'GCash',         icon: 'fa-mobile-alt',      cls: 'bg-primary' },
+        'paymongo_gcash':    { label: 'GCash (Online)', icon: 'fa-mobile-alt',     cls: 'bg-info' },
+        'paymongo_grab_pay': { label: 'GrabPay',       icon: 'fa-car',             cls: 'bg-success' },
+        'paymongo_card':     { label: 'Card',          icon: 'fa-credit-card',     cls: 'bg-dark' },
+        'bank_transfer':     { label: 'Bank',          icon: 'fa-university',      cls: 'bg-secondary' },
+    };
+
+    function buildRow(p) {
+        var m = methodLabels[p.payment_method] || methodLabels['cash'];
+        var isPaymongo = p.payment_method && p.payment_method.startsWith('paymongo_');
+        var fm = p.for_month ? new Date(p.for_month + '-02').toLocaleDateString('en-US', {month:'short', year:'numeric'}) : '—';
+        var pd = new Date(p.payment_date).toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric'});
+        var created = new Date(p.created_at).toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+        var proof = p.proof_file
+            ? '<a href="../uploads/payments/' + p.proof_file + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-file me-1"></i>View</a>'
+            : '<span class="text-muted">No file</span>';
+        var actions = isPaymongo
+            ? '<span class="badge bg-info text-white"><i class="fas fa-sync-alt me-1"></i>Processing</span><small class="text-muted d-block mt-1">Auto-verifies on refresh</small>'
+            : '<div class="btn-group" role="group">'
+              + '<form method="POST" class="d-inline"><input type="hidden" name="payment_id" value="' + p.payment_id + '"><input type="hidden" name="status" value="verified"><button type="submit" name="update_status" class="btn btn-sm btn-success" onclick="return confirm(\'Verify this payment?\')"><i class="fas fa-check"></i></button></form>'
+              + '<form method="POST" class="d-inline"><input type="hidden" name="payment_id" value="' + p.payment_id + '"><input type="hidden" name="status" value="rejected"><button type="submit" name="update_status" class="btn btn-sm btn-danger" onclick="return confirm(\'Reject this payment?\')"><i class="fas fa-times"></i></button></form>'
+              + '</div>';
+        var tr = document.createElement('tr');
+        tr.dataset.status = p.status;
+        tr.dataset.id = p.payment_id;
+        tr.style.background = '#fffbeb';
+        tr.innerHTML = '<td class="align-middle"><div class="tenant-cell"><strong>' + p.name + '</strong><small class="text-muted d-block">' + p.email + '</small></div></td>'
+            + '<td class="align-middle"><span class="badge bg-primary">' + p.unit_number + '</span></td>'
+            + '<td class="align-middle"><strong>₱' + parseFloat(p.amount).toLocaleString('en-US',{minimumFractionDigits:2}) + '</strong></td>'
+            + '<td class="align-middle"><span class="badge ' + m.cls + '"><i class="fas ' + m.icon + ' me-1"></i>' + m.label + '</span>' + (p.reference_no ? '<br><small class="text-muted">Ref: ' + p.reference_no + '</small>' : '') + '</td>'
+            + '<td class="align-middle">' + fm + '</td>'
+            + '<td class="align-middle">' + pd + '</td>'
+            + '<td class="align-middle">' + proof + '</td>'
+            + '<td class="align-middle"><span class="badge status-' + p.status + '">' + p.status.charAt(0).toUpperCase() + p.status.slice(1) + '</span></td>'
+            + '<td class="align-middle"><small class="text-muted">' + created + '</small></td>'
+            + '<td class="align-middle">' + actions + '</td>';
+        return tr;
+    }
+
+    function showToast(count) {
+        var existing = document.getElementById('newPaymentToast');
+        if (existing) existing.remove();
+        var toast = document.createElement('div');
+        toast.id = 'newPaymentToast';
+        toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#16a34a;color:#fff;padding:.75rem 1.25rem;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);font-weight:600;display:flex;align-items:center;gap:.6rem;';
+        toast.innerHTML = '<i class="fas fa-bell"></i> ' + count + ' new payment' + (count > 1 ? 's' : '') + ' received!';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.style.transition='opacity .5s'; toast.style.opacity='0'; setTimeout(function(){ toast.remove(); }, 500); }, 4000);
+    }
+
+    function pollNewPayments() {
+        fetch('payments.php?poll_since=' + encodeURIComponent(lastPollTime))
+            .then(function(r) { return r.json(); })
+            .then(function(rows) {
+                if (!rows.length) return;
+                var newRows = rows.filter(function(p) { return !knownIds.has(String(p.payment_id)); });
+                if (!newRows.length) return;
+                var tbody = table.querySelector('tbody');
+                var statusFilter = (document.querySelector('input[name="filter"]:checked') || {id:'all'}).id;
+                newRows.forEach(function(p) {
+                    knownIds.add(String(p.payment_id));
+                    var tr = buildRow(p);
+                    if (statusFilter !== 'all' && p.status !== statusFilter) tr.style.display = 'none';
+                    tbody.insertBefore(tr, tbody.firstChild);
+                    setTimeout(function() { tr.style.transition = 'background 1.5s'; tr.style.background = ''; }, 5000);
+                });
+                lastPollTime = rows[0].created_at;
+                showToast(newRows.length);
+                updateStats();
+            })
+            .catch(function() {});
+    }
+
+    setInterval(pollNewPayments, 10000);
 });
+
 function viewTenantPayments(tenantId, tenantName) {
     fetch('payments.php?history=' + tenantId)
         .then(response => response.json())
