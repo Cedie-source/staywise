@@ -1,15 +1,35 @@
 <?php
+// Buffer all output so header() calls never fail with "headers already sent"
+ob_start();
+
+// Suppress non-fatal errors from crashing the page; log them instead
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    if ($errno === E_ERROR || $errno === E_PARSE) return false; // let fatal errors through
+    error_log("change_password.php [$errno] $errstr in $errfile:$errline");
+    return true;
+});
+
 require_once 'includes/security.php';
 set_secure_session_cookies(); // Must be before session_start()
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'config/db.php';
 require_once 'includes/logger.php';
 require_once 'includes/email_helper.php';
 
 // Require login
 if (!isset($_SESSION['user_id'])) {
+    ob_end_clean();
     header('Location: index.php');
     exit();
+}
+
+// Verify DB connection
+if (!isset($conn) || $conn->connect_error) {
+    ob_end_clean();
+    http_response_code(503);
+    die('Database connection failed. Please try again later.');
 }
 
 // Ensure columns exist (best-effort)
@@ -120,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     unset($_SESSION['must_change_password']);
 
                     $role = strtolower($_SESSION['role'] ?? '');
+                    ob_end_clean();
                     header($role === 'tenant' ? 'Location: tenant/dashboard.php' : 'Location: admin/dashboard.php');
                     exit();
                 } else {
@@ -217,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     logAdminAction($conn, $uid, 'password_change', $logDetails);
                                     unset($_SESSION['must_change_password']);
                                     $role = strtolower($_SESSION['role'] ?? '');
+                                    ob_end_clean();
                                     header($role === 'tenant' ? 'Location: tenant/dashboard.php' : 'Location: admin/dashboard.php');
                                     exit();
                                 } else {
