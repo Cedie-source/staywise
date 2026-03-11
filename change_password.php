@@ -45,17 +45,9 @@ if (empty($_SESSION['user_id'])) {
     exit();
 }
 
-// Ensure required DB columns exist (safe, wrapped in try/catch)
-if (function_exists('db_ensure_user_force_change_columns')) {
-    try {
-        db_ensure_user_force_change_columns($conn);
-    } catch (Throwable $e) {
-        error_log('db_ensure_user_force_change_columns failed: ' . $e->getMessage());
-    }
-    // Clear any mysqli error state left by ALTER TABLE queries inside db_ensure
-    // Without this, subsequent prepare() calls can fail silently
-    try { while ($conn->more_results()) { $conn->next_result(); } } catch (Throwable $e) {}
-}
+// Note: db_ensure_user_force_change_columns intentionally NOT called here.
+// ALTER TABLE queries leave mysqli in an error state that breaks subsequent prepare() calls.
+// Columns are already created on first login — no need to re-check on every password change.
 
 // ── Helper functions ────────────────────────────────────────────────────────
 
@@ -257,6 +249,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($errors)) {
                 // ── Verify current password ──────────────────────────────────
                 $row = null;
+                // Ensure connection is alive before querying
+                try { if (!$conn->ping()) { $conn->connect(); } } catch (Throwable $e) {}
                 try {
                     $stmt = $conn->prepare('SELECT password FROM users WHERE id = ?');
                     if ($stmt) {
