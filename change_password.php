@@ -513,6 +513,29 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
             var t = setInterval(function(){
                 if (--cd <= 0) { resendBtn.disabled = false; resendBtn.style.opacity = ''; clearInterval(t); }
             }, 1000);
+
+            // Show loading state when resend is clicked
+            resendBtn.closest('form').addEventListener('submit', function() {
+                resendBtn.disabled = true;
+                resendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending\u2026';
+                resendBtn.style.opacity = '0.7';
+            });
+        }
+
+        // Show loading state when verifying OTP
+        var verifyForm = document.querySelector('form input[name="action"][value="verify_otp"]');
+        if (verifyForm) {
+            verifyForm.closest('form').addEventListener('submit', function() {
+                var btn = this.querySelector('button[type="submit"]');
+                var otp = document.getElementById('otp_code');
+                if (otp && /^\d{6}$/.test(otp.value)) {
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verifying\u2026';
+                        btn.style.opacity = '0.7';
+                    }
+                }
+            });
         }
     })();
     </script>
@@ -585,15 +608,49 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
                 <a href="<?= htmlspecialchars($back_link) ?>" class="btn-outline-tc"><i class="fas fa-arrow-left"></i> Back</a>
             <?php endif; ?>
 
-            <button type="submit" class="btn-tc-save">
+            <button type="submit" class="btn-tc-save" id="submitPwBtn">
                 <?php if (!empty($_SESSION['must_change_password'])): ?>
                     <i class="fas fa-key"></i> Set New Password
                 <?php else: ?>
-                    <i class="fas fa-paper-plane"></i> Send Verification Code
+                    <i class="fas fa-paper-plane" id="submitPwIcon"></i>
+                    <span id="submitPwText">Send Verification Code</span>
                 <?php endif; ?>
             </button>
         </div>
     </form>
+
+    <?php if (empty($_SESSION['must_change_password'])): ?>
+    <!-- Loading overlay shown while email is being sent -->
+    <div id="pwSendingOverlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.92);border-radius:14px;z-index:10;display:none;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;">
+        <div style="width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#16a34a;border-radius:50%;animation:cpwSpin .75s linear infinite;"></div>
+        <div style="font-size:.9rem;font-weight:600;color:#374151;">Sending verification code&hellip;</div>
+        <div style="font-size:.78rem;color:#94a3b8;">Please wait, this may take a few seconds.</div>
+    </div>
+    <style>
+        @keyframes cpwSpin { to { transform: rotate(360deg); } }
+        #pwSendingOverlay { display: none; }
+        #pwSendingOverlay.active { display: flex !important; }
+        .cpw-card { position: relative; overflow: hidden; }
+    </style>
+    <script>
+    (function() {
+        var form = document.querySelector('form[method="post"] input[name="action"][value="validate"]');
+        if (!form) return;
+        var parentForm = form.closest('form');
+        if (!parentForm) return;
+        parentForm.addEventListener('submit', function(e) {
+            var newPw  = (document.getElementById('new_password') || {}).value || '';
+            var conf   = (document.getElementById('confirm_password') || {}).value || '';
+            var curr   = (document.getElementById('current_password') || {}).value || '';
+            // Only show loader if basic client-side checks pass
+            if (!curr || !newPw || !conf || newPw !== conf || newPw.length < 8) return;
+            var overlay = document.getElementById('pwSendingOverlay');
+            var btn     = document.getElementById('submitPwBtn');
+            if (overlay) overlay.classList.add('active');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+        });
+    })();
+    </script>
     <?php endif; ?>
 
     </div><!-- .cpw-card -->
