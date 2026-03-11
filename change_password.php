@@ -1,176 +1,228 @@
 <?php
-// Buffer all output so header() calls never fail with "headers already sent"
+/**
+ * change_password.php - StayWise Password Change
+ * Fixed version: output buffering, session safety, error handling
+ */
+
+// Start output buffering FIRST - prevents "headers already sent" errors
 ob_start();
 
-// Suppress non-fatal errors from crashing the page; log them instead
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    if ($errno === E_ERROR || $errno === E_PARSE) return false; // let fatal errors through
-    error_log("change_password.php [$errno] $errstr in $errfile:$errline");
-    return true;
-});
+// Show errors only in development - on Railway these get logged not displayed
+// Remove this line in production if you want to hide errors completely  
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
 
-require_once 'includes/security.php';
-set_secure_session_cookies(); // Must be before session_start()
+// Load dependencies
+require_once __DIR__ . '/includes/security.php';
+
+// Set secure cookie params BEFORE session_start
+set_secure_session_cookies();
+
+// Start session only if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once 'config/db.php';
-require_once 'includes/logger.php';
-require_once 'includes/email_helper.php';
 
-// Require login
-if (!isset($_SESSION['user_id'])) {
+// Load DB
+require_once __DIR__ . '/config/db.php';
+
+// Verify DB connected successfully
+if (!isset($conn) || ($conn instanceof mysqli && $conn->connect_error)) {
+    ob_end_clean();
+    http_response_code(503);
+    die('<!DOCTYPE html><html><body><h2>Database connection failed. Please try again later.</h2></body></html>');
+}
+
+// Load helpers
+require_once __DIR__ . '/includes/logger.php';
+require_once __DIR__ . '/includes/email_helper.php';
+
+// Must be logged in
+if (empty($_SESSION['user_id'])) {
     ob_end_clean();
     header('Location: index.php');
     exit();
 }
 
-// Verify DB connection
-if (!isset($conn) || $conn->connect_error) {
-    ob_end_clean();
-    http_response_code(503);
-    die('Database connection failed. Please try again later.');
+// Ensure required DB columns exist (safe, wrapped in try/catch)
+if (function_exists('db_ensure_user_force_change_columns')) {
+    try {
+        db_ensure_user_force_change_columns($conn);
+    } catch (Throwable $e) {
+        error_log('db_ensure_user_force_change_columns failed: ' . $e->getMessage());
+    }
 }
 
-// Ensure columns exist (best-effort)
-if (function_exists('db_ensure_user_force_change_columns')) {
-    db_ensure_user_force_change_columns($conn);
+// ── Helper functions ────────────────────────────────────────────────────────
+
+if (!function_exists('_get_user_email_for_otp')) {
+    function _get_user_email_for_otp($conn, $user_id) {
+        try {
+            $stmt = $conn->prepare('SELECT email, username, full_name, role FROM users WHERE id = ?');
+            if (!$stmt) return ['email' => null, 'name' => '', 'role' => 'tenant', 'username' => ''];
+            $stmt->bind_param('i', $user_id);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        } catch (Throwable $e) {
+            return ['email' => null, 'name' => '', 'role' => 'tenant', 'username' => ''];
+        }
+
+        $email = !empty($row['email']) ? $row['email'] : null;
+        $name  = !empty($row['full_name']) ? $row['full_name'] : ($row['username'] ?? '');
+        $role  = $row['role'] ?? 'tenant';
+
+        // Fallback: check tenants table
+        if (!$email) {
+            try {
+                $stmt2 = $conn->prepare('SELECT email, name FROM tenants WHERE user_id = ?');
+                if ($stmt2) {
+                    $stmt2->bind_param('i', $user_id);
+                    $stmt2->execute();
+                    $tRow = $stmt2->get_result()->fetch_assoc();
+                    $stmt2->close();
+                    if ($tRow && !empty($tRow['email'])) {
+                        $email = $tRow['email'];
+                        if (empty($name)) $name = $tRow['name'];
+                    }
+                }
+            } catch (Throwable $e) { /* ignore */ }
+        }
+
+        return ['email' => $email, 'name' => $name, 'role' => $role, 'username' => $row['username'] ?? ''];
+    }
 }
+
+if (!function_exists('_generate_otp')) {
+    function _generate_otp() {
+        return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+}
+
+// ── Page variables ──────────────────────────────────────────────────────────
 
 $page_title = 'Change Password';
-$errors = [];
-$success = null;
-$otp_sent = false;
+$errors     = [];
+$success    = null;
+$otp_sent   = false;
 $otp_resent = false;
 
-// Check if we're already in OTP step
+// Check if already in OTP step
 if (!empty($_SESSION['pw_otp_code']) && !empty($_SESSION['pw_otp_expires'])) {
     $otp_sent = true;
 }
 
-// Helper: get user email for OTP
-if (!function_exists('_get_user_email_for_otp')) {
-function _get_user_email_for_otp($conn, $user_id) {
-    $stmt = $conn->prepare('SELECT email, username, full_name, role FROM users WHERE id = ?');
-    $stmt->bind_param('i', $user_id);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    $email = !empty($row['email']) ? $row['email'] : null;
-    $name  = !empty($row['full_name']) ? $row['full_name'] : $row['username'];
-    $role  = $row['role'] ?? 'tenant';
-
-    // Fallback: check tenants table
-    if (!$email) {
-        $stmt2 = $conn->prepare('SELECT email, name FROM tenants WHERE user_id = ?');
-        $stmt2->bind_param('i', $user_id);
-        $stmt2->execute();
-        $tRow = $stmt2->get_result()->fetch_assoc();
-        $stmt2->close();
-        if ($tRow && !empty($tRow['email'])) {
-            $email = $tRow['email'];
-            if (empty($name) || $name === ($row['username'] ?? '')) {
-                $name = $tRow['name'];
-            }
-        }
-    }
-    return ['email' => $email, 'name' => $name, 'role' => $role, 'username' => $row['username'] ?? ''];
-}
-} // end if(!function_exists('_get_user_email_for_otp'))
-
-// Helper: generate OTP
-if (!function_exists('_generate_otp')) {
-function _generate_otp() {
-    return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-}
-} // end if(!function_exists('_generate_otp'))
+// ── POST handling ───────────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        $errors[] = 'Invalid request token. Please try again.';
-    } else {
-        $action = $_POST['action'] ?? 'validate';
 
-        // --- STEP 2: Verify OTP and change password ---
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Invalid request token. Please refresh the page and try again.';
+    } else {
+        $action = trim($_POST['action'] ?? 'validate');
+
+        // ── STEP 2: Verify OTP ──────────────────────────────────────────────
         if ($action === 'verify_otp') {
             $entered_otp = trim($_POST['otp_code'] ?? '');
 
             if (empty($_SESSION['pw_otp_code']) || empty($_SESSION['pw_otp_expires'])) {
                 $errors[] = 'No pending verification. Please start over.';
                 $otp_sent = false;
-            } elseif (time() > $_SESSION['pw_otp_expires']) {
+            } elseif (time() > (int)$_SESSION['pw_otp_expires']) {
                 $errors[] = 'Verification code has expired. Please click "Start Over" and try again.';
                 unset($_SESSION['pw_otp_code'], $_SESSION['pw_otp_expires'], $_SESSION['pw_new_hash']);
                 $otp_sent = false;
             } elseif (empty($entered_otp)) {
-                $errors[] = 'Please enter the 6-digit verification code sent to your email.';
+                $errors[] = 'Please enter the 6-digit verification code.';
                 $otp_sent = true;
             } elseif (!preg_match('/^\d{6}$/', $entered_otp)) {
                 $errors[] = 'The verification code must be exactly 6 digits.';
                 $otp_sent = true;
-            } elseif (!hash_equals($_SESSION['pw_otp_code'], $entered_otp)) {
-                $_SESSION['pw_otp_attempts'] = ($_SESSION['pw_otp_attempts'] ?? 0) + 1;
+            } elseif (!hash_equals((string)$_SESSION['pw_otp_code'], $entered_otp)) {
+                $_SESSION['pw_otp_attempts'] = (int)($_SESSION['pw_otp_attempts'] ?? 0) + 1;
                 if ($_SESSION['pw_otp_attempts'] >= 5) {
                     $errors[] = 'Too many incorrect attempts. Please start over.';
                     unset($_SESSION['pw_otp_code'], $_SESSION['pw_otp_expires'], $_SESSION['pw_new_hash'], $_SESSION['pw_otp_attempts']);
                     $otp_sent = false;
                 } else {
-                    $remaining = 5 - $_SESSION['pw_otp_attempts'];
-                    $errors[] = 'Incorrect verification code. ' . $remaining . ' attempt' . ($remaining === 1 ? '' : 's') . ' remaining.';
+                    $remaining = 5 - (int)$_SESSION['pw_otp_attempts'];
+                    $errors[] = 'Incorrect code. ' . $remaining . ' attempt' . ($remaining === 1 ? '' : 's') . ' remaining.';
                     $otp_sent = true;
                 }
             } else {
-                // OTP correct — change the password
-                $newHash = $_SESSION['pw_new_hash'];
-                $uid = (int)$_SESSION['user_id'];
+                // OTP correct — update password
+                $newHash = (string)$_SESSION['pw_new_hash'];
+                $uid     = (int)$_SESSION['user_id'];
 
-                if (db_column_exists($conn, 'users', 'password_changed_at')) {
-                    $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
-                } else {
-                    $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
-                }
-                $upd->bind_param('si', $newHash, $uid);
-
-                if ($upd->execute()) {
-                    $userInfo = _get_user_email_for_otp($conn, $uid);
-                    $logDetails = ucfirst($userInfo['role']) . ' "' . $userInfo['username'] . '" (' . $userInfo['name'] . ') changed their password';
-                    logAdminAction($conn, $uid, 'password_change', $logDetails);
-
-                    if (function_exists('notify_admin_password_change')) {
-                        notify_admin_password_change($conn, $userInfo['name'], $userInfo['role'], $userInfo['email'] ?? '');
+                try {
+                    if (function_exists('db_column_exists') && db_column_exists($conn, 'users', 'password_changed_at')) {
+                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
+                    } else {
+                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
                     }
 
-                    unset($_SESSION['pw_otp_code'], $_SESSION['pw_otp_expires'], $_SESSION['pw_new_hash'], $_SESSION['pw_otp_attempts'], $_SESSION['pw_otp_email']);
-                    unset($_SESSION['must_change_password']);
+                    if (!$upd) throw new RuntimeException('Prepare failed: ' . $conn->error);
+                    $upd->bind_param('si', $newHash, $uid);
 
-                    $role = strtolower($_SESSION['role'] ?? '');
-                    ob_end_clean();
-                    header($role === 'tenant' ? 'Location: tenant/dashboard.php' : 'Location: admin/dashboard.php');
-                    exit();
-                } else {
-                    $errors[] = 'Failed to update password. Please try again.';
+                    if ($upd->execute()) {
+                        $upd->close();
+
+                        // Log the action
+                        try {
+                            $userInfo = _get_user_email_for_otp($conn, $uid);
+                            $logDetails = ucfirst($userInfo['role']) . ' "' . $userInfo['username'] . '" (' . $userInfo['name'] . ') changed their password';
+                            logAdminAction($conn, $uid, 'password_change', $logDetails);
+                            if (function_exists('notify_admin_password_change')) {
+                                notify_admin_password_change($conn, $userInfo['name'], $userInfo['role'], $userInfo['email'] ?? '');
+                            }
+                        } catch (Throwable $e) {
+                            error_log('Post-password-change log error: ' . $e->getMessage());
+                        }
+
+                        unset($_SESSION['pw_otp_code'], $_SESSION['pw_otp_expires'], $_SESSION['pw_new_hash'],
+                              $_SESSION['pw_otp_attempts'], $_SESSION['pw_otp_email'], $_SESSION['must_change_password']);
+
+                        $role = strtolower((string)($_SESSION['role'] ?? ''));
+                        ob_end_clean();
+                        header('Location: ' . ($role === 'tenant' ? 'tenant/dashboard.php' : 'admin/dashboard.php'));
+                        exit();
+                    } else {
+                        $upd->close();
+                        $errors[] = 'Failed to update password. Please try again.';
+                        $otp_sent = true;
+                    }
+                } catch (Throwable $e) {
+                    error_log('Password update error: ' . $e->getMessage());
+                    $errors[] = 'An error occurred while updating your password. Please try again.';
+                    $otp_sent = true;
                 }
-                $upd->close();
             }
 
-        // --- RESEND OTP ---
+        // ── RESEND OTP ──────────────────────────────────────────────────────
         } elseif ($action === 'resend_otp') {
             if (!empty($_SESSION['pw_new_hash'])) {
-                $userInfo = _get_user_email_for_otp($conn, $_SESSION['user_id']);
-                if ($userInfo['email']) {
-                    $newOtp = _generate_otp();
-                    $_SESSION['pw_otp_code']     = $newOtp;
-                    $_SESSION['pw_otp_expires']  = time() + 600;
-                    $_SESSION['pw_otp_attempts'] = 0;
+                try {
+                    $userInfo = _get_user_email_for_otp($conn, (int)$_SESSION['user_id']);
+                    if (!empty($userInfo['email'])) {
+                        $newOtp = _generate_otp();
+                        $_SESSION['pw_otp_code']     = $newOtp;
+                        $_SESSION['pw_otp_expires']  = time() + 600;
+                        $_SESSION['pw_otp_attempts'] = 0;
 
-                    $emailSent = notify_password_otp($conn, $userInfo['email'], $userInfo['name'], $newOtp, 10);
-                    $otp_sent  = true;
-                    $otp_resent = ($emailSent !== false);
-                    if (!$otp_resent) {
-                        $errors[] = 'Failed to send email. Please check your email configuration or contact admin.';
+                        $emailSent = notify_password_otp($conn, $userInfo['email'], $userInfo['name'], $newOtp, 10);
+                        $otp_sent  = true;
+                        $otp_resent = ($emailSent !== false);
+                        if (!$otp_resent) {
+                            $errors[] = 'Failed to send email. Please check your spam folder or contact admin.';
+                        }
+                    } else {
+                        $errors[] = 'No email address found. Please contact your administrator.';
+                        $otp_sent = true;
                     }
-                } else {
-                    $errors[] = 'No email address found. Please contact your administrator.';
+                } catch (Throwable $e) {
+                    error_log('Resend OTP error: ' . $e->getMessage());
+                    $errors[] = 'Failed to resend code. Please try again.';
                     $otp_sent = true;
                 }
             } else {
@@ -178,238 +230,191 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $otp_sent = false;
             }
 
-        // --- CANCEL OTP ---
+        // ── CANCEL OTP ──────────────────────────────────────────────────────
         } elseif ($action === 'cancel_otp') {
-            unset($_SESSION['pw_otp_code'], $_SESSION['pw_otp_expires'], $_SESSION['pw_new_hash'], $_SESSION['pw_otp_attempts'], $_SESSION['pw_otp_email']);
+            unset($_SESSION['pw_otp_code'], $_SESSION['pw_otp_expires'], $_SESSION['pw_new_hash'],
+                  $_SESSION['pw_otp_attempts'], $_SESSION['pw_otp_email']);
             $otp_sent = false;
 
-        // --- STEP 1: Validate passwords and send OTP ---
+        // ── STEP 1: Validate passwords and send OTP ─────────────────────────
         } else {
-            $current = $_POST['current_password'] ?? '';
-            $new     = $_POST['new_password']     ?? '';
-            $confirm = $_POST['confirm_password'] ?? '';
+            $current = (string)($_POST['current_password'] ?? '');
+            $new     = (string)($_POST['new_password']     ?? '');
+            $confirm = (string)($_POST['confirm_password'] ?? '');
 
             // Password policy
             $pwErrs = [];
-            if (strlen($new) < 8)                                                    $pwErrs[] = 'at least 8 characters';
-            if (!preg_match('/[A-Z]/', $new))                                        $pwErrs[] = 'one uppercase letter';
-            if (!preg_match('/[0-9]/', $new))                                        $pwErrs[] = 'one number';
-            if (!preg_match('/[!@#$%^&*()_+\-=\[\]{};:\"\\\|,.<>\/?]/', $new))     $pwErrs[] = 'one special character';
+            if (strlen($new) < 8)                                                     $pwErrs[] = 'at least 8 characters';
+            if (!preg_match('/[A-Z]/', $new))                                         $pwErrs[] = 'one uppercase letter';
+            if (!preg_match('/[0-9]/', $new))                                         $pwErrs[] = 'one number';
+            if (!preg_match('/[!@#$%^&*()\-_=+\[\]{};:\'",.<>\/?\\\\|`~]/', $new))   $pwErrs[] = 'one special character';
             if (!empty($pwErrs)) $errors[] = 'New password must include: ' . implode(', ', $pwErrs) . '.';
             if ($new !== $confirm) $errors[] = 'New password and confirm password do not match.';
 
             if (empty($errors)) {
-                $stmt = $conn->prepare('SELECT password FROM users WHERE id = ?');
-                $stmt->bind_param('i', $_SESSION['user_id']);
-                $stmt->execute();
-                $row = $stmt->get_result()->fetch_assoc();
-                $stmt->close();
+                try {
+                    $stmt = $conn->prepare('SELECT password FROM users WHERE id = ?');
+                    if (!$stmt) throw new RuntimeException('DB prepare failed');
+                    $stmt->bind_param('i', (int)$_SESSION['user_id']);
+                    $stmt->execute();
+                    $row = $stmt->get_result()->fetch_assoc();
+                    $stmt->close();
 
-                if (!$row) {
-                    $errors[] = 'Account not found.';
-                } else {
-                    $stored = (string)$row['password'];
-                    $ok = false;
-                    if (!empty($stored) && (strpos($stored, '$2y$') === 0 || strpos($stored, '$argon2') === 0)) {
-                        $ok = password_verify($current, $stored);
+                    if (!$row) {
+                        $errors[] = 'Account not found.';
                     } else {
-                        $is_md5  = preg_match('/^[a-f0-9]{32}$/i', $stored) === 1;
-                        $is_sha1 = preg_match('/^[a-f0-9]{40}$/i', $stored) === 1;
-                        if ($is_md5)       { $ok = hash_equals(strtolower($stored), md5($current)); }
-                        elseif ($is_sha1)  { $ok = hash_equals(strtolower($stored), sha1($current)); }
-                        else               { $ok = hash_equals($stored, $current); }
-                    }
+                        $stored = (string)$row['password'];
+                        $ok = false;
 
-                    if (!$ok) {
-                        $errors[] = 'Current password is incorrect.';
-                    } else {
-                        $newHash = password_hash($new, PASSWORD_DEFAULT);
-                        if (!$newHash) {
-                            $errors[] = 'Failed to process new password.';
+                        if (!empty($stored) && (str_starts_with($stored, '$2y$') || str_starts_with($stored, '$argon2'))) {
+                            $ok = password_verify($current, $stored);
+                        } elseif (preg_match('/^[a-f0-9]{32}$/i', $stored)) {
+                            $ok = hash_equals(strtolower($stored), md5($current));
+                        } elseif (preg_match('/^[a-f0-9]{40}$/i', $stored)) {
+                            $ok = hash_equals(strtolower($stored), sha1($current));
                         } else {
-                            // Forced change — skip OTP
-                            if (!empty($_SESSION['must_change_password'])) {
-                                $uid = (int)$_SESSION['user_id'];
-                                if (db_column_exists($conn, 'users', 'password_changed_at')) {
-                                    $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
-                                } else {
-                                    $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
+                            $ok = hash_equals($stored, $current);
+                        }
+
+                        if (!$ok) {
+                            $errors[] = 'Current password is incorrect.';
+                        } else {
+                            $newHash = password_hash($new, PASSWORD_DEFAULT);
+
+                            if (!$newHash) {
+                                $errors[] = 'Failed to process new password. Please try again.';
+                            } elseif (!empty($_SESSION['must_change_password'])) {
+                                // Forced change — skip OTP
+                                try {
+                                    $uid = (int)$_SESSION['user_id'];
+                                    if (function_exists('db_column_exists') && db_column_exists($conn, 'users', 'password_changed_at')) {
+                                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
+                                    } else {
+                                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
+                                    }
+                                    if (!$upd) throw new RuntimeException('Prepare failed');
+                                    $upd->bind_param('si', $newHash, $uid);
+
+                                    if ($upd->execute()) {
+                                        $upd->close();
+                                        try {
+                                            $userInfo = _get_user_email_for_otp($conn, $uid);
+                                            logAdminAction($conn, $uid, 'password_change',
+                                                ucfirst($userInfo['role']) . ' "' . $userInfo['username'] . '" changed password (forced)');
+                                        } catch (Throwable $e) { /* ignore */ }
+                                        unset($_SESSION['must_change_password']);
+                                        $role = strtolower((string)($_SESSION['role'] ?? ''));
+                                        ob_end_clean();
+                                        header('Location: ' . ($role === 'tenant' ? 'tenant/dashboard.php' : 'admin/dashboard.php'));
+                                        exit();
+                                    } else {
+                                        $upd->close();
+                                        $errors[] = 'Failed to update password. Please try again.';
+                                    }
+                                } catch (Throwable $e) {
+                                    error_log('Forced password change error: ' . $e->getMessage());
+                                    $errors[] = 'An error occurred. Please try again.';
                                 }
-                                $upd->bind_param('si', $newHash, $uid);
-                                if ($upd->execute()) {
-                                    $userInfo = _get_user_email_for_otp($conn, $uid);
-                                    $logDetails = ucfirst($userInfo['role']) . ' "' . $userInfo['username'] . '" (' . $userInfo['name'] . ') changed their password (first login)';
-                                    logAdminAction($conn, $uid, 'password_change', $logDetails);
-                                    unset($_SESSION['must_change_password']);
-                                    $role = strtolower($_SESSION['role'] ?? '');
-                                    ob_end_clean();
-                                    header($role === 'tenant' ? 'Location: tenant/dashboard.php' : 'Location: admin/dashboard.php');
-                                    exit();
-                                } else {
-                                    $errors[] = 'Failed to update password. Please try again.';
-                                }
-                                $upd->close();
                             } else {
                                 // Normal change — send OTP
-                                $userInfo = _get_user_email_for_otp($conn, $_SESSION['user_id']);
-                                if (empty($userInfo['email'])) {
-                                    $errors[] = 'No email address on file. Please contact your administrator to add one before changing your password.';
-                                } else {
-                                    $otpCode = _generate_otp();
-                                    $_SESSION['pw_otp_code']     = $otpCode;
-                                    $_SESSION['pw_otp_expires']  = time() + 600;
-                                    $_SESSION['pw_new_hash']     = $newHash;
-                                    $_SESSION['pw_otp_email']    = $userInfo['email'];
-                                    $_SESSION['pw_otp_attempts'] = 0;
+                                try {
+                                    $userInfo = _get_user_email_for_otp($conn, (int)$_SESSION['user_id']);
+                                    if (empty($userInfo['email'])) {
+                                        $errors[] = 'No email address on file. Please ask your administrator to add one.';
+                                    } else {
+                                        $otpCode = _generate_otp();
+                                        $_SESSION['pw_otp_code']     = $otpCode;
+                                        $_SESSION['pw_otp_expires']  = time() + 600;
+                                        $_SESSION['pw_new_hash']     = $newHash;
+                                        $_SESSION['pw_otp_email']    = $userInfo['email'];
+                                        $_SESSION['pw_otp_attempts'] = 0;
 
-                                    $emailSent = notify_password_otp($conn, $userInfo['email'], $userInfo['name'], $otpCode, 10);
-                                    $otp_sent  = true;
-                                    if ($emailSent === false) {
-                                        // OTP saved in session — let user resend from OTP screen
-                                        $errors[] = 'Verification code generated but the email may not have arrived. Please use "Resend Code" below.';
+                                        $emailSent = notify_password_otp($conn, $userInfo['email'], $userInfo['name'], $otpCode, 10);
+                                        $otp_sent  = true;
+                                        if ($emailSent === false) {
+                                            $errors[] = 'Code generated but email may not have arrived. Use "Resend Code" if needed.';
+                                        }
                                     }
+                                } catch (Throwable $e) {
+                                    error_log('Send OTP error: ' . $e->getMessage());
+                                    $errors[] = 'Failed to send verification code. Please try again.';
                                 }
                             }
                         }
                     }
+                } catch (Throwable $e) {
+                    error_log('Password validate error: ' . $e->getMessage());
+                    $errors[] = 'An unexpected error occurred. Please try again.';
                 }
             }
         }
     }
 }
 
-include 'includes/header.php';
+// ── Render ──────────────────────────────────────────────────────────────────
 
 // Mask email for display
 $maskedEmail = '';
 if ($otp_sent && !empty($_SESSION['pw_otp_email'])) {
-    $e      = $_SESSION['pw_otp_email'];
-    $parts  = explode('@', $e);
+    $parts  = explode('@', $_SESSION['pw_otp_email']);
     $local  = $parts[0];
     $domain = $parts[1] ?? '';
     $maskedEmail = substr($local, 0, 2) . str_repeat('*', max(strlen($local) - 2, 3)) . '@' . $domain;
 }
 
-// Back link
-$role_for_back = strtolower($_SESSION['role'] ?? '');
+$role_for_back = strtolower((string)($_SESSION['role'] ?? ''));
 $back_link = ($role_for_back === 'tenant') ? 'tenant/profile.php?tab=security' : 'admin/profile.php?tab=security';
+
+include __DIR__ . '/includes/header.php';
 ?>
 
 <style>
-/* ── Matches profile.php design system ── */
-.cpw-wrap {
-    max-width: 560px;
-    margin: 0 auto;
-    padding: 1.75rem 1.25rem 3rem;
-}
-
-.cpw-breadcrumb {
-    display: flex; align-items: center; gap: 8px;
-    font-size: .82rem; color: #94a3b8; margin-bottom: 1.5rem;
-}
+.cpw-wrap { max-width: 560px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+.cpw-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: #94a3b8; margin-bottom: 1.5rem; }
 .cpw-breadcrumb a { color: #94a3b8; text-decoration: none; }
 .cpw-breadcrumb a:hover { color: #16a34a; }
 body.dark-mode .cpw-breadcrumb a:hover { color: #4ED6C1; }
-
 .cpw-heading { font-size: 1.45rem; font-weight: 700; margin-bottom: .25rem; }
 body:not(.dark-mode) .cpw-heading { color: #111827; }
 body.dark-mode .cpw-heading { color: #f1f5f9; }
 .cpw-sub { font-size: .82rem; color: #94a3b8; margin-bottom: 2rem; }
-
-.cpw-card {
-    border-radius: 14px; padding: 1.75rem;
-    border: 1.5px solid #e2e8f0; background: #fff;
-}
+.cpw-card { border-radius: 14px; padding: 1.75rem; border: 1.5px solid #e2e8f0; background: #fff; position: relative; overflow: hidden; }
 body.dark-mode .cpw-card { background: #1e293b; border-color: #2d3748; }
-
 .cpw-section-title { font-weight: 700; font-size: .95rem; margin-bottom: .2rem; }
-.cpw-section-sub   { font-size: .8rem; color: #94a3b8; margin-bottom: 1.5rem; }
+.cpw-section-sub { font-size: .8rem; color: #94a3b8; margin-bottom: 1.5rem; }
 body:not(.dark-mode) .cpw-section-title { color: #111827; }
 body.dark-mode .cpw-section-title { color: #f1f5f9; }
-
 .cpw-divider { border: none; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
 body.dark-mode .cpw-divider { border-top-color: #2d3748; }
-
 .tc-label { display: block; font-size: .78rem; font-weight: 600; color: #6b7280; margin-bottom: 5px; }
 body.dark-mode .tc-label { color: #94a3b8; }
-
-.tc-input {
-    width: 100%; padding: .65rem .9rem;
-    border: 1.5px solid #d1d5db; border-radius: 8px;
-    font-size: .88rem; color: #111827; background: #fff;
-    transition: border-color .15s, box-shadow .15s; outline: none; font-family: inherit;
-}
+.tc-input { width: 100%; padding: .65rem .9rem; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: .88rem; color: #111827; background: #fff; transition: border-color .15s, box-shadow .15s; outline: none; font-family: inherit; }
 .tc-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
 body.dark-mode .tc-input { background: #0f172a; border-color: #374151; color: #e2e8f0; }
 body.dark-mode .tc-input:focus { border-color: #4ED6C1; box-shadow: 0 0 0 3px rgba(78,214,193,.1); }
-
-.otp-input {
-    font-size: 2rem !important; letter-spacing: 14px;
-    text-align: center; font-family: monospace; font-weight: 700;
-    height: 68px !important; border-radius: 12px !important;
-}
-
+.otp-input { font-size: 2rem !important; letter-spacing: 14px; text-align: center; font-family: monospace; font-weight: 700; height: 68px !important; border-radius: 12px !important; }
 .pw-wrap { position: relative; }
 .pw-wrap .tc-input { padding-right: 2.75rem; }
-.pw-eye {
-    position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
-    background: none; border: none; cursor: pointer; color: #94a3b8; padding: 0; line-height: 1;
-}
+.pw-eye { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 0; line-height: 1; }
 .pw-eye:hover { color: #16a34a; }
 body.dark-mode .pw-eye:hover { color: #4ED6C1; }
-
-.tc-input:-webkit-autofill,
-.tc-input:-webkit-autofill:hover,
-.tc-input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #111827 !important;
-    box-shadow: 0 0 0px 1000px #fff inset !important;
-}
-body.dark-mode .tc-input:-webkit-autofill,
-body.dark-mode .tc-input:-webkit-autofill:hover,
-body.dark-mode .tc-input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #e2e8f0 !important;
-    box-shadow: 0 0 0px 1000px #0f172a inset !important;
-}
-
-.btn-tc-save {
-    background: #16a34a; color: #fff; border: none;
-    padding: .65rem 1.75rem; border-radius: 8px;
-    font-weight: 600; font-size: .88rem; cursor: pointer;
-    font-family: inherit; transition: background .15s;
-    display: inline-flex; align-items: center; gap: 6px;
-}
+.btn-tc-save { background: #16a34a; color: #fff; border: none; padding: .65rem 1.75rem; border-radius: 8px; font-weight: 600; font-size: .88rem; cursor: pointer; font-family: inherit; transition: background .15s; display: inline-flex; align-items: center; gap: 6px; }
 .btn-tc-save:hover { background: #15803d; }
-
-.btn-outline-tc {
-    border: 1.5px solid #d1d5db; background: none; color: #374151;
-    padding: .5rem 1.1rem; border-radius: 8px;
-    font-weight: 600; font-size: .82rem; cursor: pointer;
-    font-family: inherit; text-decoration: none;
-    transition: border-color .15s, color .15s; display: inline-flex; align-items: center; gap: 6px;
-}
+.btn-outline-tc { border: 1.5px solid #d1d5db; background: none; color: #374151; padding: .5rem 1.1rem; border-radius: 8px; font-weight: 600; font-size: .82rem; cursor: pointer; font-family: inherit; text-decoration: none; transition: border-color .15s, color .15s; display: inline-flex; align-items: center; gap: 6px; }
 .btn-outline-tc:hover { border-color: #16a34a; color: #16a34a; }
 body.dark-mode .btn-outline-tc { border-color: #374151; color: #94a3b8; }
 body.dark-mode .btn-outline-tc:hover { border-color: #4ED6C1; color: #4ED6C1; }
-
-.otp-icon-wrap {
-    width: 72px; height: 72px; border-radius: 50%;
-    background: #f0fdf4; display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 1.25rem;
-}
+.otp-icon-wrap { width: 72px; height: 72px; border-radius: 50%; background: #f0fdf4; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; }
 body.dark-mode .otp-icon-wrap { background: rgba(20,83,45,.2); }
-
 .otp-timer { font-size: .82rem; color: #94a3b8; }
 .otp-timer .time-val { font-weight: 700; color: #16a34a; }
 .otp-timer .time-val.expiring { color: #dc2626; }
-
 .pw-strength-bar { height: 4px; border-radius: 4px; background: #e2e8f0; margin-top: 8px; overflow: hidden; }
 body.dark-mode .pw-strength-bar { background: #2d3748; }
 .pw-strength-fill { height: 100%; border-radius: 4px; transition: width .3s, background .3s; width: 0; }
 .pw-hint { font-size: .72rem; color: #94a3b8; margin-top: 4px; }
-
 .caps-hint { font-size: .75rem; color: #d97706; margin-top: 4px; display: none; }
 .caps-hint.show { display: block; }
-
 .alert { border-radius: 10px; font-size: .87rem; }
 </style>
 
@@ -427,7 +432,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
     <div class="cpw-heading"><i class="fas fa-key me-2" style="color:#16a34a;font-size:1.2rem;"></i>Change Password</div>
     <div class="cpw-sub">
         <?php if (!empty($_SESSION['must_change_password'])): ?>
-            You must set a new password before you can continue.
+            You must set a new password before continuing.
         <?php elseif ($otp_sent): ?>
             Step 2 of 2 &mdash; Enter the verification code sent to your email.
         <?php else: ?>
@@ -458,7 +463,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
     <div class="cpw-card">
 
     <?php if ($otp_sent): ?>
-    <!-- ════ OTP STEP ════ -->
+    <!-- OTP Step -->
     <div class="text-center mb-4">
         <div class="otp-icon-wrap">
             <i class="fas fa-envelope-open-text fa-2x" style="color:#16a34a;"></i>
@@ -468,9 +473,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
             A 6-digit code was sent to <strong><?= htmlspecialchars($maskedEmail) ?></strong>.<br>
             <span style="font-size:.78rem;">Check your inbox and spam folder.</span>
         </p>
-        <div class="otp-timer">
-            Expires in <span class="time-val" id="otpTimerVal">--:--</span>
-        </div>
+        <div class="otp-timer">Expires in <span class="time-val" id="otpTimerVal">--:--</span></div>
     </div>
 
     <form method="post" novalidate autocomplete="off">
@@ -493,9 +496,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
         <form method="post">
             <?= csrf_input() ?>
             <input type="hidden" name="action" value="cancel_otp">
-            <button type="submit" class="btn-outline-tc">
-                <i class="fas fa-arrow-left"></i> Start Over
-            </button>
+            <button type="submit" class="btn-outline-tc"><i class="fas fa-arrow-left"></i> Start Over</button>
         </form>
         <form method="post">
             <?= csrf_input() ?>
@@ -509,65 +510,28 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
     <script>
     (function(){
         var expiresAt = <?= (int)($_SESSION['pw_otp_expires'] ?? 0) ?>;
-        var timerEl   = document.getElementById('otpTimerVal');
+        var timerEl = document.getElementById('otpTimerVal');
         function tick() {
             var diff = expiresAt - Math.floor(Date.now() / 1000);
-            if (diff <= 0) {
-                timerEl.textContent = 'Expired';
-                timerEl.classList.add('expiring');
-                return;
-            }
+            if (diff <= 0) { timerEl.textContent = 'Expired'; timerEl.classList.add('expiring'); return; }
             var m = Math.floor(diff / 60), s = diff % 60;
             timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
             if (diff <= 60) timerEl.classList.add('expiring');
             setTimeout(tick, 1000);
         }
         tick();
-
         var inp = document.getElementById('otp_code');
-        if (inp) {
-            inp.focus();
-            inp.addEventListener('input', function() { this.value = this.value.replace(/\D/g,''); });
-        }
-
-        // Resend cooldown (15s)
-        var resendBtn = document.getElementById('resendBtn');
-        if (resendBtn) {
-            var cd = 15;
-            resendBtn.disabled = true;
-            resendBtn.style.opacity = '0.6';
-            var t = setInterval(function(){
-                if (--cd <= 0) { resendBtn.disabled = false; resendBtn.style.opacity = ''; clearInterval(t); }
-            }, 1000);
-
-            // Show loading state when resend is clicked
-            resendBtn.closest('form').addEventListener('submit', function() {
-                resendBtn.disabled = true;
-                resendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending\u2026';
-                resendBtn.style.opacity = '0.7';
-            });
-        }
-
-        // Show loading state when verifying OTP
-        var verifyForm = document.querySelector('form input[name="action"][value="verify_otp"]');
-        if (verifyForm) {
-            verifyForm.closest('form').addEventListener('submit', function() {
-                var btn = this.querySelector('button[type="submit"]');
-                var otp = document.getElementById('otp_code');
-                if (otp && /^\d{6}$/.test(otp.value)) {
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verifying\u2026';
-                        btn.style.opacity = '0.7';
-                    }
-                }
-            });
+        if (inp) { inp.focus(); inp.addEventListener('input', function(){ this.value = this.value.replace(/\D/g,''); }); }
+        var rb = document.getElementById('resendBtn');
+        if (rb) {
+            var cd = 15; rb.disabled = true; rb.style.opacity = '0.6';
+            var t = setInterval(function(){ if (--cd <= 0) { rb.disabled = false; rb.style.opacity = ''; clearInterval(t); } }, 1000);
         }
     })();
     </script>
 
     <?php else: ?>
-    <!-- ════ PASSWORD FORM STEP ════ -->
+    <!-- Password Form Step -->
     <div class="cpw-section-title">Update your password</div>
     <div class="cpw-section-sub">Use a strong password you don't use elsewhere.</div>
 
@@ -579,7 +543,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
             <label for="current_password" class="tc-label">Current Password <span style="color:#ef4444">*</span></label>
             <div class="pw-wrap">
                 <input type="password" class="tc-input" id="current_password" name="current_password"
-                       required autocomplete="current-password" data-lpignore="true">
+                       required autocomplete="current-password">
                 <button type="button" class="pw-eye" tabindex="-1" onclick="togglePw('current_password',this)">
                     <i class="fas fa-eye"></i>
                 </button>
@@ -593,8 +557,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
             <label for="new_password" class="tc-label">New Password <span style="color:#ef4444">*</span></label>
             <div class="pw-wrap">
                 <input type="password" class="tc-input" id="new_password" name="new_password"
-                       required autocomplete="new-password" data-lpignore="true"
-                       oninput="updateStrength(this.value)">
+                       required autocomplete="new-password" oninput="updateStrength(this.value)">
                 <button type="button" class="pw-eye" tabindex="-1" onclick="togglePw('new_password',this)">
                     <i class="fas fa-eye"></i>
                 </button>
@@ -608,7 +571,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
             <label for="confirm_password" class="tc-label">Confirm New Password <span style="color:#ef4444">*</span></label>
             <div class="pw-wrap">
                 <input type="password" class="tc-input" id="confirm_password" name="confirm_password"
-                       required autocomplete="new-password" data-lpignore="true">
+                       required autocomplete="new-password">
                 <button type="button" class="pw-eye" tabindex="-1" onclick="togglePw('confirm_password',this)">
                     <i class="fas fa-eye"></i>
                 </button>
@@ -617,8 +580,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
         </div>
 
         <?php if (empty($_SESSION['must_change_password'])): ?>
-        <div class="d-flex align-items-start gap-2 mb-4 p-3 rounded-3"
-             style="background:#f0fdf4;border:1px solid #bbf7d0;">
+        <div class="d-flex align-items-start gap-2 mb-4 p-3 rounded-3" style="background:#f0fdf4;border:1px solid #bbf7d0;">
             <i class="fas fa-shield-alt mt-1" style="color:#16a34a;flex-shrink:0;font-size:.85rem;"></i>
             <div style="font-size:.82rem;color:#15803d;line-height:1.5;">
                 <strong>Email verification required.</strong>
@@ -633,49 +595,15 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
             <?php else: ?>
                 <a href="<?= htmlspecialchars($back_link) ?>" class="btn-outline-tc"><i class="fas fa-arrow-left"></i> Back</a>
             <?php endif; ?>
-
-            <button type="submit" class="btn-tc-save" id="submitPwBtn">
+            <button type="submit" class="btn-tc-save">
                 <?php if (!empty($_SESSION['must_change_password'])): ?>
                     <i class="fas fa-key"></i> Set New Password
                 <?php else: ?>
-                    <i class="fas fa-paper-plane" id="submitPwIcon"></i>
-                    <span id="submitPwText">Send Verification Code</span>
+                    <i class="fas fa-paper-plane"></i> Send Verification Code
                 <?php endif; ?>
             </button>
         </div>
     </form>
-
-    <?php if (empty($_SESSION['must_change_password'])): ?>
-    <!-- Loading overlay shown while email is being sent -->
-    <div id="pwSendingOverlay" style="position:absolute;inset:0;background:rgba(255,255,255,.92);border-radius:14px;z-index:10;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;display:none;">
-        <div style="width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#16a34a;border-radius:50%;animation:cpwSpin .75s linear infinite;"></div>
-        <div style="font-size:.9rem;font-weight:600;color:#374151;">Sending verification code&hellip;</div>
-        <div style="font-size:.78rem;color:#94a3b8;">Please wait, this may take a few seconds.</div>
-    </div>
-    <style>
-        @keyframes cpwSpin { to { transform: rotate(360deg); } }
-        .cpw-card { position: relative; overflow: hidden; }
-    </style>
-    <script>
-    (function() {
-        var actionInput = document.querySelector('input[name="action"][value="validate"]');
-        if (!actionInput) return;
-        var parentForm = actionInput.closest('form');
-        if (!parentForm) return;
-        parentForm.addEventListener('submit', function() {
-            var newPw = (document.getElementById('new_password') || {}).value || '';
-            var conf  = (document.getElementById('confirm_password') || {}).value || '';
-            var curr  = (document.getElementById('current_password') || {}).value || '';
-            // Only show loader if basic client-side checks pass
-            if (!curr || !newPw || !conf || newPw !== conf || newPw.length < 8) return;
-            var overlay = document.getElementById('pwSendingOverlay');
-            var btn     = document.getElementById('submitPwBtn');
-            if (overlay) overlay.style.display = 'flex';
-            if (btn) btn.style.opacity = '0.6';
-            // NOTE: do NOT disable the button — that blocks form submission
-        });
-    })();
-    </script>
     <?php endif; ?>
 
     </div><!-- .cpw-card -->
@@ -684,70 +612,51 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
 
 <script>
 function togglePw(id, btn) {
-    var inp = document.getElementById(id);
-    var icon = btn.querySelector('i');
-    if (inp.type === 'password') {
-        inp.type = 'text';
-        icon.classList.replace('fa-eye','fa-eye-slash');
-    } else {
-        inp.type = 'password';
-        icon.classList.replace('fa-eye-slash','fa-eye');
-    }
+    var inp = document.getElementById(id), icon = btn.querySelector('i');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    icon.classList.toggle('fa-eye'); icon.classList.toggle('fa-eye-slash');
 }
-
 function updateStrength(pw) {
-    var fill  = document.getElementById('strengthFill');
-    var label = document.getElementById('strengthLabel');
+    var fill = document.getElementById('strengthFill'), label = document.getElementById('strengthLabel');
     if (!fill || !label) return;
     var score = 0;
-    if (pw.length >= 8)        score++;
-    if (/[A-Z]/.test(pw))     score++;
-    if (/[0-9]/.test(pw))     score++;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
-    var pct    = (score / 4) * 100;
     var colors = ['#dc2626','#f97316','#eab308','#16a34a'];
     var labels = ['Weak','Fair','Good','Strong'];
-    fill.style.width      = pct + '%';
+    fill.style.width = ((score / 4) * 100) + '%';
     fill.style.background = colors[score - 1] || '#e2e8f0';
-    label.textContent     = score > 0 ? labels[score - 1] : 'Min. 8 chars, uppercase, number, special character';
-    label.style.color     = colors[score - 1] || '#94a3b8';
+    label.textContent = score > 0 ? labels[score - 1] : 'Min. 8 chars, uppercase, number, special character';
+    label.style.color = colors[score - 1] || '#94a3b8';
     var ci = document.getElementById('confirm_password');
     if (ci && ci.value) checkMatch(ci.value, pw);
 }
-
 document.addEventListener('DOMContentLoaded', function(){
     var ci = document.getElementById('confirm_password');
-    if (ci) {
-        ci.addEventListener('input', function(){
-            var np = (document.getElementById('new_password') || {}).value || '';
-            checkMatch(this.value, np);
-        });
-    }
+    if (ci) ci.addEventListener('input', function(){
+        checkMatch(this.value, (document.getElementById('new_password')||{}).value||'');
+    });
 });
-
 function checkMatch(conf, pw) {
     var ml = document.getElementById('matchLabel');
     if (!ml) return;
     if (!conf) { ml.textContent = ''; return; }
-    if (conf === pw) { ml.textContent = '✓ Passwords match'; ml.style.color = '#16a34a'; }
-    else             { ml.textContent = '✗ Passwords do not match'; ml.style.color = '#dc2626'; }
+    ml.textContent = conf === pw ? '✓ Passwords match' : '✗ Passwords do not match';
+    ml.style.color = conf === pw ? '#16a34a' : '#dc2626';
 }
-
 (function(){
     function bindCaps(inputId, hintId) {
-        var inp  = document.getElementById(inputId);
-        var hint = document.getElementById(hintId);
+        var inp = document.getElementById(inputId), hint = document.getElementById(hintId);
         if (!inp || !hint) return;
-        function upd(e) {
-            var on = false;
-            try { on = e.getModifierState && e.getModifierState('CapsLock'); } catch(_){}
-            hint.classList.toggle('show', on);
-        }
-        ['keydown','keyup','focus'].forEach(function(ev){ inp.addEventListener(ev, upd); });
+        ['keydown','keyup','focus'].forEach(function(ev){
+            inp.addEventListener(ev, function(e){ try { hint.classList.toggle('show', e.getModifierState('CapsLock')); } catch(_){} });
+        });
         inp.addEventListener('blur', function(){ hint.classList.remove('show'); });
     }
     bindCaps('current_password','capsCurrent');
     bindCaps('new_password','capsNew');
 })();
 </script>
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>
