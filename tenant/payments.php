@@ -1036,58 +1036,58 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Cancel payment (AJAX) ──
-    document.querySelectorAll('.cancel-payment-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            if (!confirm('Cancel this payment?')) return;
-            var id = this.dataset.id, button = this;
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:.75rem;"></i>';
+    // ── Cancel payment (AJAX) — event delegation ──
+    document.addEventListener('click', function (e) {
+        var button = e.target.closest('.cancel-payment-btn');
+        if (!button) return;
+        if (!confirm('Cancel this payment?')) return;
+        var id = button.dataset.id;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:.75rem;"></i>';
 
-            var fd = new FormData();
-            fd.append('cancel_payment', '1');
-            fd.append('payment_id', id);
+        var fd = new FormData();
+        fd.append('cancel_payment', '1');
+        fd.append('payment_id', id);
 
-            fetch('payments.php', {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: fd
-            })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.success) {
-                    var item = document.getElementById('hist-' + id);
-                    if (item) {
-                        var dot  = item.querySelector('.status-dot');
-                        var amt  = item.querySelector('.history-amount div:last-child');
-                        if (dot) { dot.className = 'status-dot cancelled'; }
-                        if (amt) { amt.textContent = 'Cancelled'; amt.style.color = '#94a3b8'; }
-                        // Update data-status so filter tabs work correctly
-                        item.dataset.status = 'cancelled';
-                        // Remove cancel button and inject delete button immediately
-                        button.remove();
-                        var actionsDiv = item.querySelector('.history-actions');
-                        if (actionsDiv) {
-                            var deleteBtn = document.createElement('button');
-                            deleteBtn.type = 'button';
-                            deleteBtn.className = 'btn btn-sm btn-outline-danger rounded-2 delete-payment-btn p-1';
-                            deleteBtn.dataset.id = id;
-                            deleteBtn.title = 'Delete record';
-                            deleteBtn.style.cssText = 'width:30px;height:30px;display:flex;align-items:center;justify-content:center;';
-                            deleteBtn.innerHTML = '<i class="fas fa-trash" style="font-size:.7rem;"></i>';
-                            actionsDiv.appendChild(deleteBtn);
-                        }
+        fetch('payments.php', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                var item = document.getElementById('hist-' + id);
+                if (item) {
+                    var dot  = item.querySelector('.status-dot');
+                    var amt  = item.querySelector('.history-amount div:last-child');
+                    if (dot) { dot.className = 'status-dot cancelled'; }
+                    if (amt) { amt.textContent = 'Cancelled'; amt.style.color = '#94a3b8'; }
+                    // Update data-status so filter tabs work correctly
+                    item.dataset.status = 'cancelled';
+                    // Remove cancel button and inject delete button immediately
+                    button.remove();
+                    var actionsDiv = item.querySelector('.history-actions');
+                    if (actionsDiv) {
+                        var deleteBtn = document.createElement('button');
+                        deleteBtn.type = 'button';
+                        deleteBtn.className = 'btn btn-sm btn-outline-danger rounded-2 delete-payment-btn p-1';
+                        deleteBtn.dataset.id = id;
+                        deleteBtn.title = 'Delete record';
+                        deleteBtn.style.cssText = 'width:30px;height:30px;display:flex;align-items:center;justify-content:center;';
+                        deleteBtn.innerHTML = '<i class="fas fa-trash" style="font-size:.7rem;"></i>';
+                        actionsDiv.appendChild(deleteBtn);
                     }
-                } else {
-                    button.disabled = false;
-                    button.innerHTML = '<i class="fas fa-times" style="font-size:.75rem;"></i>';
-                    alert('Unable to cancel.');
                 }
-            })
-            .catch(function () {
+            } else {
                 button.disabled = false;
                 button.innerHTML = '<i class="fas fa-times" style="font-size:.75rem;"></i>';
-            });
+                alert('Unable to cancel.');
+            }
+        })
+        .catch(function () {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-times" style="font-size:.75rem;"></i>';
         });
     });
 
