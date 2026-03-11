@@ -553,7 +553,15 @@ body.dark-mode .filter-tab.active { background: #4ED6C1; color: #0f172a; border-
                     </span>
                     <?php endif; ?>
                 </div>
-                <div class="hero-unit mt-1"><?= date('F Y') ?> · Due by <?= date('M d', strtotime($due_date)) ?></div>
+                <div class="hero-unit mt-1"><?= date('F Y') ?> · 
+                    <?php if ($credit_amount > 0): ?>
+                        <span style="color:#16a34a;font-weight:600;"><i class="fas fa-check-circle me-1"></i>Advance covers this month</span>
+                    <?php elseif ($balance_due <= 0): ?>
+                        <span style="color:#16a34a;font-weight:600;"><i class="fas fa-check-circle me-1"></i>Fully Paid</span>
+                    <?php else: ?>
+                        Due by <?= date('M d', strtotime($due_date)) ?>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="col-sm-5">
                 <div class="row g-2 text-center">
