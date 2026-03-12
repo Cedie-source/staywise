@@ -1,55 +1,36 @@
 <?php
-require_once __DIR__ . '/config/smtp.php';
-require_once __DIR__ . '/vendor/phpmailer/Exception.php';
-require_once __DIR__ . '/vendor/phpmailer/PHPMailer.php';
-require_once __DIR__ . '/vendor/phpmailer/SMTP.php';
+// Test Brevo HTTP API
+$apiKey = getenv('BREVO_API_KEY') ?: '';
 
 echo "<pre>";
+echo "Testing Brevo HTTP API...\n";
+echo "API Key length: " . strlen($apiKey) . "\n\n";
 
-// Test port 465 SSL
-echo "Testing port 465 (SSL)...\n";
-$mail = new PHPMailer\PHPMailer\PHPMailer(true);
-try {
-    $mail->SMTPDebug = 0;
-    $mail->isSMTP();
-    $mail->Host       = 'smtp-relay.brevo.com';
-    $mail->SMTPAuth   = true;
-    $mail->Username   = SMTP_USERNAME;
-    $mail->Password   = SMTP_PASSWORD;
-    $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-    $mail->Port       = 465;
-    $mail->Timeout    = 10;
-    $mail->setFrom(SMTP_FROM_EMAIL, 'StayWise');
-    $mail->addAddress('christianpisalbon24@gmail.com', 'Test');
-    $mail->Subject = 'StayWise Test';
-    $mail->Body    = 'Working!';
-    $mail->send();
-    echo "PORT 465: SUCCESS!\n";
-} catch (Exception $e) {
-    echo "PORT 465 FAILED: " . htmlspecialchars($mail->ErrorInfo) . "\n";
-}
+$data = json_encode([
+    'sender'     => ['name' => 'StayWise', 'email' => 'christianpisalbon24@gmail.com'],
+    'to'         => [['email' => 'christianpisalbon24@gmail.com', 'name' => 'Test']],
+    'subject'    => 'StayWise API Test',
+    'htmlContent'=> '<p>If you get this, Brevo API works!</p>'
+]);
 
-// Test port 2525
-echo "\nTesting port 2525...\n";
-$mail2 = new PHPMailer\PHPMailer\PHPMailer(true);
-try {
-    $mail2->SMTPDebug = 0;
-    $mail2->isSMTP();
-    $mail2->Host       = 'smtp-relay.brevo.com';
-    $mail2->SMTPAuth   = true;
-    $mail2->Username   = SMTP_USERNAME;
-    $mail2->Password   = SMTP_PASSWORD;
-    $mail2->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-    $mail2->Port       = 2525;
-    $mail2->Timeout    = 10;
-    $mail2->setFrom(SMTP_FROM_EMAIL, 'StayWise');
-    $mail2->addAddress('christianpisalbon24@gmail.com', 'Test');
-    $mail2->Subject = 'StayWise Test';
-    $mail2->Body    = 'Working!';
-    $mail2->send();
-    echo "PORT 2525: SUCCESS!\n";
-} catch (Exception $e) {
-    echo "PORT 2525 FAILED: " . htmlspecialchars($mail2->ErrorInfo) . "\n";
-}
+$ch = curl_init('https://api.brevo.com/v3/smtp/email');
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $data,
+    CURLOPT_HTTPHEADER     => [
+        'accept: application/json',
+        'api-key: ' . $apiKey,
+        'content-type: application/json'
+    ],
+    CURLOPT_TIMEOUT => 15,
+]);
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
+curl_close($ch);
 
+echo "HTTP Code: $httpCode\n";
+echo "Response: $response\n";
+if ($curlError) echo "Curl Error: $curlError\n";
 echo "</pre>";
