@@ -491,32 +491,54 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.rejected  { background: #ef4444; }
 .status-dot.cancelled { background: #94a3b8; }
 
-/* ID-based override — beats any !important class rule in style.css */
 /* ── Payment History header — light mode ── */
-#payHistoryHeader {
-    background-color: #ffffff !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    color: #0f172a !important;
+body:not(.dark-mode) #payHistoryHeader {
+    background-color: #007DFE !important;
+    border-bottom: 1px solid #0066d6 !important;
+    color: #ffffff !important;
 }
-#payHistoryHeader h6 {
-    color: #0f172a !important;
+body:not(.dark-mode) #payHistoryHeader h6,
+body:not(.dark-mode) #payHistoryHeader h6 i {
+    color: #ffffff !important;
 }
 /* CSV button — light mode */
-#payHistoryHeader .btn-outline-secondary {
-    color: #475569 !important;
-    border-color: #cbd5e1 !important;
-    background: transparent !important;
+body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary {
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,.6) !important;
+    background: rgba(255,255,255,.15) !important;
 }
-#payHistoryHeader .btn-outline-secondary:hover {
-    background: #f1f5f9 !important;
-    color: #0f172a !important;
-    border-color: #94a3b8 !important;
+body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary:hover {
+    background: rgba(255,255,255,.3) !important;
+    color: #ffffff !important;
+}
+/* Filter tabs — light mode (white on blue) */
+body:not(.dark-mode) #payHistoryHeader .filter-tab {
+    color: rgba(255,255,255,.75) !important;
+    background: transparent !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    padding: .45rem .85rem !important;
+    font-size: .8rem !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+}
+body:not(.dark-mode) #payHistoryHeader .filter-tab:hover {
+    color: #ffffff !important;
+    background: rgba(255,255,255,.1) !important;
+}
+body:not(.dark-mode) #payHistoryHeader .filter-tab.active {
+    color: #ffffff !important;
+    border-bottom-color: #ffffff !important;
+    font-weight: 700 !important;
 }
 
 /* ── Payment History header — dark mode only ── */
 body.dark-mode #payHistoryHeader {
-    background-color: #111111 !important;
-    border-bottom-color: rgba(255,255,255,.08) !important;
+    background-color: #1f2530 !important;
+    border-bottom: 1px solid #2d3748 !important;
     color: #e2e8f0 !important;
 }
 body.dark-mode #payHistoryHeader h6 { color: #e2e8f0 !important; }
@@ -526,8 +548,11 @@ body.dark-mode #payHistoryHeader .btn-outline-secondary {
 body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
     background: rgba(255,255,255,.08) !important; color: #e2e8f0 !important;
 }
+body.dark-mode #payHistoryHeader .filter-tab { color: #94a3b8 !important; }
+body.dark-mode #payHistoryHeader .filter-tab:hover { color: #e2e8f0 !important; }
+body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; }
 
-/* ── Filter tabs ── */
+/* fallback filter-tab base (non-history uses) */
 .filter-tab {
     background: transparent !important;
     border: none !important;
@@ -541,13 +566,6 @@ body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
     margin-bottom: -1px;
     box-shadow: none !important;
 }
-.filter-tab:hover { color: #0f172a !important; background: transparent !important; }
-.filter-tab.active { color: #007DFE !important; border-bottom-color: #007DFE !important; font-weight: 700 !important; }
-
-/* dark mode tabs — unchanged */
-body.dark-mode .filter-tab { color: #94a3b8 !important; }
-body.dark-mode .filter-tab:hover { color: #e2e8f0 !important; }
-body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; }
 .history-item.hidden-by-filter { display: none !important; }
 .info-ribbon {
     border-radius: 12px;
