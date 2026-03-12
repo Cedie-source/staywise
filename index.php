@@ -26,338 +26,317 @@ $page_title = "Welcome";
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg"/>
     <link rel="alternate icon" type="image/png" href="/assets/favicon-32.png"/>
     <link rel="apple-touch-icon" href="/assets/icon-192.png"/>
-    <meta name="theme-color" content="#007DFE"/>
+    <meta name="theme-color" content="#0d6efd"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --blue:      #007DFE;
-            --blue-dark: #0060cc;
-            --blue-glow: rgba(0,125,254,.18);
-            --teal:      #4ED6C1;
-            --teal-dim:  rgba(78,214,193,.12);
-            --bg:        #111418;
-            --surface:   #1a1f26;
-            --surface-2: #1f2530;
-            --border:    rgba(255,255,255,.07);
-            --border-hi: rgba(0,125,254,.3);
-            --text:      #e7e7ee;
-            --muted:     #6b7280;
-            --muted-2:   #9ca3af;
+            /* Same as system */
+            --primary:      #0d6efd;
+            --primary-dark: #0a58ca;
+            --primary-glow: rgba(13,110,253,.15);
+            --green:        #16a34a;
+            --green-dark:   #15803d;
+            --teal:         #4ED6C1;
+            --danger:       #dc3545;
+
+            /* Light mode surfaces (matches system light) */
+            --bg:        #f1f5f9;
+            --surface:   #ffffff;
+            --surface-2: #f8fafc;
+            --border:    #e2e8f0;
+            --border-md: #d1d5db;
+            --text:      #1e293b;
+            --text-2:    #374151;
+            --muted:     #64748b;
+            --muted-2:   #94a3b8;
         }
 
         html, body {
             min-height: 100vh;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             background: var(--bg);
             color: var(--text);
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
         }
 
-        /* ── Background ── */
-        .bg-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
-
-        /* Subtle grid */
-        .bg-scene::before {
+        /* Soft background pattern */
+        body::before {
             content: '';
-            position: absolute; inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 20%, transparent 80%);
-        }
-
-        /* Ambient glow */
-        .bg-scene::after {
-            content: '';
-            position: absolute; inset: 0;
+            position: fixed; inset: 0; z-index: 0;
             background:
-                radial-gradient(ellipse 55% 55% at 10% 15%, rgba(0,125,254,.09) 0%, transparent 65%),
-                radial-gradient(ellipse 45% 55% at 90% 85%, rgba(78,214,193,.07) 0%, transparent 65%),
-                radial-gradient(ellipse 35% 35% at 55% 45%, rgba(0,125,254,.04) 0%, transparent 70%);
+                radial-gradient(ellipse 70% 50% at 5% 10%, rgba(13,110,253,.06) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 60% at 95% 90%, rgba(22,163,74,.05) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(78,214,193,.03) 0%, transparent 60%);
         }
 
-        /* Floating orbs */
-        .orb {
-            position: absolute; border-radius: 50%;
-            filter: blur(90px); animation: drift 18s ease-in-out infinite alternate;
-        }
-        .orb-1 { width: 550px; height: 550px; background: rgba(0,125,254,.06); top: -180px; left: -130px; animation-delay: 0s; }
-        .orb-2 { width: 450px; height: 450px; background: rgba(78,214,193,.05); bottom: -140px; right: -100px; animation-delay: -7s; }
-        .orb-3 { width: 280px; height: 280px; background: rgba(0,125,254,.04); top: 45%; left: 58%; animation-delay: -14s; }
-        @keyframes drift {
-            from { transform: translate(0,0) scale(1); }
-            to   { transform: translate(20px,14px) scale(1.05); }
+        /* Subtle dot grid */
+        body::after {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            background-image: radial-gradient(circle, rgba(100,116,139,.18) 1px, transparent 1px);
+            background-size: 28px 28px;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
         }
 
-        /* ── Split layout ── */
+        /* ── Shell ── */
         .shell {
             position: relative; z-index: 1;
-            width: 100%; max-width: 900px;
-            margin: 1rem;
+            width: 100%; max-width: 880px;
+            margin: 1.25rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            border-radius: 24px;
+            border-radius: 20px;
             overflow: hidden;
+            background: var(--surface);
             border: 1px solid var(--border);
             box-shadow:
-                0 0 0 1px rgba(0,125,254,.08),
-                0 32px 80px rgba(0,0,0,.7),
-                0 0 100px rgba(0,125,254,.05);
-            animation: appear .55s cubic-bezier(.22,1,.36,1) both;
+                0 1px 3px rgba(0,0,0,.06),
+                0 8px 24px rgba(0,0,0,.08),
+                0 32px 64px rgba(0,0,0,.05);
+            animation: rise .5s cubic-bezier(.22,1,.36,1) both;
         }
-        @keyframes appear {
-            from { opacity: 0; transform: translateY(28px) scale(.97); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ── Left panel ── */
         .panel-left {
-            background: linear-gradient(160deg, #151b24 0%, #111418 100%);
+            background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
             padding: 2.75rem 2.25rem;
             display: flex; flex-direction: column; justify-content: space-between;
             position: relative; overflow: hidden;
-            border-right: 1px solid var(--border);
         }
+
+        /* Top-left glow */
         .panel-left::before {
             content: '';
-            position: absolute; inset: 0;
-            background:
-                radial-gradient(ellipse 90% 50% at 0% 0%, rgba(0,125,254,.06) 0%, transparent 60%),
-                radial-gradient(ellipse 70% 70% at 100% 100%, rgba(78,214,193,.04) 0%, transparent 60%);
+            position: absolute; top: -80px; left: -80px;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(13,110,253,.18) 0%, transparent 70%);
+            border-radius: 50%;
         }
 
-        /* Decorative rings */
-        .ring {
-            position: absolute; border-radius: 50%;
-            border: 1px solid rgba(0,125,254,.08);
+        /* Bottom-right teal glow */
+        .panel-left::after {
+            content: '';
+            position: absolute; bottom: -60px; right: -60px;
+            width: 240px; height: 240px;
+            background: radial-gradient(circle, rgba(78,214,193,.12) 0%, transparent 70%);
+            border-radius: 50%;
         }
-        .ring-1 { width: 320px; height: 320px; bottom: -110px; right: -110px; }
-        .ring-2 { width: 220px; height: 220px; bottom: -60px; right: -60px; border-color: rgba(78,214,193,.08); }
-        .ring-3 { width: 120px; height: 120px; bottom: -10px; right: -10px; border-color: rgba(78,214,193,.14); }
 
-        .left-top { position: relative; z-index: 1; }
+        .left-inner { position: relative; z-index: 1; }
 
         /* Brand */
-        .brand { display: flex; align-items: center; gap: .7rem; margin-bottom: 2.25rem; }
+        .brand { display: flex; align-items: center; gap: .65rem; margin-bottom: 2.5rem; }
         .brand-icon {
-            width: 42px; height: 42px;
-            background: linear-gradient(135deg, var(--blue), #0050bb);
-            border-radius: 11px;
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; color: #fff;
-            box-shadow: 0 4px 16px rgba(0,125,254,.35);
+            font-size: .95rem; color: #fff;
+            box-shadow: 0 4px 14px rgba(13,110,253,.4);
+            flex-shrink: 0;
         }
-        .brand-name { font-size: 1.25rem; font-weight: 800; color: var(--text); letter-spacing: -.02em; }
+        .brand-name { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; letter-spacing: -.01em; }
         .brand-name em { color: var(--teal); font-style: normal; }
 
-        .panel-headline {
-            font-size: 2rem; font-weight: 800; line-height: 1.2;
-            color: var(--text); margin-bottom: .85rem; letter-spacing: -.03em;
+        .left-headline {
+            font-size: 1.85rem; font-weight: 700; line-height: 1.2;
+            color: #f1f5f9; margin-bottom: .85rem; letter-spacing: -.02em;
         }
-        .panel-headline span {
-            display: block;
-            background: linear-gradient(90deg, var(--blue), var(--teal));
+        .left-headline span {
+            background: linear-gradient(90deg, var(--primary), var(--teal));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .panel-desc { font-size: .82rem; color: var(--muted-2); line-height: 1.7; max-width: 240px; font-weight: 300; }
+        .left-desc { font-size: .8rem; color: #94a3b8; line-height: 1.7; font-weight: 400; max-width: 230px; }
 
-        /* Feature list */
-        .left-bottom { position: relative; z-index: 1; }
-        .features { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
-        .features li {
+        /* Features */
+        .left-footer { position: relative; z-index: 1; }
+        .feat-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+        .feat-list li {
             display: flex; align-items: center; gap: .6rem;
-            font-size: .78rem; color: var(--muted-2); font-weight: 400;
+            font-size: .78rem; color: #94a3b8; font-weight: 400;
         }
-        .feat-icon {
+        .feat-pip {
             width: 26px; height: 26px; border-radius: 7px;
             display: flex; align-items: center; justify-content: center;
-            font-size: .65rem; flex-shrink: 0;
+            font-size: .62rem; flex-shrink: 0;
         }
-        .feat-icon.blue { background: rgba(0,125,254,.15); color: var(--blue); }
-        .feat-icon.teal { background: rgba(78,214,193,.12); color: var(--teal); }
+        .feat-pip.blue { background: rgba(13,110,253,.18); color: #60a5fa; }
+        .feat-pip.teal { background: rgba(78,214,193,.15); color: var(--teal); }
+        .feat-pip.green { background: rgba(22,163,74,.15); color: #4ade80; }
 
-        /* ── Right panel (form) ── */
+        /* ── Right panel ── */
         .panel-right {
-            background: var(--surface);
             padding: 2.75rem 2.5rem;
             display: flex; flex-direction: column; justify-content: center;
+            background: var(--surface);
+            /* Top accent */
+            border-top: 3px solid var(--primary);
         }
 
-        /* Top accent bar */
-        .panel-right::before {
-            content: '';
-            position: absolute; /* not used, using card::before instead */
-        }
-
-        .form-title { font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: .25rem; letter-spacing: -.025em; }
-        .form-sub { font-size: .8rem; color: var(--muted); margin-bottom: 1.75rem; font-weight: 400; }
+        .form-title { font-size: 1.45rem; font-weight: 700; color: var(--text); margin-bottom: .2rem; letter-spacing: -.02em; }
+        .form-sub { font-size: .8rem; color: var(--muted); margin-bottom: 1.75rem; }
 
         /* Alert */
         .login-alert {
-            display: flex; align-items: center; gap: .6rem;
-            background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2);
-            border-radius: 10px; padding: .6rem .85rem;
-            font-size: .8rem; color: #f87171; font-weight: 500;
-            margin-bottom: 1.2rem; animation: shake .4s ease;
+            display: flex; align-items: center; gap: .55rem;
+            background: #fef2f2; border: 1px solid #fecaca;
+            border-radius: 9px; padding: .6rem .85rem;
+            font-size: .8rem; color: var(--danger); font-weight: 500;
+            margin-bottom: 1.2rem;
+            animation: shake .4s ease;
         }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-3px)} 40%,80%{transform:translateX(3px)} }
 
-        /* Fields */
+        /* Fields — identical to profile.php tc-input style */
         .field { margin-bottom: 1rem; }
         .field-label {
-            display: block; font-size: .7rem; font-weight: 700;
-            color: var(--muted-2); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .45rem;
+            display: block; font-size: .78rem; font-weight: 600;
+            color: var(--muted); margin-bottom: .45rem;
         }
         .field-inner { position: relative; }
         .field-icon {
-            position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
-            color: var(--muted); font-size: .78rem; pointer-events: none; transition: color .2s;
+            position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+            color: var(--muted-2); font-size: .78rem; pointer-events: none; transition: color .15s;
         }
         .field-input {
-            width: 100%; height: 48px;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0 1rem 0 2.4rem;
-            font-size: .88rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 400;
-            color: var(--text); outline: none; caret-color: var(--teal);
-            transition: border-color .2s, box-shadow .2s;
+            width: 100%; padding: .65rem .9rem .65rem 2.4rem;
+            border: 1.5px solid var(--border-md);
+            border-radius: 8px;
+            font-size: .88rem; font-family: 'DM Sans', sans-serif; font-weight: 400;
+            color: var(--text-2); background: var(--surface);
+            outline: none; transition: border-color .15s, box-shadow .15s;
+            caret-color: var(--primary);
         }
-        .field-input::placeholder { color: #2e3542; }
+        .field-input::placeholder { color: var(--muted-2); }
         .field-input:focus {
-            border-color: var(--border-hi);
-            box-shadow: 0 0 0 3px var(--blue-glow);
-            background: #212936;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
         }
-        .field-input:focus ~ .field-icon { color: var(--blue); }
-        .field-input.is-invalid { border-color: rgba(239,68,68,.4); box-shadow: 0 0 0 3px rgba(239,68,68,.08); }
+        .field-input:focus ~ .field-icon { color: var(--primary); }
+        .field-input.is-invalid {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(220,53,69,.1);
+        }
 
         /* Autofill */
         .field-input:-webkit-autofill,
         .field-input:-webkit-autofill:focus {
-            -webkit-text-fill-color: var(--text) !important;
-            box-shadow: 0 0 0px 1000px #1f2530 inset, 0 0 0 3px var(--blue-glow) !important;
-            border-color: var(--border-hi) !important;
+            -webkit-text-fill-color: var(--text-2) !important;
+            box-shadow: 0 0 0px 1000px var(--surface) inset, 0 0 0 3px var(--primary-glow) !important;
+            border-color: var(--primary) !important;
         }
 
-        /* Password */
-        .pw-wrap { position: relative; padding-bottom: 1.3rem; }
+        /* Password row */
+        .pw-wrap { position: relative; padding-bottom: 1.2rem; }
         .pw-toggle {
             position: absolute; right: .85rem; top: 50%; transform: translateY(-60%);
-            background: none; border: none; color: var(--muted);
-            cursor: pointer; font-size: .82rem; padding: 0; z-index: 2; transition: color .2s;
+            background: none; border: none; color: var(--muted-2);
+            cursor: pointer; font-size: .82rem; padding: 0; z-index: 2; transition: color .15s;
         }
-        .pw-toggle:hover { color: var(--teal); }
+        .pw-toggle:hover { color: var(--primary); }
         #capsLockHint {
             position: absolute; bottom: 0; left: 0;
-            font-size: .72rem; color: #f59e0b; font-weight: 600;
+            font-size: .73rem; color: #d97706; font-weight: 600;
             display: flex; align-items: center; gap: .3rem;
-            visibility: hidden; opacity: 0; transition: opacity .2s;
+            visibility: hidden; opacity: 0; transition: opacity .15s;
         }
-        #capsLockHint.caps-visible { visibility: visible; opacity: 1; }
-        .field-error { font-size: .72rem; color: #f87171; font-weight: 500; margin-top: .3rem; display: none; }
+        #capsLockHint.show { visibility: visible; opacity: 1; }
+        .field-error { font-size: .74rem; color: var(--danger); font-weight: 500; margin-top: .3rem; display: none; }
         .field-error.show { display: block; }
 
-        /* Button */
-        .btn-login {
-            width: 100%; height: 48px;
-            background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
-            border: none; border-radius: 10px;
-            color: #fff; font-size: .88rem; font-weight: 700;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            cursor: pointer; letter-spacing: .02em; position: relative; overflow: hidden;
-            transition: transform .15s, box-shadow .15s;
-            box-shadow: 0 4px 18px rgba(0,125,254,.3);
-            margin-top: .25rem;
+        /* Submit — green like profile save button */
+        .btn-signin {
+            width: 100%;
+            background: var(--green);
+            border: none; border-radius: 8px;
+            color: #fff; font-size: .88rem; font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            padding: .7rem 1rem;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: background .15s, transform .12s, box-shadow .15s;
+            box-shadow: 0 2px 8px rgba(22,163,74,.25);
+            margin-top: .2rem; letter-spacing: .01em;
         }
-        .btn-login::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
-            transition: left .45s;
-        }
-        .btn-login:hover:not(:disabled)::before { left: 100%; }
-        .btn-login:hover:not(:disabled) {
+        .btn-signin:hover:not(:disabled) {
+            background: var(--green-dark);
             transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0,125,254,.4);
+            box-shadow: 0 4px 14px rgba(22,163,74,.32);
         }
-        .btn-login:active:not(:disabled) { transform: translateY(0); }
-        .btn-login:disabled { opacity: .5; cursor: not-allowed; }
-        .btn-login.loading .btn-text { opacity: 0; }
-        .btn-login .btn-spinner { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
-        .btn-login.loading .btn-spinner { display: flex; }
-
-        /* Divider */
-        .divider { display: flex; align-items: center; gap: .75rem; margin: 1.4rem 0 0; }
-        .divider-line { flex: 1; height: 1px; background: var(--border); }
-        .divider-text { font-size: .68rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
-
-        /* Footer */
-        .form-footer { margin-top: .9rem; text-align: center; font-size: .75rem; color: var(--muted); }
-        .form-footer a { color: var(--teal); font-weight: 600; text-decoration: none; transition: color .2s; }
-        .form-footer a:hover { color: #7ee8db; }
+        .btn-signin:active:not(:disabled) { transform: translateY(0); }
+        .btn-signin:disabled { opacity: .55; cursor: not-allowed; }
+        .btn-signin .btn-text { transition: opacity .15s; }
+        .btn-signin .btn-spinner { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
+        .btn-signin.loading .btn-text { opacity: 0; }
+        .btn-signin.loading .btn-spinner { display: flex; }
 
         /* Lock hint */
         .lock-hint {
-            display: flex; align-items: center; gap: .4rem;
-            background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2);
+            background: #fffbeb; border: 1px solid #fde68a;
             border-radius: 8px; padding: .5rem .8rem;
-            font-size: .76rem; color: #fbbf24; font-weight: 500; margin-top: .5rem;
+            font-size: .78rem; color: #d97706; font-weight: 500;
+            margin-top: .5rem; display: flex; align-items: center; gap: .4rem;
         }
 
-        @media (max-width: 680px) {
+        /* Divider */
+        .divider {
+            display: flex; align-items: center; gap: .75rem; margin: 1.4rem 0 0;
+        }
+        .divider-line { flex: 1; height: 1px; background: var(--border); }
+        .divider-text { font-size: .69rem; color: var(--muted-2); letter-spacing: .06em; text-transform: uppercase; }
+
+        /* Footer link — teal like dark mode profile accent */
+        .form-footer { margin-top: .9rem; text-align: center; font-size: .76rem; color: var(--muted); }
+        .form-footer a { color: var(--primary); font-weight: 600; text-decoration: none; transition: color .15s; }
+        .form-footer a:hover { color: var(--primary-dark); }
+
+        /* Mobile */
+        @media (max-width: 640px) {
             .shell { grid-template-columns: 1fr; max-width: 400px; }
             .panel-left { display: none; }
-            .panel-right { padding: 2.25rem 1.75rem; }
+            .panel-right { padding: 2.25rem 1.75rem; border-top: 3px solid var(--primary); }
         }
     </style>
 </head>
 <body>
 
-<div class="bg-scene">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-</div>
-
 <div class="shell">
 
-    <!-- LEFT -->
+    <!-- LEFT: Branding -->
     <div class="panel-left">
-        <div class="ring ring-1"></div>
-        <div class="ring ring-2"></div>
-        <div class="ring ring-3"></div>
-
-        <div class="left-top">
+        <div class="left-inner">
             <div class="brand">
                 <div class="brand-icon"><i class="fas fa-building"></i></div>
                 <div class="brand-name">Stay<em>Wise</em></div>
             </div>
-            <div class="panel-headline">
-                Smart property<br>management
+            <div class="left-headline">
+                Property management<br>
                 <span>made simple.</span>
             </div>
-            <p class="panel-desc">Track payments, manage tenants and handle everything from one clean dashboard.</p>
+            <p class="left-desc">Track payments, manage tenants, and handle everything from one clean dashboard.</p>
         </div>
 
-        <div class="left-bottom">
-            <ul class="features">
-                <li><div class="feat-icon blue"><i class="fas fa-shield-alt"></i></div> Secure & encrypted access</li>
-                <li><div class="feat-icon teal"><i class="fas fa-bolt"></i></div> Real-time payment tracking</li>
-                <li><div class="feat-icon blue"><i class="fas fa-bell"></i></div> Instant notifications</li>
-                <li><div class="feat-icon teal"><i class="fas fa-chart-line"></i></div> Financial reports & history</li>
+        <div class="left-footer">
+            <ul class="feat-list">
+                <li><div class="feat-pip blue"><i class="fas fa-shield-alt"></i></div> Secure & encrypted access</li>
+                <li><div class="feat-pip teal"><i class="fas fa-bolt"></i></div> Real-time payment tracking</li>
+                <li><div class="feat-pip green"><i class="fas fa-bell"></i></div> Instant notifications</li>
+                <li><div class="feat-pip blue"><i class="fas fa-chart-line"></i></div> Financial reports & history</li>
             </ul>
         </div>
     </div>
 
-    <!-- RIGHT -->
+    <!-- RIGHT: Form -->
     <div class="panel-right">
         <div class="form-title">Welcome back 👋</div>
         <div class="form-sub">Sign in to your StayWise account</div>
@@ -376,7 +355,7 @@ $page_title = "Welcome";
                 <label class="field-label" for="username">Username or Email</label>
                 <div class="field-inner">
                     <input type="text" class="field-input" id="username" name="username"
-                           placeholder="you@email.com"
+                           placeholder="your@email.com"
                            autocapitalize="none" autocomplete="username email" spellcheck="false"
                            value="<?= isset($_SESSION['last_login_identifier']) ? htmlspecialchars($_SESSION['last_login_identifier']) : '' ?>"
                            required>
@@ -402,7 +381,7 @@ $page_title = "Welcome";
                 </div>
             </div>
 
-            <button type="submit" class="btn-login" id="submitBtn">
+            <button type="submit" class="btn-signin" id="submitBtn">
                 <span class="btn-text">Sign In</span>
                 <span class="btn-spinner"><i class="fas fa-circle-notch fa-spin"></i></span>
             </button>
@@ -443,12 +422,12 @@ $page_title = "Welcome";
     });
 
     function updateCaps(e) {
-        try { caps.classList.toggle('caps-visible', e.getModifierState('CapsLock')); } catch (_) {}
+        try { caps.classList.toggle('show', e.getModifierState('CapsLock')); } catch (_) {}
     }
     password.addEventListener('keydown', updateCaps);
-    password.addEventListener('keyup',   updateCaps);
-    password.addEventListener('focus',   updateCaps);
-    password.addEventListener('blur',    () => caps.classList.remove('caps-visible'));
+    password.addEventListener('keyup', updateCaps);
+    password.addEventListener('focus', updateCaps);
+    password.addEventListener('blur', () => caps.classList.remove('show'));
 
     const params   = new URLSearchParams(window.location.search);
     let remain     = parseInt(params.get('remain') || '0', 10);
