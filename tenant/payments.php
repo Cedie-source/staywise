@@ -939,20 +939,21 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
                 <div class="card-header px-3 px-md-4" id="payHistoryHeader" style="padding-top:.65rem;padding-bottom:.65rem;">
-                    <div class="d-flex align-items-center gap-1" id="historyFilterTabs">
-                        <span class="fw-bold flex-shrink-0 me-2" style="font-size:.92rem;white-space:nowrap;">
+                    <div class="d-flex align-items-center" id="historyFilterTabs">
+                        <span class="fw-bold flex-shrink-0" style="font-size:.92rem;white-space:nowrap;min-width:0;">
                             <i class="fas fa-history me-2"></i>Payment History
                         </span>
-                        <div class="flex-grow-1"></div>
-                        <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
-                        <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
-                        <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
-                        <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
-                        <?php if ($payments->num_rows > 0): ?>
-                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2 flex-shrink-0" id="exportPaymentsCsv">
-                            <i class="fas fa-download me-1"></i>CSV
-                        </button>
-                        <?php endif; ?>
+                        <div class="ms-auto d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
+                            <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
+                            <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
+                            <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
+                            <?php if ($payments->num_rows > 0): ?>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1 flex-shrink-0" id="exportPaymentsCsv">
+                                <i class="fas fa-download me-1"></i>CSV
+                            </button>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0" id="historyList">
