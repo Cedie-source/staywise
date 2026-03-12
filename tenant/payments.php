@@ -491,87 +491,80 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.rejected  { background: #ef4444; }
 .status-dot.cancelled { background: #94a3b8; }
 
-/* ── Payment History header — light mode modern design ── */
-body:not(.dark-mode) #payHistoryHeader {
+/* ID-based override — beats any !important class rule in style.css */
+/* html prefix beats style.css class rules */
+html body:not(.dark-mode) #payHistoryHeader {
     background: linear-gradient(135deg, #1a56db 0%, #007DFE 60%, #38bdf8 100%) !important;
     border-bottom: none !important;
     color: #ffffff !important;
     border-radius: 12px 12px 0 0 !important;
-    padding-bottom: 0 !important;
 }
-body:not(.dark-mode) #payHistoryHeader h6,
-body:not(.dark-mode) #payHistoryHeader h6 i {
+html body:not(.dark-mode) #payHistoryHeader span,
+html body:not(.dark-mode) #payHistoryHeader span i {
     color: #ffffff !important;
-    text-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
 }
-/* CSV button — green accent pill */
-body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary {
+/* Filter tabs — glassy pills */
+html body:not(.dark-mode) #payHistoryHeader .filter-tab {
+    color: rgba(255,255,255,.9) !important;
+    background: rgba(255,255,255,.18) !important;
+    border: 1.5px solid rgba(255,255,255,.35) !important;
+    border-radius: 20px !important;
+    padding: .25rem .8rem !important;
+    font-size: .77rem !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+    margin: 0 2px !important;
+    transition: all .18s !important;
+}
+html body:not(.dark-mode) #payHistoryHeader .filter-tab:hover {
+    color: #ffffff !important;
+    background: rgba(255,255,255,.3) !important;
+    border-color: rgba(255,255,255,.6) !important;
+    transform: translateY(-1px) !important;
+}
+html body:not(.dark-mode) #payHistoryHeader .filter-tab.active {
+    color: #15803d !important;
+    background: #dcfce7 !important;
+    border-color: #dcfce7 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18) !important;
+    transform: translateY(-1px) !important;
+}
+/* CSV — green pill */
+html body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary {
     color: #ffffff !important;
     background: #16a34a !important;
     border: none !important;
     border-radius: 20px !important;
     font-size: .74rem !important;
     font-weight: 700 !important;
-    padding: .28rem 1rem !important;
+    padding: .25rem 1rem !important;
     box-shadow: 0 2px 8px rgba(22,163,74,.45) !important;
-    letter-spacing: .03em !important;
     transition: all .18s !important;
 }
-body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary:hover {
+html body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary:hover {
     background: #15803d !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(22,163,74,.55) !important;
+    box-shadow: 0 4px 12px rgba(22,163,74,.55) !important;
     transform: translateY(-1px) !important;
 }
-/* Filter tabs — light mode: green-tinted pills */
-body:not(.dark-mode) #payHistoryHeader .filter-tab {
-    color: #ffffff !important;
-    background: rgba(255,255,255,.15) !important;
-    border: 1.5px solid rgba(255,255,255,.3) !important;
-    border-radius: 20px !important;
-    padding: .26rem .9rem !important;
-    font-size: .78rem !important;
-    font-weight: 500 !important;
-    box-shadow: none !important;
-    margin: 0 2px !important;
-    transition: all .18s !important;
-    opacity: .8 !important;
-}
-body:not(.dark-mode) #payHistoryHeader .filter-tab:hover {
-    color: #ffffff !important;
-    background: rgba(255,255,255,.25) !important;
-    border-color: rgba(255,255,255,.55) !important;
-    opacity: 1 !important;
-    transform: translateY(-1px) !important;
-}
-body:not(.dark-mode) #payHistoryHeader .filter-tab.active {
-    color: #15803d !important;
-    background: #dcfce7 !important;
-    border-color: #dcfce7 !important;
-    font-weight: 700 !important;
-    opacity: 1 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.18) !important;
-    transform: translateY(-1px) !important;
-}
-
-/* ── Payment History header — dark mode only ── */
+/* dark mode — unchanged */
 body.dark-mode #payHistoryHeader {
     background-color: #1f2530 !important;
     border-bottom: 1px solid #2d3748 !important;
     color: #e2e8f0 !important;
 }
-body.dark-mode #payHistoryHeader h6 { color: #e2e8f0 !important; }
+body.dark-mode #payHistoryHeader span { color: #e2e8f0 !important; }
 body.dark-mode #payHistoryHeader .btn-outline-secondary {
     color: #94a3b8 !important; border-color: #444 !important; background: transparent !important;
 }
 body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
     background: rgba(255,255,255,.08) !important; color: #e2e8f0 !important;
 }
-body.dark-mode #payHistoryHeader .filter-tab { color: #94a3b8 !important; }
+body.dark-mode #payHistoryHeader .filter-tab { color: #94a3b8 !important; background: transparent !important; border-color: transparent !important; }
 body.dark-mode #payHistoryHeader .filter-tab:hover { color: #e2e8f0 !important; }
-body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; }
+body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; background: transparent !important; }
 
-/* fallback filter-tab base (non-history uses) */
+/* fallback filter-tab base */
 .filter-tab {
     background: transparent !important;
     border: none !important;
@@ -580,11 +573,16 @@ body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important;
     padding: .45rem .85rem !important;
     font-size: .8rem !important;
     font-weight: 500 !important;
-    color: #475569 !important;
+    color: #64748b !important;
     transition: all .15s;
     margin-bottom: -1px;
     box-shadow: none !important;
 }
+.filter-tab:hover { color: #0f172a !important; background: transparent !important; }
+.filter-tab.active { color: #007DFE !important; border-bottom-color: #007DFE !important; font-weight: 700 !important; }
+body.dark-mode .filter-tab { color: #94a3b8 !important; }
+body.dark-mode .filter-tab:hover { color: #e2e8f0 !important; }
+body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; }
 .history-item.hidden-by-filter { display: none !important; }
 .info-ribbon {
     border-radius: 12px;
@@ -941,19 +939,15 @@ body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important;
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
                 <div class="card-header px-3 px-md-4" id="payHistoryHeader" style="padding-top:.65rem;padding-bottom:.65rem;">
-                    <div class="d-flex align-items-center" id="historyFilterTabs">
-                        <!-- Title left -->
-                        <span class="fw-bold flex-shrink-0" style="font-size:.92rem;white-space:nowrap;color:#ffffff;">
+                    <div class="d-flex align-items-center gap-1" id="historyFilterTabs">
+                        <span class="fw-bold flex-shrink-0 me-2" style="font-size:.92rem;white-space:nowrap;">
                             <i class="fas fa-history me-2"></i>Payment History
                         </span>
-                        <!-- Push everything else to right -->
                         <div class="flex-grow-1"></div>
-                        <!-- Filter tabs -->
                         <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
                         <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
                         <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
                         <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
-                        <!-- CSV -->
                         <?php if ($payments->num_rows > 0): ?>
                         <button type="button" class="btn btn-sm btn-outline-secondary ms-2 flex-shrink-0" id="exportPaymentsCsv">
                             <i class="fas fa-download me-1"></i>CSV
