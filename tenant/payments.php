@@ -491,48 +491,65 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.rejected  { background: #ef4444; }
 .status-dot.cancelled { background: #94a3b8; }
 
-/* ── Payment History header — light mode ── */
+/* ── Payment History header — light mode modern design ── */
 body:not(.dark-mode) #payHistoryHeader {
-    background-color: #007DFE !important;
-    border-bottom: 1px solid #0066d6 !important;
+    background: linear-gradient(135deg, #1a56db 0%, #007DFE 60%, #38bdf8 100%) !important;
+    border-bottom: none !important;
     color: #ffffff !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding-bottom: 0 !important;
 }
 body:not(.dark-mode) #payHistoryHeader h6,
 body:not(.dark-mode) #payHistoryHeader h6 i {
     color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
 }
-/* CSV button — light mode */
+/* CSV button — light mode: mint green pill */
 body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary {
-    color: #ffffff !important;
-    border-color: rgba(255,255,255,.6) !important;
-    background: rgba(255,255,255,.15) !important;
+    color: #0f5132 !important;
+    background: #4ED6C1 !important;
+    border: none !important;
+    border-radius: 20px !important;
+    font-size: .74rem !important;
+    font-weight: 700 !important;
+    padding: .28rem 1rem !important;
+    box-shadow: 0 2px 8px rgba(78,214,193,.4) !important;
+    letter-spacing: .03em !important;
+    transition: all .18s !important;
 }
 body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary:hover {
-    background: rgba(255,255,255,.3) !important;
+    background: #38c4af !important;
     color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(78,214,193,.5) !important;
+    transform: translateY(-1px) !important;
 }
-/* Filter tabs — light mode (white on blue) */
+/* Filter tabs — light mode: glassy pill chips */
 body:not(.dark-mode) #payHistoryHeader .filter-tab {
-    color: rgba(255,255,255,.75) !important;
-    background: transparent !important;
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
-    padding: .45rem .85rem !important;
-    font-size: .8rem !important;
+    color: rgba(255,255,255,.8) !important;
+    background: rgba(255,255,255,.12) !important;
+    border: 1.5px solid rgba(255,255,255,.2) !important;
+    border-radius: 20px !important;
+    padding: .26rem .85rem !important;
+    font-size: .77rem !important;
     font-weight: 500 !important;
     box-shadow: none !important;
+    margin: 0 2px !important;
+    transition: all .18s !important;
+    backdrop-filter: blur(4px) !important;
 }
 body:not(.dark-mode) #payHistoryHeader .filter-tab:hover {
     color: #ffffff !important;
-    background: rgba(255,255,255,.1) !important;
+    background: rgba(255,255,255,.22) !important;
+    border-color: rgba(255,255,255,.45) !important;
+    transform: translateY(-1px) !important;
 }
 body:not(.dark-mode) #payHistoryHeader .filter-tab.active {
-    color: #ffffff !important;
-    border-bottom-color: #ffffff !important;
+    color: #007DFE !important;
+    background: #ffffff !important;
+    border-color: #ffffff !important;
     font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* ── Payment History header — dark mode only ── */
