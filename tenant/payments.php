@@ -553,16 +553,45 @@ body.dark-mode #payHistoryHeader {
     border-bottom: 1px solid #2d3748 !important;
     color: #e2e8f0 !important;
 }
-body.dark-mode #payHistoryHeader span { color: #e2e8f0 !important; }
+body.dark-mode #payHistoryHeader span { color: #ffffff !important; }
 body.dark-mode #payHistoryHeader .btn-outline-secondary {
-    color: #94a3b8 !important; border-color: #444 !important; background: transparent !important;
+    color: #ffffff !important;
+    border: 1.5px solid rgba(255,255,255,.25) !important;
+    background: rgba(255,255,255,.08) !important;
+    border-radius: 20px !important;
+    font-size: .74rem !important;
+    font-weight: 600 !important;
+    padding: .25rem 1rem !important;
+    transition: all .18s !important;
 }
 body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
-    background: rgba(255,255,255,.08) !important; color: #e2e8f0 !important;
+    background: rgba(255,255,255,.18) !important;
+    border-color: rgba(255,255,255,.45) !important;
+    color: #ffffff !important;
 }
-body.dark-mode #payHistoryHeader .filter-tab { color: #94a3b8 !important; background: transparent !important; border-color: transparent !important; }
-body.dark-mode #payHistoryHeader .filter-tab:hover { color: #e2e8f0 !important; }
-body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; background: transparent !important; }
+body.dark-mode #payHistoryHeader .filter-tab {
+    color: rgba(255,255,255,.7) !important;
+    background: rgba(255,255,255,.08) !important;
+    border: 1.5px solid rgba(255,255,255,.15) !important;
+    border-radius: 20px !important;
+    padding: .25rem .8rem !important;
+    font-size: .77rem !important;
+    font-weight: 500 !important;
+    margin: 0 2px !important;
+    transition: all .18s !important;
+}
+body.dark-mode #payHistoryHeader .filter-tab:hover {
+    color: #ffffff !important;
+    background: rgba(255,255,255,.15) !important;
+    border-color: rgba(255,255,255,.3) !important;
+}
+body.dark-mode #payHistoryHeader .filter-tab.active {
+    color: #1f2530 !important;
+    background: #4ED6C1 !important;
+    border-color: #4ED6C1 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(78,214,193,.35) !important;
+}
 
 /* fallback filter-tab base */
 .filter-tab {
@@ -942,7 +971,6 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
                     display:flex;
                     align-items:center;
                     padding:.65rem 2.5rem .65rem 1.25rem;
-                    background:linear-gradient(135deg,#1a56db 0%,#007DFE 60%,#38bdf8 100%);
                     border-radius:12px 12px 0 0;
                     border:none;
                 ">
@@ -1210,6 +1238,28 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+// ── Payment History header theme ──
+function applyPayHistoryTheme() {
+    var header = document.getElementById('payHistoryHeader');
+    if (!header) return;
+    var isDark = document.body.classList.contains('dark-mode');
+    if (isDark) {
+        header.style.background = '#1f2530';
+        header.style.borderBottom = '1px solid #2d3748';
+    } else {
+        header.style.background = 'linear-gradient(135deg,#1a56db 0%,#007DFE 60%,#38bdf8 100%)';
+        header.style.borderBottom = 'none';
+    }
+}
+applyPayHistoryTheme();
+// Watch for dark mode toggle
+var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+        if (m.attributeName === 'class') applyPayHistoryTheme();
+    });
+});
+observer.observe(document.body, { attributes: true });
 
 function copyGcashNumber() {
     var num = document.getElementById('gcashNumberDisplay');
