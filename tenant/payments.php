@@ -492,12 +492,28 @@ body.dark-mode .history-item:hover { background: rgba(255,255,255,.03); }
 .status-dot.cancelled { background: #94a3b8; }
 
 /* ID-based override — beats any !important class rule in style.css */
+/* ── Payment History header — light mode ── */
 #payHistoryHeader {
     background-color: #ffffff !important;
     border-bottom: 1px solid #e2e8f0 !important;
     color: #0f172a !important;
 }
-#payHistoryHeader h6 { color: #0f172a !important; }
+#payHistoryHeader h6 {
+    color: #0f172a !important;
+}
+/* CSV button — light mode */
+#payHistoryHeader .btn-outline-secondary {
+    color: #475569 !important;
+    border-color: #cbd5e1 !important;
+    background: transparent !important;
+}
+#payHistoryHeader .btn-outline-secondary:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+
+/* ── Payment History header — dark mode only ── */
 body.dark-mode #payHistoryHeader {
     background-color: #111111 !important;
     border-bottom-color: rgba(255,255,255,.08) !important;
@@ -505,13 +521,13 @@ body.dark-mode #payHistoryHeader {
 }
 body.dark-mode #payHistoryHeader h6 { color: #e2e8f0 !important; }
 body.dark-mode #payHistoryHeader .btn-outline-secondary {
-    color: #94a3b8 !important; border-color: #444 !important;
+    color: #94a3b8 !important; border-color: #444 !important; background: transparent !important;
 }
 body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
     background: rgba(255,255,255,.08) !important; color: #e2e8f0 !important;
 }
 
-/* Filter tabs */
+/* ── Filter tabs ── */
 .filter-tab {
     background: transparent !important;
     border: none !important;
@@ -520,13 +536,15 @@ body.dark-mode #payHistoryHeader .btn-outline-secondary:hover {
     padding: .45rem .85rem !important;
     font-size: .8rem !important;
     font-weight: 500 !important;
-    color: #64748b !important;
+    color: #475569 !important;
     transition: all .15s;
     margin-bottom: -1px;
     box-shadow: none !important;
 }
 .filter-tab:hover { color: #0f172a !important; background: transparent !important; }
 .filter-tab.active { color: #007DFE !important; border-bottom-color: #007DFE !important; font-weight: 700 !important; }
+
+/* dark mode tabs — unchanged */
 body.dark-mode .filter-tab { color: #94a3b8 !important; }
 body.dark-mode .filter-tab:hover { color: #e2e8f0 !important; }
 body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-color: #4ED6C1 !important; }
