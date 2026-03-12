@@ -252,6 +252,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Ensure connection is alive before querying
                 try { if (!$conn->ping()) { $conn->connect(); } } catch (Throwable $e) {}
                 try {
+                    // DEBUG: log connection state
+                    error_log('DB state before prepare: errno=' . $conn->errno . ' error=' . $conn->error . ' thread_id=' . $conn->thread_id);
                     $stmt = $conn->prepare('SELECT password FROM users WHERE id = ?');
                     if ($stmt) {
                         $stmt->bind_param('i', (int)$_SESSION['user_id']);
@@ -259,8 +261,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $row = $stmt->get_result()->fetch_assoc();
                         $stmt->close();
                     } else {
-                        error_log('Prepare SELECT password failed: ' . $conn->error);
-                        $errors[] = 'Database error. Please try again.';
+                        error_log('Prepare SELECT password failed: errno=' . $conn->errno . ' error=' . $conn->error);
+                        // Try reconnect and retry once
+                        try {
+                            $conn->close();
+                            $conn = new mysqli(
+                                getenv('MYSQLHOST') ?: 'localhost',
+                                getenv('MYSQLUSER') ?: 'root',
+                                getenv('MYSQLPASSWORD') ?: '',
+                                getenv('MYSQLDATABASE') ?: 'staywise',
+                                (int)(getenv('MYSQLPORT') ?: 3306)
+                            );
+                            $conn->set_charset('utf8');
+                            $stmt2 = $conn->prepare('SELECT password FROM users WHERE id = ?');
+                            if ($stmt2) {
+                                $stmt2->bind_param('i', (int)$_SESSION['user_id']);
+                                $stmt2->execute();
+                                $row = $stmt2->get_result()->fetch_assoc();
+                                $stmt2->close();
+                            } else {
+                                error_log('Retry prepare also failed: ' . $conn->error);
+                                $errors[] = 'Database error (retry failed: ' . htmlspecialchars($conn->error) . '). Please try again.';
+                            }
+                        } catch (Throwable $ex) {
+                            error_log('Reconnect failed: ' . $ex->getMessage());
+                            $errors[] = 'Database error (reconnect: ' . htmlspecialchars($ex->getMessage()) . '). Please try again.';
+                        }
                     }
                 } catch (Throwable $e) {
                     error_log('Fetch password error: ' . $e->getMessage());
