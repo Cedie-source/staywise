@@ -938,22 +938,31 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
         <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
-                <div class="card-header px-3 px-md-4" id="payHistoryHeader" style="padding-top:.65rem;padding-bottom:.65rem;">
-                    <div class="d-flex align-items-center" id="historyFilterTabs">
-                        <span class="fw-bold flex-shrink-0" style="font-size:.92rem;white-space:nowrap;min-width:0;">
-                            <i class="fas fa-history me-2"></i>Payment History
-                        </span>
-                        <div class="ms-auto d-flex align-items-center gap-1">
-                            <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
-                            <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
-                            <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
-                            <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
-                            <?php if ($payments->num_rows > 0): ?>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1 flex-shrink-0" id="exportPaymentsCsv">
-                                <i class="fas fa-download me-1"></i>CSV
-                            </button>
-                            <?php endif; ?>
-                        </div>
+                <div id="payHistoryHeader" style="
+                    display:flex;
+                    align-items:center;
+                    padding:.65rem 1.25rem;
+                    background:linear-gradient(135deg,#1a56db 0%,#007DFE 60%,#38bdf8 100%);
+                    border-radius:12px 12px 0 0;
+                    border:none;
+                ">
+                    <!-- Title -->
+                    <span class="fw-bold" style="font-size:.92rem;white-space:nowrap;color:#fff;flex-shrink:0;">
+                        <i class="fas fa-history me-2"></i>Payment History
+                    </span>
+                    <!-- Spacer -->
+                    <span style="flex:1;"></span>
+                    <!-- Filter tabs + CSV pinned right -->
+                    <div id="historyFilterTabs" style="display:flex;align-items:center;gap:4px;">
+                        <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
+                        <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
+                        <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
+                        <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
+                        <?php if ($payments->num_rows > 0): ?>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="exportPaymentsCsv" style="margin-left:6px;">
+                            <i class="fas fa-download me-1"></i>CSV
+                        </button>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="card-body p-0" id="historyList">
