@@ -504,50 +504,52 @@ body:not(.dark-mode) #payHistoryHeader h6 i {
     color: #ffffff !important;
     text-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
 }
-/* CSV button — light mode: mint green pill */
+/* CSV button — green accent pill */
 body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary {
-    color: #0f5132 !important;
-    background: #4ED6C1 !important;
+    color: #ffffff !important;
+    background: #16a34a !important;
     border: none !important;
     border-radius: 20px !important;
     font-size: .74rem !important;
     font-weight: 700 !important;
     padding: .28rem 1rem !important;
-    box-shadow: 0 2px 8px rgba(78,214,193,.4) !important;
+    box-shadow: 0 2px 8px rgba(22,163,74,.45) !important;
     letter-spacing: .03em !important;
     transition: all .18s !important;
 }
 body:not(.dark-mode) #payHistoryHeader .btn-outline-secondary:hover {
-    background: #38c4af !important;
+    background: #15803d !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(78,214,193,.5) !important;
+    box-shadow: 0 4px 14px rgba(22,163,74,.55) !important;
     transform: translateY(-1px) !important;
 }
-/* Filter tabs — light mode: glassy pill chips */
+/* Filter tabs — light mode: green-tinted pills */
 body:not(.dark-mode) #payHistoryHeader .filter-tab {
-    color: rgba(255,255,255,.8) !important;
-    background: rgba(255,255,255,.12) !important;
-    border: 1.5px solid rgba(255,255,255,.2) !important;
+    color: #ffffff !important;
+    background: rgba(255,255,255,.15) !important;
+    border: 1.5px solid rgba(255,255,255,.3) !important;
     border-radius: 20px !important;
-    padding: .26rem .85rem !important;
-    font-size: .77rem !important;
+    padding: .26rem .9rem !important;
+    font-size: .78rem !important;
     font-weight: 500 !important;
     box-shadow: none !important;
     margin: 0 2px !important;
     transition: all .18s !important;
-    backdrop-filter: blur(4px) !important;
+    opacity: .8 !important;
 }
 body:not(.dark-mode) #payHistoryHeader .filter-tab:hover {
     color: #ffffff !important;
-    background: rgba(255,255,255,.22) !important;
-    border-color: rgba(255,255,255,.45) !important;
+    background: rgba(255,255,255,.25) !important;
+    border-color: rgba(255,255,255,.55) !important;
+    opacity: 1 !important;
     transform: translateY(-1px) !important;
 }
 body:not(.dark-mode) #payHistoryHeader .filter-tab.active {
-    color: #007DFE !important;
-    background: #ffffff !important;
-    border-color: #ffffff !important;
+    color: #15803d !important;
+    background: #dcfce7 !important;
+    border-color: #dcfce7 !important;
     font-weight: 700 !important;
+    opacity: 1 !important;
     box-shadow: 0 2px 8px rgba(0,0,0,.18) !important;
     transform: translateY(-1px) !important;
 }
@@ -938,24 +940,25 @@ body.dark-mode #payHistoryHeader .filter-tab.active { color: #4ED6C1 !important;
         <!-- ═══════ PAYMENT HISTORY ═══════ -->
         <div class="col-lg-7 order-lg-1">
             <div class="pay-form-card card">
-                <div class="card-header border-bottom px-3 px-md-4 pt-3 pb-0" id="payHistoryHeader">
-                    <!-- Row 1: Title -->
-                    <h6 class="fw-bold mb-3" style="font-size:.95rem;">
-                        <i class="fas fa-history me-2" style="color:#007DFE;"></i>Payment History
-                    </h6>
-                    <!-- Row 2: Filter tabs + CSV button -->
-                    <div class="d-flex justify-content-between align-items-center" id="historyFilterTabs">
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
-                            <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
-                            <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
-                            <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
-                        </div>
+                <div class="card-header border-bottom px-3 px-md-4 py-3" id="payHistoryHeader">
+                    <!-- Title + Filter tabs + CSV all in one row -->
+                    <div class="d-flex justify-content-between align-items-center pb-2" id="historyFilterTabs">
+                        <h6 class="fw-bold mb-0" style="font-size:.95rem;">
+                            <i class="fas fa-history me-2" style="color:#ffffff;"></i>Payment History
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
+                                <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
+                                <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
+                                <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
+                            </div>
                         <?php if ($payments->num_rows > 0): ?>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-2 mb-1" id="exportPaymentsCsv">
-                            <i class="fas fa-download me-1"></i>CSV
-                        </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="exportPaymentsCsv">
+                                <i class="fas fa-download me-1"></i>CSV
+                            </button>
                         <?php endif; ?>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0" id="historyList">
