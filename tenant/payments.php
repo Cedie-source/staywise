@@ -941,7 +941,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
                 <div id="payHistoryHeader" style="
                     display:flex;
                     align-items:center;
-                    padding:.65rem 1.25rem;
+                    padding:.65rem 2.5rem .65rem 1.25rem;
                     background:linear-gradient(135deg,#1a56db 0%,#007DFE 60%,#38bdf8 100%);
                     border-radius:12px 12px 0 0;
                     border:none;
@@ -951,7 +951,7 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
                         <i class="fas fa-history me-2"></i>Payment History
                     </span>
                     <!-- Spacer -->
-                    <span style="flex:1;"></span>
+                    <span style="flex:1;min-width:2rem;"></span>
                     <!-- Filter tabs + CSV pinned right, all in one tight group -->
                     <div id="historyFilterTabs" style="display:flex;align-items:center;gap:4px;">
                         <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
