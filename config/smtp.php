@@ -1,35 +1,10 @@
 <?php
-/**
- * SMTP Email Configuration for StayWise
- * 
- * This uses PHPMailer with Gmail SMTP (free).
- * 
- * SETUP INSTRUCTIONS:
- * 1. Go to https://myaccount.google.com/security
- * 2. Enable 2-Step Verification on your Google account
- * 3. Go to https://myaccount.google.com/apppasswords
- * 4. Generate an App Password (select "Mail" and "Windows Computer")
- * 5. Copy the 16-character password and paste it below
- * 6. Set your Gmail address below
- * 
- * That's it! Emails will be sent from your Gmail for free.
- */
-
-// Set to true once you've configured the settings below
-define('SMTP_ENABLED', true);
-
-// Gmail SMTP settings (free)
-define('SMTP_HOST', 'smtp.gmail.com');
-define('SMTP_PORT', 587);
-define('SMTP_ENCRYPTION', 'tls');    // 'tls' for port 587, 'ssl' for port 465
-
-// Your Gmail credentials
-define('SMTP_USERNAME', 'christianpisalbon24@gmail.com');
-define('SMTP_PASSWORD', 'vhvu ytjn nzpq cdas');
-
-// Sender info (shown in the email "From" field)
-define('SMTP_FROM_EMAIL', 'christianpisalbon24@gmail.com');
-define('SMTP_FROM_NAME', 'StayWise');
-
-// Debug level: 0 = off, 1 = client messages, 2 = client+server messages
-define('SMTP_DEBUG', 0);
+if (!defined('SMTP_ENABLED'))    define('SMTP_ENABLED',    true);
+if (!defined('SMTP_HOST'))       define('SMTP_HOST',       getenv('SMTP_HOST')       ?: 'smtp.gmail.com');
+if (!defined('SMTP_PORT'))       define('SMTP_PORT',       (int)(getenv('SMTP_PORT') ?: 587));
+if (!defined('SMTP_ENCRYPTION')) define('SMTP_ENCRYPTION', getenv('SMTP_ENCRYPTION') ?: 'tls');
+if (!defined('SMTP_USERNAME'))   define('SMTP_USERNAME',   getenv('SMTP_USERNAME')   ?: 'christianpisalbon24@gmail.com');
+if (!defined('SMTP_PASSWORD'))   define('SMTP_PASSWORD',   getenv('SMTP_PASSWORD')   ?: 'vhvuytjnnzpqcdas');
+if (!defined('SMTP_FROM_EMAIL')) define('SMTP_FROM_EMAIL', getenv('SMTP_FROM_EMAIL') ?: 'christianpisalbon24@gmail.com');
+if (!defined('SMTP_FROM_NAME'))  define('SMTP_FROM_NAME',  getenv('SMTP_FROM_NAME')  ?: 'StayWise');
+if (!defined('SMTP_DEBUG'))      define('SMTP_DEBUG', 0);
