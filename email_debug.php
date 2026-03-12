@@ -1,14 +1,31 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/smtp.php';
+require_once __DIR__ . '/vendor/phpmailer/Exception.php';
+require_once __DIR__ . '/vendor/phpmailer/PHPMailer.php';
+require_once __DIR__ . '/vendor/phpmailer/SMTP.php';
+
 echo "<pre>";
-echo "SMTP_HOST: " . (defined('SMTP_HOST') ? SMTP_HOST : 'NOT SET') . "\n";
-echo "SMTP_PORT: " . (defined('SMTP_PORT') ? SMTP_PORT : 'NOT SET') . "\n";
-echo "SMTP_USERNAME: " . (defined('SMTP_USERNAME') ? SMTP_USERNAME : 'NOT SET') . "\n";
-echo "SMTP_PASSWORD length: " . (defined('SMTP_PASSWORD') ? strlen(SMTP_PASSWORD) : 'NOT SET') . "\n";
-echo "openssl loaded: " . (extension_loaded('openssl') ? 'YES' : 'NO') . "\n";
-echo "RAILPACK_PHP_EXTENSIONS env: " . getenv('RAILPACK_PHP_EXTENSIONS') . "\n\n";
-$res = $conn->query("SELECT status, error_message, created_at FROM email_logs ORDER BY id DESC LIMIT 3");
-echo "Recent email logs:\n";
-if ($res) { while ($r = $res->fetch_assoc()) { echo $r['created_at'] . " | " . $r['status'] . " | " . $r['error_message'] . "\n"; } }
+
+$mail = new PHPMailer\PHPMailer\PHPMailer(true);
+try {
+    $mail->SMTPDebug = 2;
+    $mail->Debugoutput = function($str, $level) { echo htmlspecialchars($str) . "\n"; };
+    $mail->isSMTP();
+    $mail->Host       = SMTP_HOST;
+    $mail->SMTPAuth   = true;
+    $mail->Username   = SMTP_USERNAME;
+    $mail->Password   = SMTP_PASSWORD;
+    $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port       = 587;
+    $mail->Timeout    = 15;
+    $mail->setFrom(SMTP_FROM_EMAIL, 'StayWise');
+    $mail->addAddress(SMTP_FROM_EMAIL, 'Test');
+    $mail->Subject = 'Test from Railway';
+    $mail->Body    = 'If you get this, SMTP works!';
+    $mail->send();
+    echo "\n\nSUCCESS - Email sent!";
+} catch (Exception $e) {
+    echo "\n\nFAILED: " . htmlspecialchars($mail->ErrorInfo);
+}
 echo "</pre>";
