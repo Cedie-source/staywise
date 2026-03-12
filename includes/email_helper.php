@@ -60,17 +60,55 @@ if (!function_exists('staywise_send_email')) {
         $sent = false;
         $error = '';
 
-        // ── Try PHPMailer + SMTP first ──────────────────────────────
-        if (defined('SMTP_ENABLED') && SMTP_ENABLED) {
+        // ── Try Brevo HTTP API first (works on Railway) ─────────────
+        $brevoApiKey = getenv('BREVO_API_KEY') ?: '';
+        if (!empty($brevoApiKey) && function_exists('curl_init')) {
+            try {
+                $data = json_encode([
+                    'sender'      => ['name' => $from_name, 'email' => $from_email],
+                    'to'          => [['email' => $to_email, 'name' => $to_name]],
+                    'subject'     => $subject,
+                    'htmlContent' => $html,
+                    'textContent' => strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $body)),
+                ]);
+                $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => $data,
+                    CURLOPT_HTTPHEADER     => [
+                        'accept: application/json',
+                        'api-key: ' . $brevoApiKey,
+                        'content-type: application/json',
+                    ],
+                    CURLOPT_TIMEOUT => 15,
+                ]);
+                $response  = curl_exec($ch);
+                $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+
+                if ($httpCode >= 200 && $httpCode < 300) {
+                    $sent = true;
+                } else {
+                    $error = 'Brevo API error ' . $httpCode . ': ' . $response;
+                    if (function_exists('app_log')) app_log('email', $error);
+                }
+            } catch (Throwable $e) {
+                $error = 'Brevo API exception: ' . $e->getMessage();
+                if (function_exists('app_log')) app_log('email', $error);
+            }
+        }
+
+        // ── Fallback: PHPMailer SMTP ─────────────────────────────────
+        if (!$sent && empty($error)) {
             $phpmailerPath = __DIR__ . '/../vendor/phpmailer';
-            if (file_exists($phpmailerPath . '/PHPMailer.php')) {
+            if (defined('SMTP_ENABLED') && SMTP_ENABLED && file_exists($phpmailerPath . '/PHPMailer.php')) {
                 require_once $phpmailerPath . '/Exception.php';
                 require_once $phpmailerPath . '/PHPMailer.php';
                 require_once $phpmailerPath . '/SMTP.php';
-
                 $mail = new PHPMailer\PHPMailer\PHPMailer(true);
                 try {
-                    // Server settings
                     $mail->SMTPDebug = defined('SMTP_DEBUG') ? SMTP_DEBUG : 0;
                     $mail->isSMTP();
                     $mail->Host       = SMTP_HOST;
@@ -81,47 +119,18 @@ if (!function_exists('staywise_send_email')) {
                     $mail->Port       = SMTP_PORT;
                     $mail->CharSet    = 'UTF-8';
                     $mail->Timeout    = 10;
-
-                    // Recipients
                     $mail->setFrom(SMTP_FROM_EMAIL, $from_name);
                     $mail->addAddress($to_email, $to_name);
-                    $mail->addReplyTo(SMTP_FROM_EMAIL, $from_name);
-
-                    // Content
                     $mail->isHTML(true);
                     $mail->Subject = $subject;
                     $mail->Body    = $html;
                     $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $body));
-
                     $mail->send();
                     $sent = true;
                 } catch (Throwable $e) {
                     $error = 'PHPMailer: ' . $mail->ErrorInfo;
-                    // Log to file for debugging
-                    if (function_exists('app_log')) {
-                        app_log('email', 'PHPMailer error: ' . $mail->ErrorInfo . ' | to=' . $to_email);
-                    }
+                    if (function_exists('app_log')) app_log('email', $error);
                 }
-            } else {
-                $error = 'PHPMailer files not found in vendor/phpmailer/';
-            }
-        }
-
-        // ── Fallback to PHP mail() ──────────────────────────────────
-        if (!$sent && empty($error)) {
-            $headers = "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: $from_name <$from_email>\r\n";
-            $headers .= "Reply-To: $from_email\r\n";
-            $headers .= "X-Mailer: StayWise/1.0\r\n";
-
-            try {
-                $sent = @mail($to_email, $subject, $html, $headers);
-                if (!$sent) {
-                    $error = 'mail() returned false - SMTP not configured. See config/smtp.php';
-                }
-            } catch (Throwable $e) {
-                $error = $e->getMessage();
             }
         }
 
