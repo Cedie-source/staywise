@@ -151,17 +151,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $uid     = (int)$_SESSION['user_id'];
 
                 try {
-                    if (function_exists('db_column_exists') && db_column_exists($conn, 'users', 'password_changed_at')) {
-                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
-                    } else {
-                        $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
-                    }
+                    $updConn = new mysqli(
+                        getenv('MYSQLHOST') ?: 'localhost',
+                        getenv('MYSQLUSER') ?: 'root',
+                        getenv('MYSQLPASSWORD') ?: '',
+                        getenv('MYSQLDATABASE') ?: 'staywise',
+                        (int)(getenv('MYSQLPORT') ?: 3306)
+                    );
+                    $updConn->set_charset('utf8');
+                    $safeHash = $updConn->real_escape_string($newHash);
+                    $updSql = "UPDATE users SET password = '$safeHash', force_password_change = 0, password_changed_at = NOW() WHERE id = $uid";
+                    $upd = $updConn->query($updSql);
 
-                    if (!$upd) throw new RuntimeException('Prepare failed: ' . $conn->error);
-                    $upd->bind_param('si', $newHash, $uid);
-
-                    if ($upd->execute()) {
-                        $upd->close();
+                    if ($upd) {
+                        $updConn->close();
 
                         // Log the action
                         try {
@@ -249,48 +252,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($errors)) {
                 // ── Verify current password ──────────────────────────────────
                 $row = null;
-                // Ensure connection is alive before querying
-                try { if (!$conn->ping()) { $conn->connect(); } } catch (Throwable $e) {}
+                // Always create a fresh connection for this critical query
                 try {
-                    // DEBUG: log connection state
-                    error_log('DB state before prepare: errno=' . $conn->errno . ' error=' . $conn->error . ' thread_id=' . $conn->thread_id);
-                    $stmt = $conn->prepare('SELECT password FROM users WHERE id = ?');
-                    if ($stmt) {
-                        $stmt->bind_param('i', (int)$_SESSION['user_id']);
-                        $stmt->execute();
-                        $row = $stmt->get_result()->fetch_assoc();
-                        $stmt->close();
+                    $freshConn = new mysqli(
+                        getenv('MYSQLHOST') ?: 'localhost',
+                        getenv('MYSQLUSER') ?: 'root',
+                        getenv('MYSQLPASSWORD') ?: '',
+                        getenv('MYSQLDATABASE') ?: 'staywise',
+                        (int)(getenv('MYSQLPORT') ?: 3306)
+                    );
+                    $freshConn->set_charset('utf8');
+                    $uid_q = (int)$_SESSION['user_id'];
+                    $result = $freshConn->query("SELECT password FROM users WHERE id = " . $uid_q . " LIMIT 1");
+                    if ($result) {
+                        $row = $result->fetch_assoc();
+                        $result->free();
                     } else {
-                        error_log('Prepare SELECT password failed: errno=' . $conn->errno . ' error=' . $conn->error);
-                        // Try reconnect and retry once
-                        try {
-                            $conn->close();
-                            $conn = new mysqli(
-                                getenv('MYSQLHOST') ?: 'localhost',
-                                getenv('MYSQLUSER') ?: 'root',
-                                getenv('MYSQLPASSWORD') ?: '',
-                                getenv('MYSQLDATABASE') ?: 'staywise',
-                                (int)(getenv('MYSQLPORT') ?: 3306)
-                            );
-                            $conn->set_charset('utf8');
-                            $stmt2 = $conn->prepare('SELECT password FROM users WHERE id = ?');
-                            if ($stmt2) {
-                                $stmt2->bind_param('i', (int)$_SESSION['user_id']);
-                                $stmt2->execute();
-                                $row = $stmt2->get_result()->fetch_assoc();
-                                $stmt2->close();
-                            } else {
-                                error_log('Retry prepare also failed: ' . $conn->error);
-                                $errors[] = 'Database error (retry failed: ' . htmlspecialchars($conn->error) . '). Please try again.';
-                            }
-                        } catch (Throwable $ex) {
-                            error_log('Reconnect failed: ' . $ex->getMessage());
-                            $errors[] = 'Database error (reconnect: ' . htmlspecialchars($ex->getMessage()) . '). Please try again.';
-                        }
+                        $errors[] = 'Database error: ' . htmlspecialchars($freshConn->error);
                     }
+                    $freshConn->close();
                 } catch (Throwable $e) {
                     error_log('Fetch password error: ' . $e->getMessage());
-                    $errors[] = 'Database error. Please try again.';
+                    $errors[] = 'Database error: ' . htmlspecialchars($e->getMessage());
                 }
 
                 if (empty($errors) && !$row) {
@@ -326,16 +309,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $uid = (int)$_SESSION['user_id'];
                         $updated = false;
                         try {
-                            if (function_exists('db_column_exists') && db_column_exists($conn, 'users', 'password_changed_at')) {
-                                $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0, password_changed_at = NOW() WHERE id = ?');
-                            } else {
-                                $upd = $conn->prepare('UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?');
-                            }
-                            if ($upd) {
-                                $upd->bind_param('si', $newHash, $uid);
-                                $updated = $upd->execute();
-                                $upd->close();
-                            }
+                            $fConn = new mysqli(
+                                getenv('MYSQLHOST') ?: 'localhost',
+                                getenv('MYSQLUSER') ?: 'root',
+                                getenv('MYSQLPASSWORD') ?: '',
+                                getenv('MYSQLDATABASE') ?: 'staywise',
+                                (int)(getenv('MYSQLPORT') ?: 3306)
+                            );
+                            $fConn->set_charset('utf8');
+                            $safeHash2 = $fConn->real_escape_string($newHash);
+                            $updated = $fConn->query("UPDATE users SET password = '$safeHash2', force_password_change = 0, password_changed_at = NOW() WHERE id = $uid");
+                            $fConn->close();
                         } catch (Throwable $e) {
                             error_log('Forced password update error: ' . $e->getMessage());
                         }
