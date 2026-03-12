@@ -35,25 +35,22 @@ $page_title = "Welcome";
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            /* Same as system */
             --primary:      #0d6efd;
             --primary-dark: #0a58ca;
             --primary-glow: rgba(13,110,253,.15);
             --green:        #16a34a;
             --green-dark:   #15803d;
             --teal:         #4ED6C1;
+            --teal-dark:    #0f766e;
             --danger:       #dc3545;
-
-            /* Light mode surfaces (matches system light) */
-            --bg:        #f1f5f9;
-            --surface:   #ffffff;
-            --surface-2: #f8fafc;
-            --border:    #e2e8f0;
-            --border-md: #d1d5db;
-            --text:      #1e293b;
-            --text-2:    #374151;
-            --muted:     #64748b;
-            --muted-2:   #94a3b8;
+            --bg:           #f1f5f9;
+            --surface:      #ffffff;
+            --border:       #e2e8f0;
+            --border-md:    #d1d5db;
+            --text:         #1e293b;
+            --text-2:       #374151;
+            --muted:        #64748b;
+            --muted-2:      #94a3b8;
         }
 
         html, body {
@@ -66,26 +63,21 @@ $page_title = "Welcome";
             justify-content: center;
         }
 
-        /* Soft background pattern */
         body::before {
             content: '';
             position: fixed; inset: 0; z-index: 0;
             background:
-                radial-gradient(ellipse 70% 50% at 5% 10%, rgba(13,110,253,.06) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 60% at 95% 90%, rgba(22,163,74,.05) 0%, transparent 55%),
-                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(78,214,193,.03) 0%, transparent 60%);
+                radial-gradient(ellipse 60% 50% at 5% 10%, rgba(13,110,253,.05) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 50% at 95% 90%, rgba(78,214,193,.06) 0%, transparent 55%);
         }
-
-        /* Subtle dot grid */
         body::after {
             content: '';
             position: fixed; inset: 0; z-index: 0;
-            background-image: radial-gradient(circle, rgba(100,116,139,.18) 1px, transparent 1px);
+            background-image: radial-gradient(circle, rgba(100,116,139,.15) 1px, transparent 1px);
             background-size: 28px 28px;
             mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
         }
 
-        /* ── Shell ── */
         .shell {
             position: relative; z-index: 1;
             width: 100%; max-width: 880px;
@@ -96,10 +88,7 @@ $page_title = "Welcome";
             overflow: hidden;
             background: var(--surface);
             border: 1px solid var(--border);
-            box-shadow:
-                0 1px 3px rgba(0,0,0,.06),
-                0 8px 24px rgba(0,0,0,.08),
-                0 32px 64px rgba(0,0,0,.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08), 0 32px 64px rgba(0,0,0,.05);
             animation: rise .5s cubic-bezier(.22,1,.36,1) both;
         }
         @keyframes rise {
@@ -107,15 +96,16 @@ $page_title = "Welcome";
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Left panel ── */
+        /* ── LEFT PANEL — dark navy ── */
         .panel-left {
             background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
             padding: 2.75rem 2.25rem;
             display: flex; flex-direction: column; justify-content: space-between;
             position: relative; overflow: hidden;
+            border-right: 1px solid rgba(255,255,255,.05);
         }
 
-        /* Top-left glow */
+        /* Top-left blue glow */
         .panel-left::before {
             content: '';
             position: absolute; top: -80px; left: -80px;
@@ -123,7 +113,6 @@ $page_title = "Welcome";
             background: radial-gradient(circle, rgba(13,110,253,.18) 0%, transparent 70%);
             border-radius: 50%;
         }
-
         /* Bottom-right teal glow */
         .panel-left::after {
             content: '';
@@ -135,8 +124,7 @@ $page_title = "Welcome";
 
         .left-inner { position: relative; z-index: 1; }
 
-        /* Brand */
-        .brand { display: flex; align-items: center; gap: .65rem; margin-bottom: 2.5rem; }
+        .brand { display: flex; align-items: center; gap: .65rem; margin-bottom: 2.25rem; }
         .brand-icon {
             width: 40px; height: 40px;
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
@@ -150,16 +138,18 @@ $page_title = "Welcome";
         .brand-name em { color: var(--teal); font-style: normal; }
 
         .left-headline {
-            font-size: 1.85rem; font-weight: 700; line-height: 1.2;
-            color: #f1f5f9; margin-bottom: .85rem; letter-spacing: -.02em;
+            font-size: 1.75rem; font-weight: 700; line-height: 1.22;
+            color: #f1f5f9; margin-bottom: .8rem; letter-spacing: -.02em;
         }
         .left-headline span {
             background: linear-gradient(90deg, var(--primary), var(--teal));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .left-desc { font-size: .8rem; color: #94a3b8; line-height: 1.7; font-weight: 400; max-width: 230px; }
+        .left-desc {
+            font-size: .8rem; color: #94a3b8; line-height: 1.7;
+            font-weight: 400; max-width: 235px; opacity: .85;
+        }
 
-        /* Features */
         .left-footer { position: relative; z-index: 1; }
         .feat-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
         .feat-list li {
@@ -171,34 +161,30 @@ $page_title = "Welcome";
             display: flex; align-items: center; justify-content: center;
             font-size: .62rem; flex-shrink: 0;
         }
-        .feat-pip.blue { background: rgba(13,110,253,.18); color: #60a5fa; }
-        .feat-pip.teal { background: rgba(78,214,193,.15); color: var(--teal); }
-        .feat-pip.green { background: rgba(22,163,74,.15); color: #4ade80; }
+        .feat-pip.teal  { background: rgba(78,214,193,.15);  color: var(--teal); }
+        .feat-pip.blue  { background: rgba(13,110,253,.12);  color: var(--primary); }
+        .feat-pip.green { background: rgba(22,163,74,.12);   color: var(--green-dark); }
 
-        /* ── Right panel ── */
+        /* ── RIGHT PANEL ── */
         .panel-right {
             padding: 2.75rem 2.5rem;
             display: flex; flex-direction: column; justify-content: center;
             background: var(--surface);
-            /* Top accent */
             border-top: 3px solid var(--primary);
         }
 
-        .form-title { font-size: 1.45rem; font-weight: 700; color: var(--text); margin-bottom: .2rem; letter-spacing: -.02em; }
-        .form-sub { font-size: .8rem; color: var(--muted); margin-bottom: 1.75rem; }
+        .form-title { font-size: 1.9rem; font-weight: 700; color: var(--text); margin-bottom: .3rem; letter-spacing: -.03em; }
+        .form-sub   { font-size: .75rem; color: var(--muted); margin-bottom: 1.75rem; font-weight: 400; }
 
-        /* Alert */
         .login-alert {
             display: flex; align-items: center; gap: .55rem;
             background: #fef2f2; border: 1px solid #fecaca;
             border-radius: 9px; padding: .6rem .85rem;
             font-size: .8rem; color: var(--danger); font-weight: 500;
-            margin-bottom: 1.2rem;
-            animation: shake .4s ease;
+            margin-bottom: 1.2rem; animation: shake .4s ease;
         }
         @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-3px)} 40%,80%{transform:translateX(3px)} }
 
-        /* Fields — identical to profile.php tc-input style */
         .field { margin-bottom: 1rem; }
         .field-label {
             display: block; font-size: .78rem; font-weight: 600;
@@ -211,33 +197,22 @@ $page_title = "Welcome";
         }
         .field-input {
             width: 100%; padding: .65rem .9rem .65rem 2.4rem;
-            border: 1.5px solid var(--border-md);
-            border-radius: 8px;
+            border: 1.5px solid var(--border-md); border-radius: 8px;
             font-size: .88rem; font-family: 'DM Sans', sans-serif; font-weight: 400;
-            color: var(--text-2); background: var(--surface);
-            outline: none; transition: border-color .15s, box-shadow .15s;
-            caret-color: var(--primary);
+            color: var(--text-2); background: var(--surface); outline: none;
+            transition: border-color .15s, box-shadow .15s; caret-color: var(--primary);
         }
         .field-input::placeholder { color: var(--muted-2); }
-        .field-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-glow);
-        }
+        .field-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
         .field-input:focus ~ .field-icon { color: var(--primary); }
-        .field-input.is-invalid {
-            border-color: var(--danger);
-            box-shadow: 0 0 0 3px rgba(220,53,69,.1);
-        }
-
-        /* Autofill */
+        .field-input.is-invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,53,69,.1); }
         .field-input:-webkit-autofill,
         .field-input:-webkit-autofill:focus {
             -webkit-text-fill-color: var(--text-2) !important;
-            box-shadow: 0 0 0px 1000px var(--surface) inset, 0 0 0 3px var(--primary-glow) !important;
+            box-shadow: 0 0 0px 1000px #fff inset, 0 0 0 3px var(--primary-glow) !important;
             border-color: var(--primary) !important;
         }
 
-        /* Password row */
         .pw-wrap { position: relative; padding-bottom: 1.2rem; }
         .pw-toggle {
             position: absolute; right: .85rem; top: 50%; transform: translateY(-60%);
@@ -255,24 +230,15 @@ $page_title = "Welcome";
         .field-error { font-size: .74rem; color: var(--danger); font-weight: 500; margin-top: .3rem; display: none; }
         .field-error.show { display: block; }
 
-        /* Submit — green like profile save button */
         .btn-signin {
-            width: 100%;
-            background: var(--green);
-            border: none; border-radius: 8px;
+            width: 100%; background: var(--green); border: none; border-radius: 8px;
             color: #fff; font-size: .88rem; font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            padding: .7rem 1rem;
+            font-family: 'DM Sans', sans-serif; padding: .7rem 1rem;
             cursor: pointer; position: relative; overflow: hidden;
             transition: background .15s, transform .12s, box-shadow .15s;
-            box-shadow: 0 2px 8px rgba(22,163,74,.25);
-            margin-top: .2rem; letter-spacing: .01em;
+            box-shadow: 0 2px 8px rgba(22,163,74,.25); margin-top: .2rem;
         }
-        .btn-signin:hover:not(:disabled) {
-            background: var(--green-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 14px rgba(22,163,74,.32);
-        }
+        .btn-signin:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(22,163,74,.32); }
         .btn-signin:active:not(:disabled) { transform: translateY(0); }
         .btn-signin:disabled { opacity: .55; cursor: not-allowed; }
         .btn-signin .btn-text { transition: opacity .15s; }
@@ -280,7 +246,6 @@ $page_title = "Welcome";
         .btn-signin.loading .btn-text { opacity: 0; }
         .btn-signin.loading .btn-spinner { display: flex; }
 
-        /* Lock hint */
         .lock-hint {
             background: #fffbeb; border: 1px solid #fde68a;
             border-radius: 8px; padding: .5rem .8rem;
@@ -288,19 +253,14 @@ $page_title = "Welcome";
             margin-top: .5rem; display: flex; align-items: center; gap: .4rem;
         }
 
-        /* Divider */
-        .divider {
-            display: flex; align-items: center; gap: .75rem; margin: 1.4rem 0 0;
-        }
+        .divider { display: flex; align-items: center; gap: .75rem; margin: 1.4rem 0 0; }
         .divider-line { flex: 1; height: 1px; background: var(--border); }
         .divider-text { font-size: .69rem; color: var(--muted-2); letter-spacing: .06em; text-transform: uppercase; }
 
-        /* Footer link — teal like dark mode profile accent */
         .form-footer { margin-top: .9rem; text-align: center; font-size: .76rem; color: var(--muted); }
         .form-footer a { color: var(--primary); font-weight: 600; text-decoration: none; transition: color .15s; }
         .form-footer a:hover { color: var(--primary-dark); }
 
-        /* Mobile */
         @media (max-width: 640px) {
             .shell { grid-template-columns: 1fr; max-width: 400px; }
             .panel-left { display: none; }
@@ -309,10 +269,8 @@ $page_title = "Welcome";
     </style>
 </head>
 <body>
-
 <div class="shell">
-
-    <!-- LEFT: Branding -->
+    <!-- LEFT -->
     <div class="panel-left">
         <div class="left-inner">
             <div class="brand">
@@ -325,18 +283,17 @@ $page_title = "Welcome";
             </div>
             <p class="left-desc">Track payments, manage tenants, and handle everything from one clean dashboard.</p>
         </div>
-
         <div class="left-footer">
             <ul class="feat-list">
-                <li><div class="feat-pip blue"><i class="fas fa-shield-alt"></i></div> Secure & encrypted access</li>
-                <li><div class="feat-pip teal"><i class="fas fa-bolt"></i></div> Real-time payment tracking</li>
+                <li><div class="feat-pip teal"><i class="fas fa-shield-alt"></i></div> Secure &amp; encrypted access</li>
+                <li><div class="feat-pip blue"><i class="fas fa-bolt"></i></div> Real-time payment tracking</li>
                 <li><div class="feat-pip green"><i class="fas fa-bell"></i></div> Instant notifications</li>
-                <li><div class="feat-pip blue"><i class="fas fa-chart-line"></i></div> Financial reports & history</li>
+                <li><div class="feat-pip teal"><i class="fas fa-chart-line"></i></div> Financial reports &amp; history</li>
             </ul>
         </div>
     </div>
 
-    <!-- RIGHT: Form -->
+    <!-- RIGHT -->
     <div class="panel-right">
         <div class="form-title">Welcome back 👋</div>
         <div class="form-sub">Sign in to your StayWise account</div>
@@ -350,7 +307,6 @@ $page_title = "Welcome";
 
         <form action="login.php" method="POST" id="loginForm" novalidate>
             <?= csrf_input() ?>
-
             <div class="field">
                 <label class="field-label" for="username">Username or Email</label>
                 <div class="field-inner">
@@ -385,7 +341,6 @@ $page_title = "Welcome";
                 <span class="btn-text">Sign In</span>
                 <span class="btn-spinner"><i class="fas fa-circle-notch fa-spin"></i></span>
             </button>
-
             <div id="lockHintWrap"></div>
         </form>
 
@@ -394,110 +349,29 @@ $page_title = "Welcome";
             <div class="divider-text">secure portal</div>
             <div class="divider-line"></div>
         </div>
-
         <div class="form-footer">
             <a href="forgot_password.php"><i class="fas fa-key me-1"></i>Forgot your password?</a>
         </div>
     </div>
-
 </div>
 
 <script>
 (function () {
-    const form      = document.getElementById('loginForm');
-    const username  = document.getElementById('username');
-    const password  = document.getElementById('password');
-    const submitBtn = document.getElementById('submitBtn');
-    const pwToggle  = document.getElementById('pwToggle');
-    const pwIcon    = document.getElementById('pwIcon');
-    const caps      = document.getElementById('capsLockHint');
-    const uErr      = document.getElementById('usernameError');
-    const pErr      = document.getElementById('passwordError');
-    const lockWrap  = document.getElementById('lockHintWrap');
-
-    pwToggle.addEventListener('click', () => {
-        const isText = password.type === 'text';
-        password.type = isText ? 'password' : 'text';
-        pwIcon.className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
-    });
-
-    function updateCaps(e) {
-        try { caps.classList.toggle('show', e.getModifierState('CapsLock')); } catch (_) {}
-    }
-    password.addEventListener('keydown', updateCaps);
-    password.addEventListener('keyup', updateCaps);
-    password.addEventListener('focus', updateCaps);
-    password.addEventListener('blur', () => caps.classList.remove('show'));
-
-    const params   = new URLSearchParams(window.location.search);
-    let remain     = parseInt(params.get('remain') || '0', 10);
-    const isLocked = params.get('lock') === '1' && remain > 0;
-
-    if (isLocked) {
-        const alertEl = document.querySelector('.login-alert');
-        if (alertEl) alertEl.style.display = 'none';
-        password.disabled = true;
-        submitBtn.disabled = true;
-        startCountdown();
-    }
-
-    const serverError = params.get('error');
-    if (!isLocked && serverError) {
-        const alertEl = document.querySelector('.login-alert');
-        if (alertEl) alertEl.style.display = 'none';
-        pErr.textContent = serverError;
-        pErr.classList.add('show');
-        password.classList.add('is-invalid');
-        try { password.focus(); } catch (_) {}
-    }
-
-    function renderLock(s) {
-        lockWrap.innerHTML = `<div class="lock-hint"><i class="fas fa-clock"></i> Too many attempts — retry in ${s}s</div>`;
-    }
-    function startCountdown() {
-        renderLock(remain);
-        const iv = setInterval(() => {
-            remain = Math.max(0, remain - 1);
-            renderLock(remain);
-            if (remain <= 0) {
-                clearInterval(iv);
-                password.disabled = false;
-                submitBtn.disabled = false;
-                lockWrap.innerHTML = '';
-                try {
-                    const url = new URL(window.location);
-                    url.searchParams.delete('lock');
-                    url.searchParams.delete('remain');
-                    window.history.replaceState({}, '', url);
-                } catch (_) {}
-            }
-        }, 1000);
-    }
-
-    function validateUsername() {
-        const v = (username.value || '').trim();
-        const ok = /^[A-Za-z0-9_]{3,20}$/.test(v) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-        username.classList.toggle('is-invalid', !ok);
-        uErr.classList.toggle('show', !ok);
-        return ok;
-    }
-    function validatePassword() {
-        const ok = password.value.length > 0;
-        password.classList.toggle('is-invalid', !ok);
-        pErr.classList.toggle('show', !ok);
-        return ok;
-    }
-
-    username.addEventListener('input', () => { username.classList.remove('is-invalid'); uErr.classList.remove('show'); });
-    password.addEventListener('input', () => { password.classList.remove('is-invalid'); pErr.classList.remove('show'); });
-
-    form.addEventListener('submit', function (e) {
-        if (isLocked && remain > 0) { e.preventDefault(); return; }
-        const ok = validateUsername() & validatePassword();
-        if (!ok) { e.preventDefault(); return; }
-        submitBtn.classList.add('loading');
-        submitBtn.disabled = true;
-    });
+    const form=document.getElementById('loginForm'),username=document.getElementById('username'),password=document.getElementById('password'),submitBtn=document.getElementById('submitBtn'),pwToggle=document.getElementById('pwToggle'),pwIcon=document.getElementById('pwIcon'),caps=document.getElementById('capsLockHint'),uErr=document.getElementById('usernameError'),pErr=document.getElementById('passwordError'),lockWrap=document.getElementById('lockHintWrap');
+    pwToggle.addEventListener('click',()=>{const t=password.type==='text';password.type=t?'password':'text';pwIcon.className=t?'fas fa-eye':'fas fa-eye-slash';});
+    function updateCaps(e){try{caps.classList.toggle('show',e.getModifierState('CapsLock'));}catch(_){}}
+    password.addEventListener('keydown',updateCaps);password.addEventListener('keyup',updateCaps);password.addEventListener('focus',updateCaps);password.addEventListener('blur',()=>caps.classList.remove('show'));
+    const params=new URLSearchParams(window.location.search);let remain=parseInt(params.get('remain')||'0',10);const isLocked=params.get('lock')==='1'&&remain>0;
+    if(isLocked){const a=document.querySelector('.login-alert');if(a)a.style.display='none';password.disabled=true;submitBtn.disabled=true;startCountdown();}
+    const serverError=params.get('error');
+    if(!isLocked&&serverError){const a=document.querySelector('.login-alert');if(a)a.style.display='none';pErr.textContent=serverError;pErr.classList.add('show');password.classList.add('is-invalid');try{password.focus();}catch(_){}}
+    function renderLock(s){lockWrap.innerHTML=`<div class="lock-hint"><i class="fas fa-clock"></i> Too many attempts — retry in ${s}s</div>`;}
+    function startCountdown(){renderLock(remain);const iv=setInterval(()=>{remain=Math.max(0,remain-1);renderLock(remain);if(remain<=0){clearInterval(iv);password.disabled=false;submitBtn.disabled=false;lockWrap.innerHTML='';try{const u=new URL(window.location);u.searchParams.delete('lock');u.searchParams.delete('remain');window.history.replaceState({},'',u);}catch(_){}}},1000);}
+    function vUser(){const v=(username.value||'').trim(),ok=/^[A-Za-z0-9_]{3,20}$/.test(v)||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);username.classList.toggle('is-invalid',!ok);uErr.classList.toggle('show',!ok);return ok;}
+    function vPass(){const ok=password.value.length>0;password.classList.toggle('is-invalid',!ok);pErr.classList.toggle('show',!ok);return ok;}
+    username.addEventListener('input',()=>{username.classList.remove('is-invalid');uErr.classList.remove('show');});
+    password.addEventListener('input',()=>{password.classList.remove('is-invalid');pErr.classList.remove('show');});
+    form.addEventListener('submit',function(e){if(isLocked&&remain>0){e.preventDefault();return;}const ok=vUser()&vPass();if(!ok){e.preventDefault();return;}submitBtn.classList.add('loading');submitBtn.disabled=true;});
 })();
 </script>
 </body>
