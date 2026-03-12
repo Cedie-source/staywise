@@ -651,6 +651,27 @@ body:not(.dark-mode) .tenant-ui .pay-form-card .card-header h6,
 body:not(.dark-mode) .tenant-ui .pay-form-card .card-header i {
     color: #0f172a !important;
 }
+/* Filter tabs — light mode visible */
+body:not(.dark-mode) .tenant-ui .filter-tab {
+    color: #374151 !important;
+}
+body:not(.dark-mode) .tenant-ui .filter-tab:hover {
+    color: #0f172a !important;
+}
+body:not(.dark-mode) .tenant-ui .filter-tab.active {
+    color: #007DFE !important;
+    border-bottom-color: #007DFE !important;
+}
+/* CSV button — light mode */
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header .btn-outline-secondary {
+    color: #374151 !important;
+    border-color: #9ca3af !important;
+    background: transparent !important;
+}
+body:not(.dark-mode) .tenant-ui .pay-form-card .card-header .btn-outline-secondary:hover {
+    background: #f3f4f6 !important;
+    color: #0f172a !important;
+}
 body.dark-mode .tenant-ui .pay-form-card .card-header {
     background-color: #1f2530 !important;
     color: #e2e8f0 !important;
