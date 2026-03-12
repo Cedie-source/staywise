@@ -952,14 +952,14 @@ body.dark-mode .filter-tab.active { color: #4ED6C1 !important; border-bottom-col
                     </span>
                     <!-- Spacer -->
                     <span style="flex:1;"></span>
-                    <!-- Filter tabs + CSV pinned right -->
+                    <!-- Filter tabs + CSV pinned right, all in one tight group -->
                     <div id="historyFilterTabs" style="display:flex;align-items:center;gap:4px;">
                         <button type="button" class="btn btn-sm filter-tab active" data-filter="all">All</button>
                         <button type="button" class="btn btn-sm filter-tab" data-filter="active">Active</button>
                         <button type="button" class="btn btn-sm filter-tab" data-filter="verified">Paid</button>
                         <button type="button" class="btn btn-sm filter-tab" data-filter="cancelled">Cancelled</button>
                         <?php if ($payments->num_rows > 0): ?>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="exportPaymentsCsv" style="margin-left:6px;">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="exportPaymentsCsv">
                             <i class="fas fa-download me-1"></i>CSV
                         </button>
                         <?php endif; ?>
