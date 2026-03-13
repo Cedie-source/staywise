@@ -281,9 +281,62 @@ $conn->close();
             border-radius: 8px; padding: .5rem .8rem;
             margin-bottom: 1.1rem; display: flex; align-items: center; gap: .5rem;
         }
+
+        /* ── Light mode ── */
+        body.light {
+            --gold: #0e7490; --gold-light: #0284c7; --gold-dim: rgba(14,116,144,.12);
+            --bg: #dce9ef; --surface: #eaf3f7; --surface-2: #d0e5ed;
+            --border: rgba(14,116,144,.13); --border-gold: rgba(14,116,144,.35);
+            --text: #091520; --muted: #155e75; --muted-2: #0e7490;
+        }
+        html, body { transition: background .4s, color .3s; }
+        .bg-scene { background: var(--bg); transition: background .4s; }
+        body:not(.light) .bg-scene::after {
+            background:
+                radial-gradient(ellipse 60% 50% at 20% 20%, rgba(0,125,254,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 80% 80%, rgba(201,168,76,.05) 0%, transparent 60%);
+        }
+        body.light .bg-scene::after {
+            background:
+                radial-gradient(ellipse 60% 50% at 20% 20%, rgba(12,95,115,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 80% 80%, rgba(11,99,88,.06) 0%, transparent 60%);
+        }
+        body.light .card {
+            background: var(--surface);
+            border-color: rgba(14,116,144,.15);
+            box-shadow: 0 0 0 1px rgba(14,116,144,.08), 0 24px 60px rgba(8,40,55,.12);
+        }
+        body.light .card::before { background: linear-gradient(90deg,#0c5f73,#0b6358,#06b6d4); }
+        body.light .brand-icon { background: linear-gradient(135deg,#d0e5ed,#bdd8e3); border-color: rgba(14,116,144,.3); }
+        body.light .field-input {
+            background: #d0e5ed; border-color: rgba(14,116,144,.2);
+            color: var(--text);
+        }
+        body.light .field-input::placeholder { color: #5aacbf; }
+        body.light .field-input:focus { border-color: rgba(14,116,144,.5); box-shadow: 0 0 0 3px rgba(14,116,144,.1); }
+        body.light .field-input:-webkit-autofill {
+            -webkit-text-fill-color: #091520 !important;
+            box-shadow: 0 0 0 1000px #d0e5ed inset !important;
+        }
+        body.light .otp-input { background: #d0e5ed; border-color: rgba(14,116,144,.35); color: #0e7490; }
+        body.light .btn-main {
+            background: linear-gradient(135deg,#0c5f73,#0b6358);
+            color: #fff; box-shadow: 0 4px 20px rgba(14,116,144,.28);
+        }
+        body.light .btn-main:hover:not(:disabled) { box-shadow: 0 8px 28px rgba(14,116,144,.42); }
+        body.light .btn-ghost { border-color: rgba(14,116,144,.2); color: #0e7490; }
+        body.light .btn-ghost:hover { border-color: rgba(14,116,144,.4); color: #0c5f73; }
+        body.light .alert-success { background: rgba(14,116,144,.08); border-color: rgba(14,116,144,.25); color: #0e7490; }
+        body.light .back-link { color: #155e75; }
+        body.light .back-link:hover { color: #0e7490; }
+        body.light .email-hint { background: #d0e5ed; border-color: rgba(14,116,144,.15); }
     </style>
 </head>
 <body>
+<script>
+    // Apply saved theme instantly before paint
+    if (localStorage.getItem('sw_theme') === 'light') document.body.classList.add('light');
+</script>
 <div class="bg-scene"></div>
 <div class="wrap">
     <div class="card">
