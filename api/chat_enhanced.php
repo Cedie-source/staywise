@@ -38,7 +38,7 @@ if ($_SESSION[$rate_key]['count'] > 30) {
 header('Content-Type: application/json');
 
 // Load configuration
-$root = dirname(__DIR__);
+$root = "/app";
 define('STAYWISE_ROOT', $root);
 @include $root . '/config/groq.php';
 @include $root . '/config/dialogflow.php';
