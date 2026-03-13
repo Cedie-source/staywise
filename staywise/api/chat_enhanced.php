@@ -38,7 +38,7 @@ if ($_SESSION[$rate_key]['count'] > 30) {
 header('Content-Type: application/json');
 
 // Load configuration
-$root = "/app/staywise";
+$root = dirname(__DIR__); // Dynamically resolve project root
 define('STAYWISE_ROOT', $root);
 @include $root . '/config/groq.php';
 @include $root . '/config/dialogflow.php';
@@ -182,7 +182,7 @@ try {
 
     // Get Groq credentials
     $apiKey = getenv('GROQ_API_KEY') ?: ($_ENV['GROQ_API_KEY'] ?? $_SERVER['GROQ_API_KEY'] ?? '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');
-    $model = getenv('GROQ_MODEL') ?: 'mixtral-8x7b-32768';
+    $model = getenv('GROQ_MODEL') ?: 'llama-3.3-70b-versatile';
     $apiUrl = getenv('GROQ_API_URL') ?: 'https://api.groq.com/openai/v1/chat/completions';
 
     if ($apiKey === 'YOUR_KEY_HERE' || !$apiKey) {
