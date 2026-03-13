@@ -182,7 +182,7 @@ try {
 
     // Get Groq credentials
     $apiKey = getenv('GROQ_API_KEY');
-    $model = getenv('GROQ_MODEL') ?: 'llama-3.3-70b-versatile';
+    $model = getenv('GROQ_MODEL') ?: 'mixtral-8x7b-32768';
     $apiUrl = getenv('GROQ_API_URL') ?: 'https://api.groq.com/openai/v1/chat/completions';
 
     if ($apiKey === 'YOUR_KEY_HERE' || !$apiKey) {
