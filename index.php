@@ -108,67 +108,61 @@ $page_title = "Welcome";
            LIGHT MODE — Warm Cream & Amber
         ═══════════════════════════════════════ */
         body.light {
-            --gold:         #0284c7;
-            --gold-light:   #38bdf8;
-            --gold-dim:     rgba(2,132,199,.12);
+            --gold:         #0e7490;
+            --gold-light:   #0284c7;
+            --gold-dim:     rgba(14,116,144,.12);
 
-            --bg:           #f0f9ff;
-            --surface:      #ffffff;
-            --surface-2:    #e0f2fe;
-            --border:       rgba(2,132,199,.12);
-            --border-acc:   rgba(2,132,199,.35);
-            --text:         #0c1a2e;
-            --muted:        #0369a1;
-            --muted-2:      #0284c7;
-            --placeholder:  #7dd3fc;
+            --bg:           #dce9ef;
+            --surface:      #eaf3f7;
+            --surface-2:    #d0e5ed;
+            --border:       rgba(14,116,144,.13);
+            --border-acc:   rgba(14,116,144,.32);
+            --text:         #091520;
+            --muted:        #155e75;
+            --muted-2:      #0e7490;
+            --placeholder:  #5aacbf;
 
-            /* bg glows */
-            --glow1: rgba(2,132,199,.1);
-            --glow2: rgba(20,184,166,.08);
-            --glow3: rgba(56,189,248,.06);
-            /* grid */
-            --grid:  rgba(2,132,199,.05);
+            /* bg glows — very subtle */
+            --glow1: rgba(14,116,144,.07);
+            --glow2: rgba(13,148,136,.06);
+            --glow3: rgba(6,182,212,.04);
+            --grid:  rgba(14,116,144,.045);
 
-            /* left panel — blue→teal gradient */
-            --panel-l:       linear-gradient(160deg,#0ea5e9 0%,#0284c7 45%,#0d9488 100%);
-            --panel-l-glow1: rgba(255,255,255,.06);
-            --panel-l-glow2: rgba(20,184,166,.08);
-            --ring1: rgba(255,255,255,.1);
-            --ring2: rgba(255,255,255,.15);
-            --ring3: rgba(255,255,255,.22);
-            --brand-icon-bg: linear-gradient(135deg,rgba(255,255,255,.25),rgba(255,255,255,.12));
+            /* left panel — deeper, less saturated teal-navy */
+            --panel-l:       linear-gradient(160deg,#0c5f73 0%,#0a4f62 45%,#0b6358 100%);
+            --panel-l-glow1: rgba(255,255,255,.04);
+            --panel-l-glow2: rgba(20,184,166,.05);
+            --ring1: rgba(255,255,255,.08);
+            --ring2: rgba(255,255,255,.12);
+            --ring3: rgba(255,255,255,.17);
+            --brand-icon-bg: linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.08));
 
-            /* right panel */
-            --panel-r:      #ffffff;
+            --panel-r:      #eaf3f7;
 
-            /* inputs */
-            --input-bg:     #f0f9ff;
-            --input-bdr:    rgba(2,132,199,.18);
-            --focus-bdr:    rgba(2,132,199,.5);
-            --focus-ring:   rgba(2,132,199,.1);
-            --caret:        #0284c7;
+            --input-bg:     #dce9ef;
+            --input-bdr:    rgba(14,116,144,.18);
+            --focus-bdr:    rgba(14,116,144,.5);
+            --focus-ring:   rgba(14,116,144,.1);
+            --caret:        #0e7490;
 
-            /* button — blue→teal */
-            --btn-from:     #0284c7;
-            --btn-to:       #0d9488;
+            --btn-from:     #0c5f73;
+            --btn-to:       #0b6358;
             --btn-text:     #ffffff;
-            --btn-shimmer:  rgba(255,255,255,.22);
-            --btn-shadow:   rgba(2,132,199,.32);
-            --btn-shadow-h: rgba(2,132,199,.48);
+            --btn-shimmer:  rgba(255,255,255,.18);
+            --btn-shadow:   rgba(14,116,144,.28);
+            --btn-shadow-h: rgba(14,116,144,.42);
 
-            /* alerts */
             --err-bg:   rgba(220,38,38,.06);
             --err-bdr:  rgba(220,38,38,.2);
             --err-txt:  #dc2626;
-            --lock-bg:  rgba(2,132,199,.06);
-            --lock-bdr: rgba(2,132,199,.2);
-            --lock-txt: #0369a1;
+            --lock-bg:  rgba(14,116,144,.06);
+            --lock-bdr: rgba(14,116,144,.2);
+            --lock-txt: #155e75;
 
-            /* shell */
             --shell-shadow:
-                0 0 0 1px rgba(2,132,199,.12),
-                0 24px 60px rgba(2,132,199,.1),
-                0 4px 16px rgba(2,132,199,.07);
+                0 0 0 1px rgba(14,116,144,.1),
+                0 24px 60px rgba(8,40,55,.15),
+                0 4px 16px rgba(8,40,55,.08);
         }
 
         /* ═══════════════════════════════════════
@@ -216,9 +210,9 @@ $page_title = "Welcome";
         }
         body.light .bg-scene::after {
             background:
-                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(2,132,199,.1) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(20,184,166,.08) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(56,189,248,.06) 0%, transparent 70%);
+                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(12,95,115,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(11,99,88,.06) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6,182,212,.04) 0%, transparent 70%);
         }
 
         /* floating orbs — explicit per mode */
@@ -232,9 +226,9 @@ $page_title = "Welcome";
         body:not(.light) .orb-2 { background: rgba(201,168,76,.04); }
         body:not(.light) .orb-3 { background: rgba(78,214,193,.04); }
         /* light orbs */
-        body.light .orb-1 { background: rgba(2,132,199,.1); }
-        body.light .orb-2 { background: rgba(13,148,136,.08); }
-        body.light .orb-3 { background: rgba(56,189,248,.07); }
+        body.light .orb-1 { background: rgba(12,95,115,.09); }
+        body.light .orb-2 { background: rgba(11,99,88,.07); }
+        body.light .orb-3 { background: rgba(6,182,212,.05); }
 
         .orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; animation-delay: 0s; }
         .orb-2 { width: 500px; height: 500px; bottom: -150px; right: -100px; animation-delay: -6s; }
@@ -679,12 +673,18 @@ $page_title = "Welcome";
 <script>
 (function () {
     const body = document.body;
-    // Default = dark. Light mode opt-in saved to localStorage.
+    // Default = dark. Light mode opt-in saved to localStorage + cookie.
     if (localStorage.getItem('sw_theme') === 'light') body.classList.add('light');
 
-    document.getElementById('themeBtn').addEventListener('click', () => {
-        const isLight = body.classList.toggle('light');
+    function setTheme(isLight) {
+        body.classList.toggle('light', isLight);
         localStorage.setItem('sw_theme', isLight ? 'light' : 'dark');
+        // Sync darkMode cookie so dashboard/header.php picks it up automatically
+        document.cookie = 'darkMode=' + (isLight ? 'false' : 'true') + '; path=/; max-age=31536000';
+    }
+
+    document.getElementById('themeBtn').addEventListener('click', () => {
+        setTheme(!body.classList.contains('light'));
     });
 
     const form      = document.getElementById('loginForm');
