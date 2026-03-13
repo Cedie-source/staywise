@@ -29,540 +29,656 @@ $page_title = "Welcome";
     <meta name="theme-color" content="#4ED6C1"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* ── LIGHT MODE (default) ── */
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           LIGHT MODE TOKENS
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
         :root {
-            --teal:        #4ED6C1;
-            --teal-dark:   #2cb8a3;
-            --teal-deeper: #1a9b87;
-            --teal-glow:   rgba(78,214,193,.14);
+            --teal:         #3ecfb8;
+            --teal-2:       #28b09a;
+            --teal-3:       #1a9080;
+            --teal-fg:      #ffffff;
+            --teal-glow:    rgba(62,207,184,.18);
 
-            --bg:          #f8fafc;
-            --card-right:  #ffffff;
-            --border:      #e2e8f0;
-            --input-bg:    #ffffff;
-            --input-bdr:   #d1d5db;
+            --bg:           #eef4f3;
+            --panel:        #ffffff;
+            --panel-bdr:    rgba(62,207,184,.25);
+            --input-bg:     #f5faf9;
+            --input-bdr:    #cde8e4;
+            --input-focus:  #3ecfb8;
+            --text-h:       #0a1f1c;
+            --text:         #1c3530;
+            --text-soft:    #4a7068;
+            --text-ghost:   #8fb5b0;
+            --divider:      #daeae7;
 
-            --text:        #111827;
-            --text-2:      #374151;
-            --muted:       #6b7280;
-            --muted-2:     #94a3b8;
+            --shadow-card:  0 0 0 1px rgba(62,207,184,.12), 0 24px 64px rgba(10,31,28,.10), 0 4px 16px rgba(10,31,28,.06);
+            --shadow-btn:   0 4px 20px rgba(62,207,184,.40);
 
-            --shadow:      0 1px 3px rgba(15,23,42,.06), 0 12px 40px rgba(15,23,42,.09);
-            --shell-bdr:   #d1faf4;
-
-            --lock-bg:     #fffbeb;
-            --lock-bdr:    #fde68a;
-            --lock-text:   #92400e;
+            --err-bg:       #fff1f1;
+            --err-bdr:      #fcc;
+            --err-text:     #c0392b;
+            --warn-bg:      #fffbeb;
+            --warn-bdr:     #fde68a;
+            --warn-text:    #92400e;
         }
 
-        /* ── DARK MODE ── */
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           DARK MODE TOKENS
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
         body.dark {
-            --bg:         #080c14;
-            --card-right: #0e1420;
-            --border:     rgba(255,255,255,.07);
-            --input-bg:   #141b28;
-            --input-bdr:  rgba(255,255,255,.1);
+            --bg:           #08100f;
+            --panel:        #0d1a18;
+            --panel-bdr:    rgba(62,207,184,.12);
+            --input-bg:     #111f1d;
+            --input-bdr:    rgba(62,207,184,.15);
+            --input-focus:  #3ecfb8;
+            --text-h:       #e8f5f3;
+            --text:         #b8d8d4;
+            --text-soft:    #6fa89f;
+            --text-ghost:   #3d6860;
+            --divider:      rgba(62,207,184,.1);
 
-            --text:       #f0ede8;
-            --text-2:     #d1d5db;
-            --muted:      #6b7280;
-            --muted-2:    #9ca3af;
+            --shadow-card:  0 0 0 1px rgba(62,207,184,.08), 0 32px 80px rgba(0,0,0,.6), 0 0 120px rgba(62,207,184,.04);
+            --shadow-btn:   0 4px 24px rgba(62,207,184,.28);
 
-            --shadow:     0 40px 80px rgba(0,0,0,.55), 0 4px 16px rgba(0,0,0,.3);
-            --shell-bdr:  rgba(78,214,193,.15);
-
-            --lock-bg:    rgba(217,119,6,.08);
-            --lock-bdr:   rgba(217,119,6,.25);
-            --lock-text:  #fbbf24;
+            --err-bg:       rgba(192,57,43,.08);
+            --err-bdr:      rgba(192,57,43,.25);
+            --err-text:     #f1948a;
+            --warn-bg:      rgba(146,64,14,.08);
+            --warn-bdr:     rgba(253,230,138,.2);
+            --warn-text:    #fbbf24;
         }
 
-        html, body {
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           BASE
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        html { height: 100%; }
+        body {
             min-height: 100vh;
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             background: var(--bg);
             color: var(--text);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background .25s, color .25s;
+            transition: background .3s, color .3s;
+            overflow: hidden;
         }
 
-        /* page background glows */
-        body::before {
-            content: '';
+        /* ── Animated mesh background ── */
+        .bg-mesh {
             position: fixed; inset: 0; z-index: 0;
+            overflow: hidden;
             pointer-events: none;
-            transition: background .25s;
         }
-        body:not(.dark)::before {
-            background:
-                radial-gradient(ellipse 65% 55% at 100% 0%,   rgba(78,214,193,.13) 0%, transparent 65%),
-                radial-gradient(ellipse 45% 45% at 0%   100%, rgba(78,214,193,.09) 0%, transparent 65%);
+        .bg-mesh::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(var(--divider) 1px, transparent 1px),
+                linear-gradient(90deg, var(--divider) 1px, transparent 1px);
+            background-size: 52px 52px;
+            mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 20%, transparent 80%);
+            transition: background-image .3s;
         }
-        body.dark::before {
-            background:
-                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(0,125,254,.07) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(78,214,193,.05) 0%, transparent 60%);
-        }
-
-        /* ── Theme toggle button ── */
-        .theme-toggle {
-            position: fixed;
-            top: 1.1rem; right: 1.25rem;
-            z-index: 100;
-            width: 38px; height: 38px;
+        .orb {
+            position: absolute;
             border-radius: 50%;
-            border: 1.5px solid var(--border);
-            background: var(--card-right);
-            color: var(--muted);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            font-size: .85rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,.08);
-            transition: background .2s, border-color .2s, color .2s, transform .15s, box-shadow .2s;
+            filter: blur(90px);
+            animation: drift 18s ease-in-out infinite alternate;
         }
-        .theme-toggle:hover {
-            color: var(--teal-dark);
-            border-color: var(--teal);
-            transform: scale(1.08);
-            box-shadow: 0 4px 14px rgba(78,214,193,.2);
+        .orb-1 {
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(62,207,184,.14) 0%, transparent 70%);
+            top: -200px; left: -150px;
+            animation-delay: 0s;
         }
-        .theme-toggle .icon-sun  { display: none; }
-        .theme-toggle .icon-moon { display: block; }
-        body.dark .theme-toggle .icon-sun  { display: block; }
-        body.dark .theme-toggle .icon-moon { display: none; }
+        .orb-2 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(62,207,184,.08) 0%, transparent 70%);
+            bottom: -150px; right: -100px;
+            animation-delay: -7s;
+        }
+        body.dark .orb-1 { background: radial-gradient(circle, rgba(62,207,184,.09) 0%, transparent 70%); }
+        body.dark .orb-2 { background: radial-gradient(circle, rgba(0,180,140,.06) 0%, transparent 70%); }
+        @keyframes drift {
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(30px,20px) scale(1.08); }
+        }
 
-        /* ── Card shell ── */
-        .login-shell {
-            position: relative; z-index: 1;
-            width: 100%; max-width: 960px; min-height: 560px;
+        /* ── Theme toggle ── */
+        .theme-btn {
+            position: fixed; top: 1.25rem; right: 1.5rem; z-index: 200;
+            width: 42px; height: 42px; border-radius: 12px;
+            border: 1px solid var(--panel-bdr);
+            background: var(--panel);
+            color: var(--text-soft);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: .9rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            transition: all .2s;
+        }
+        .theme-btn:hover {
+            color: var(--teal-2);
+            border-color: var(--teal);
+            box-shadow: 0 4px 20px var(--teal-glow);
+            transform: translateY(-1px);
+        }
+        .theme-btn .i-sun  { display: none; }
+        .theme-btn .i-moon { display: block; }
+        body.dark .theme-btn .i-sun  { display: block; }
+        body.dark .theme-btn .i-moon { display: none; }
+
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           CARD SHELL
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        .card-shell {
+            position: relative; z-index: 10;
+            width: 100%; max-width: 980px;
             margin: 1.5rem;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            border-radius: 20px;
+            grid-template-columns: 420px 1fr;
+            border-radius: 28px;
             overflow: hidden;
-            border: 1.5px solid var(--shell-bdr);
-            box-shadow: var(--shadow);
-            animation: appear .45s cubic-bezier(.22,1,.36,1) both;
-            transition: border-color .25s, box-shadow .25s;
+            border: 1px solid var(--panel-bdr);
+            box-shadow: var(--shadow-card);
+            animation: rise .55s cubic-bezier(.16,1,.3,1) both;
+            transition: border-color .3s, box-shadow .3s;
         }
-        @keyframes appear {
-            from { opacity: 0; transform: translateY(20px); }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(28px) scale(.97); }
+            to   { opacity: 1; transform: translateY(0)   scale(1); }
+        }
+
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           LEFT PANEL  ─  teal hero
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        .panel-l {
+            background: linear-gradient(155deg, #4edfc8 0%, #28b09a 45%, #0d7a6a 100%);
+            padding: 3rem 2.75rem;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: relative; overflow: hidden;
+            min-height: 580px;
+        }
+
+        /* big abstract shapes */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+        }
+        .shape-1 {
+            width: 440px; height: 440px;
+            background: rgba(255,255,255,.07);
+            top: -160px; right: -130px;
+        }
+        .shape-2 {
+            width: 280px; height: 280px;
+            background: rgba(255,255,255,.05);
+            top: -60px; right: -50px;
+        }
+        .shape-3 {
+            width: 180px; height: 180px;
+            background: rgba(0,0,0,.08);
+            bottom: -60px; left: -50px;
+        }
+
+        /* floating ring decoration */
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.15);
+        }
+        .ring-1 { width: 320px; height: 320px; bottom: 60px; right: -120px; }
+        .ring-2 { width: 220px; height: 220px; bottom: 100px; right: -70px; border-color: rgba(255,255,255,.1); }
+
+        /* dot matrix */
+        .dots {
+            position: absolute; bottom: 2.5rem; left: 2.75rem;
+            display: grid; grid-template-columns: repeat(6,1fr); gap: 7px;
+        }
+        .dots span {
+            width: 4px; height: 4px; border-radius: 50%;
+            background: rgba(255,255,255,.3); display: block;
+        }
+
+        /* brand */
+        .logo-row {
+            display: flex; align-items: center; gap: .8rem;
+            position: relative; z-index: 2;
+        }
+        .logo-icon {
+            width: 46px; height: 46px; border-radius: 14px;
+            background: rgba(255,255,255,.2);
+            border: 1px solid rgba(255,255,255,.35);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.05rem; color: #fff;
+            box-shadow: 0 8px 24px rgba(0,0,0,.15);
+        }
+        .logo-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.4rem; font-weight: 800;
+            color: #fff; letter-spacing: -.02em;
+        }
+
+        /* headline */
+        .hero-text { position: relative; z-index: 2; }
+        .hero-text h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.55rem; font-weight: 800;
+            color: #fff; line-height: 1.15;
+            letter-spacing: -.03em;
+            margin-bottom: .9rem;
+        }
+        .hero-text h1 em {
+            font-style: normal;
+            color: rgba(255,255,255,.55);
+        }
+        .hero-text p {
+            font-size: .875rem;
+            color: rgba(255,255,255,.68);
+            line-height: 1.8;
+            max-width: 260px;
+            font-weight: 300;
+        }
+
+        /* pills */
+        .pills { position: relative; z-index: 2; display: flex; flex-direction: column; gap: .55rem; }
+        .pill {
+            display: flex; align-items: center; gap: .7rem;
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 10px;
+            padding: .55rem .9rem;
+            font-size: .8rem; font-weight: 500;
+            color: rgba(255,255,255,.9);
+            backdrop-filter: blur(6px);
+            transition: background .2s;
+        }
+        .pill:hover { background: rgba(255,255,255,.16); }
+        .pill i { width: 14px; text-align: center; opacity: .75; font-size: .75rem; }
+
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           RIGHT PANEL  ─  form
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        .panel-r {
+            background: var(--panel);
+            padding: 3.25rem 3.25rem;
+            display: flex; flex-direction: column; justify-content: center;
+            transition: background .3s;
+        }
+
+        /* staggered entrance for form children */
+        .panel-r > * {
+            animation: fadein .5s cubic-bezier(.16,1,.3,1) both;
+        }
+        .panel-r > *:nth-child(1) { animation-delay: .1s; }
+        .panel-r > *:nth-child(2) { animation-delay: .15s; }
+        .panel-r > *:nth-child(3) { animation-delay: .2s; }
+        .panel-r > *:nth-child(4) { animation-delay: .25s; }
+        .panel-r > *:nth-child(5) { animation-delay: .3s; }
+        @keyframes fadein {
+            from { opacity: 0; transform: translateY(12px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ══ LEFT — teal branding panel (same in both modes) ══ */
-        .panel-left {
-            background: linear-gradient(150deg, var(--teal) 0%, var(--teal-dark) 50%, var(--teal-deeper) 100%);
-            padding: 2.75rem 2.5rem;
-            display: flex; flex-direction: column; justify-content: space-between;
-            position: relative; overflow: hidden;
+        .tag-line {
+            display: inline-flex; align-items: center; gap: .45rem;
+            font-size: .68rem; font-weight: 700;
+            letter-spacing: .12em; text-transform: uppercase;
+            color: var(--teal-2);
+            margin-bottom: .6rem;
         }
-        .panel-left::before,
-        .panel-left::after {
-            content: ''; position: absolute; border-radius: 50%;
-            background: rgba(255,255,255,.08);
-        }
-        .panel-left::before { width: 380px; height: 380px; top: -140px; right: -110px; }
-        .panel-left::after  { width: 220px; height: 220px; bottom: -80px; left: -60px; }
-
-        .dot-grid {
-            position: absolute; bottom: 2.25rem; right: 2.25rem;
-            display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; z-index: 1;
-        }
-        .dot-grid span { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.3); display: block; }
-
-        .brand-row { display: flex; align-items: center; gap: .75rem; position: relative; z-index: 1; }
-        .brand-icon-box {
-            width: 42px; height: 42px;
-            background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
-            border-radius: 11px; display: flex; align-items: center; justify-content: center;
-            font-size: .95rem; color: #fff; backdrop-filter: blur(6px);
-        }
-        .brand-name { font-size: 1.3rem; font-weight: 800; color: #fff; letter-spacing: -.01em; }
-
-        .panel-headline { position: relative; z-index: 1; }
-        .panel-headline h2 {
-            font-size: 2.2rem; font-weight: 800; color: #fff;
-            line-height: 1.2; letter-spacing: -.025em; margin-bottom: .75rem;
-        }
-        .panel-headline h2 span { color: rgba(255,255,255,.65); font-weight: 600; font-size: 1.8rem; }
-        .panel-headline p { font-size: .85rem; color: rgba(255,255,255,.72); line-height: 1.75; max-width: 250px; }
-
-        .panel-features { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .55rem; }
-        .feat-pill {
-            display: flex; align-items: center; gap: .65rem;
-            background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
-            border-radius: 9px; padding: .5rem .8rem;
-            font-size: .79rem; color: rgba(255,255,255,.92); font-weight: 500;
-        }
-        .feat-pill i { width: 13px; text-align: center; color: rgba(255,255,255,.7); font-size: .75rem; }
-
-        /* ══ RIGHT — form panel ══ */
-        .panel-right {
-            background: var(--card-right);
-            padding: 2.75rem 3rem;
-            display: flex; flex-direction: column; justify-content: center;
-            transition: background .25s;
+        .tag-line::before {
+            content: '';
+            width: 18px; height: 2px;
+            background: var(--teal);
+            border-radius: 2px;
         }
 
-        .form-eyebrow {
-            font-size: .7rem; font-weight: 700; letter-spacing: .1em;
-            text-transform: uppercase; color: var(--teal-dark); margin-bottom: .4rem;
+        .form-h {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem; font-weight: 800;
+            color: var(--text-h);
+            letter-spacing: -.035em;
+            line-height: 1.15;
+            margin-bottom: .3rem;
+            transition: color .3s;
         }
-        .form-title {
-            font-size: 1.75rem; font-weight: 800; color: var(--text);
-            letter-spacing: -.03em; margin-bottom: .25rem;
-            transition: color .25s;
+        .form-sub {
+            font-size: .83rem; font-weight: 300;
+            color: var(--text-soft);
+            margin-bottom: 2rem;
+            transition: color .3s;
         }
-        .form-sub { font-size: .82rem; color: var(--muted); margin-bottom: 1.85rem; transition: color .25s; }
 
-        /* error alert */
-        .login-alert {
-            display: flex; align-items: center; gap: .55rem;
-            background: #fef2f2; border: 1px solid #fecaca;
-            border-radius: 9px; padding: .6rem .85rem;
-            font-size: .81rem; color: #dc2626; font-weight: 600;
-            margin-bottom: 1.2rem; animation: shake .4s ease;
-        }
-        body.dark .login-alert {
-            background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.2); color: #f87171;
+        /* alert */
+        .alert-err {
+            display: flex; align-items: center; gap: .6rem;
+            background: var(--err-bg); border: 1px solid var(--err-bdr);
+            border-radius: 10px; padding: .65rem .9rem;
+            font-size: .81rem; color: var(--err-text); font-weight: 600;
+            margin-bottom: 1.25rem;
+            animation: shake .4s ease;
         }
         @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            20%,60%  { transform: translateX(-4px); }
-            40%,80%  { transform: translateX(4px); }
+            0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)}
         }
 
-        /* fields */
-        .field-wrap { margin-bottom: 1rem; }
-        .field-label {
-            display: block; font-size: .76rem; font-weight: 600;
-            color: var(--muted); margin-bottom: 5px; transition: color .25s;
+        /* field */
+        .field { margin-bottom: 1.1rem; }
+        .field-lbl {
+            display: block;
+            font-size: .72rem; font-weight: 600;
+            color: var(--text-soft);
+            letter-spacing: .06em; text-transform: uppercase;
+            margin-bottom: .45rem;
+            transition: color .3s;
         }
-        .field-inner { position: relative; }
-        .field-icon {
-            position: absolute; left: .9rem; top: 50%;
-            transform: translateY(-50%); color: var(--muted-2);
-            font-size: .78rem; pointer-events: none; transition: color .15s;
+        .field-wrap { position: relative; }
+        .field-ico {
+            position: absolute; left: .95rem; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-ghost); font-size: .78rem;
+            pointer-events: none;
+            transition: color .2s;
         }
-        .field-input {
-            width: 100%; padding: .65rem .9rem .65rem 2.4rem;
-            border: 1.5px solid var(--input-bdr); border-radius: 8px;
-            font-size: .88rem; color: var(--text); background: var(--input-bg);
-            outline: none; font-family: 'Inter', sans-serif;
-            transition: border-color .15s, box-shadow .15s, background .25s, color .25s;
+        .field-in {
+            width: 100%;
+            padding: .72rem .95rem .72rem 2.5rem;
+            background: var(--input-bg);
+            border: 1.5px solid var(--input-bdr);
+            border-radius: 11px;
+            font-size: .88rem; font-family: 'DM Sans', sans-serif;
+            color: var(--text-h);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s, background .3s, color .3s;
         }
-        .field-input::placeholder { color: var(--muted-2); }
-        .field-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-glow); }
-        .field-input:focus ~ .field-icon { color: var(--teal-dark); }
-        .field-input.is-invalid { border-color: #fca5a5; box-shadow: 0 0 0 3px rgba(220,38,38,.07); }
-        body.dark .field-input.is-invalid { border-color: rgba(239,68,68,.4); }
+        .field-in::placeholder { color: var(--text-ghost); }
+        .field-in:hover { border-color: var(--teal-2); }
+        .field-in:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3.5px var(--teal-glow);
+        }
+        .field-in:focus + .field-ico { color: var(--teal-2); }
+        .field-in.bad { border-color: var(--err-bdr); box-shadow: 0 0 0 3px rgba(192,57,43,.08); }
 
-        /* autofill — light */
-        .field-input:-webkit-autofill,
-        .field-input:-webkit-autofill:focus {
-            -webkit-text-fill-color: var(--text) !important;
-            box-shadow: 0 0 0 1000px #fff inset, 0 0 0 3px var(--teal-glow) !important;
-            border-color: var(--teal) !important;
-        }
-        /* autofill — dark */
-        body.dark .field-input:-webkit-autofill,
-        body.dark .field-input:-webkit-autofill:focus {
-            -webkit-text-fill-color: #f0ede8 !important;
-            box-shadow: 0 0 0 1000px #141b28 inset, 0 0 0 3px var(--teal-glow) !important;
-            border-color: var(--teal) !important;
-        }
+        /* autofill */
+        .field-in:-webkit-autofill { -webkit-text-fill-color: var(--text-h) !important; }
+        .field-in:-webkit-autofill { box-shadow: 0 0 0 1000px var(--input-bg) inset, 0 0 0 3.5px var(--teal-glow) !important; border-color: var(--input-focus) !important; }
 
-        /* password */
-        .pw-wrap { position: relative; padding-bottom: 1.2rem; }
-        .pw-toggle {
-            position: absolute; right: .85rem; top: 50%; transform: translateY(-60%);
-            background: none; border: none; color: var(--muted-2); cursor: pointer;
-            font-size: .82rem; padding: 0; z-index: 2; transition: color .15s;
+        /* pw row */
+        .pw-row { position: relative; padding-bottom: 1.3rem; }
+        .pw-eye {
+            position: absolute; right: .9rem; top: 50%;
+            transform: translateY(-65%);
+            background: none; border: none; padding: 0;
+            color: var(--text-ghost); cursor: pointer; font-size: .82rem; z-index: 2;
+            transition: color .2s;
         }
-        .pw-toggle:hover { color: var(--teal-dark); }
+        .pw-eye:hover { color: var(--teal-2); }
 
-        #capsLockHint {
+        #caps {
             position: absolute; bottom: 0; left: 0;
-            font-size: .73rem; color: #d97706; font-weight: 600;
+            font-size: .72rem; color: #d97706; font-weight: 600;
             display: flex; align-items: center; gap: .3rem;
-            visibility: hidden; opacity: 0; transition: opacity .2s;
+            opacity: 0; visibility: hidden; transition: opacity .2s;
         }
-        #capsLockHint.caps-visible { visibility: visible; opacity: 1; }
+        #caps.on { opacity: 1; visibility: visible; }
 
-        .field-error { font-size: .73rem; color: #dc2626; font-weight: 600; margin-top: .3rem; display: none; }
-        body.dark .field-error { color: #f87171; }
-        .field-error.show { display: block; }
+        .ferr { font-size: .72rem; color: var(--err-text); font-weight: 600; margin-top: .3rem; display: none; }
+        .ferr.show { display: block; }
 
-        /* submit */
-        .btn-signin {
-            width: 100%; padding: .68rem 1rem;
-            background: var(--teal-dark); border: none; border-radius: 8px;
-            color: #fff; font-size: .88rem; font-weight: 600;
-            font-family: 'Inter', sans-serif; cursor: pointer;
+        /* button */
+        .btn-go {
+            width: 100%;
+            padding: .78rem 1rem;
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 60%, var(--teal-3) 100%);
+            border: none; border-radius: 11px;
+            color: #fff; font-family: 'Syne', sans-serif;
+            font-size: .92rem; font-weight: 700;
+            letter-spacing: .02em;
+            cursor: pointer;
             position: relative; overflow: hidden;
-            transition: background .15s, box-shadow .15s, transform .1s;
-            box-shadow: 0 2px 10px rgba(44,184,163,.3); margin-top: .2rem;
+            box-shadow: var(--shadow-btn);
+            transition: transform .15s, box-shadow .2s, opacity .2s;
+            margin-top: .3rem;
         }
-        .btn-signin::after {
-            content: ''; position: absolute;
-            top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
-            transition: left .4s;
+        /* shimmer */
+        .btn-go::after {
+            content: '';
+            position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+            transform: skewX(-20deg);
+            transition: left .5s ease;
         }
-        .btn-signin:hover:not(:disabled)::after { left: 100%; }
-        .btn-signin:hover:not(:disabled) {
-            background: var(--teal-deeper);
-            box-shadow: 0 4px 18px rgba(44,184,163,.38);
-            transform: translateY(-1px);
+        .btn-go:hover:not(:disabled)::after { left: 150%; }
+        .btn-go:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(62,207,184,.45);
         }
-        .btn-signin:active:not(:disabled) { transform: translateY(0); }
-        .btn-signin:disabled { opacity: .55; cursor: not-allowed; }
-        .btn-signin.loading .btn-text { opacity: 0; }
-        .btn-signin .btn-spinner { display: none; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
-        .btn-signin.loading .btn-spinner { opacity: 1; }
+        .btn-go:active:not(:disabled) { transform: translateY(0); }
+        .btn-go:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-go.spin .btn-lbl { opacity: 0; }
+        .btn-go .btn-spinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
+        .btn-go.spin .btn-spinner { opacity: 1; }
 
-        /* lock hint */
-        .lock-hint {
-            display: flex; align-items: center; gap: .4rem;
-            background: var(--lock-bg); border: 1px solid var(--lock-bdr);
-            border-radius: 8px; padding: .5rem .8rem;
-            font-size: .77rem; color: var(--lock-text); font-weight: 600; margin-top: .5rem;
+        /* lock */
+        .lock-box {
+            display: flex; align-items: center; gap: .45rem;
+            background: var(--warn-bg); border: 1px solid var(--warn-bdr);
+            border-radius: 9px; padding: .5rem .8rem;
+            font-size: .77rem; color: var(--warn-text); font-weight: 600; margin-top: .5rem;
         }
 
         /* divider */
-        .divider { display: flex; align-items: center; gap: .7rem; margin-top: 1.4rem; }
-        .divider-line { flex: 1; height: 1px; background: var(--border); transition: background .25s; }
-        .divider-text { font-size: .68rem; color: var(--muted-2); letter-spacing: .07em; text-transform: uppercase; font-weight: 600; }
+        .div-row { display: flex; align-items: center; gap: .75rem; margin: 1.5rem 0 0; }
+        .div-line { flex: 1; height: 1px; background: var(--divider); transition: background .3s; }
+        .div-txt { font-size: .67rem; color: var(--text-ghost); letter-spacing: .09em; text-transform: uppercase; font-weight: 600; }
 
-        /* forgot link */
-        .form-footer { margin-top: 1.1rem; text-align: center; font-size: .79rem; color: var(--muted); }
-        .form-footer a { color: var(--teal-dark); font-weight: 600; text-decoration: none; transition: color .15s; }
-        .form-footer a:hover { color: var(--teal-deeper); text-decoration: underline; }
+        /* footer link */
+        .form-foot { margin-top: 1.1rem; text-align: center; font-size: .8rem; color: var(--text-soft); }
+        .form-foot a { color: var(--teal-2); font-weight: 600; text-decoration: none; transition: color .15s; }
+        .form-foot a:hover { color: var(--teal-3); text-decoration: underline; }
 
-        /* responsive */
-        @media (max-width: 680px) {
-            .login-shell { grid-template-columns: 1fr; max-width: 420px; }
-            .panel-left  { display: none; }
-            .panel-right { padding: 2.5rem 1.75rem; }
+        /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           RESPONSIVE
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+        @media (max-width: 780px) {
+            .card-shell { grid-template-columns: 1fr; max-width: 440px; }
+            .panel-l    { display: none; }
+            .panel-r    { padding: 2.75rem 2rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- Dark / Light toggle -->
-<button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode" aria-label="Toggle theme">
-    <i class="fas fa-sun icon-sun"></i>
-    <i class="fas fa-moon icon-moon"></i>
+<!-- background -->
+<div class="bg-mesh">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+</div>
+
+<!-- theme toggle -->
+<button class="theme-btn" id="themeBtn" aria-label="Toggle theme">
+    <i class="fas fa-sun i-sun"></i>
+    <i class="fas fa-moon i-moon"></i>
 </button>
 
-<div class="login-shell">
+<div class="card-shell">
 
-    <!-- LEFT: teal branding -->
-    <div class="panel-left">
-        <div class="dot-grid"><?php for($i=0;$i<25;$i++) echo '<span></span>'; ?></div>
+    <!-- ── LEFT ── -->
+    <div class="panel-l">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="dots"><?php for($i=0;$i<30;$i++) echo '<span></span>'; ?></div>
 
-        <div class="brand-row">
-            <div class="brand-icon-box"><i class="fas fa-building"></i></div>
-            <div class="brand-name">StayWise</div>
+        <div class="logo-row">
+            <div class="logo-icon"><i class="fas fa-building"></i></div>
+            <div class="logo-text">StayWise</div>
         </div>
 
-        <div class="panel-headline">
-            <h2>Manage your<br>property<span><br>effortlessly.</span></h2>
-            <p>A modern platform for landlords and tenants — payments, maintenance, and communication in one place.</p>
+        <div class="hero-text">
+            <h1>Property<br>management<br><em>made elegant.</em></h1>
+            <p>One platform for landlords and tenants — payments, maintenance requests, and communication unified.</p>
         </div>
 
-        <div class="panel-features">
-            <div class="feat-pill"><i class="fas fa-shield-alt"></i> Secure &amp; encrypted access</div>
-            <div class="feat-pill"><i class="fas fa-bolt"></i> Real-time payment tracking</div>
-            <div class="feat-pill"><i class="fas fa-bell"></i> Instant notifications</div>
-            <div class="feat-pill"><i class="fas fa-chart-line"></i> Smart financial reports</div>
+        <div class="pills">
+            <div class="pill"><i class="fas fa-shield-alt"></i> End-to-end encrypted access</div>
+            <div class="pill"><i class="fas fa-bolt"></i> Real-time payment tracking</div>
+            <div class="pill"><i class="fas fa-bell"></i> Instant push notifications</div>
+            <div class="pill"><i class="fas fa-chart-bar"></i> AI-powered financial reports</div>
         </div>
     </div>
 
-    <!-- RIGHT: form -->
-    <div class="panel-right">
-        <div class="form-eyebrow">Welcome back</div>
-        <div class="form-title">Sign in</div>
-        <div class="form-sub">Enter your credentials to continue</div>
+    <!-- ── RIGHT ── -->
+    <div class="panel-r">
+        <div class="tag-line">Welcome back</div>
+        <div class="form-h">Sign in</div>
+        <div class="form-sub">Enter your credentials to access your workspace</div>
 
         <?php if (isset($_GET['error'])): ?>
-        <div class="login-alert">
-            <i class="fas fa-exclamation-circle"></i>
+        <div class="alert-err">
+            <i class="fas fa-circle-exclamation"></i>
             <?= htmlspecialchars($_GET['error']) ?>
         </div>
         <?php endif; ?>
 
-        <form action="login.php" method="POST" id="loginForm" novalidate>
+        <form action="login.php" method="POST" id="lf" novalidate>
             <?= csrf_input() ?>
 
-            <div class="field-wrap">
-                <label class="field-label" for="username">Username or Email</label>
-                <div class="field-inner">
-                    <input type="text" class="field-input" id="username" name="username"
-                        placeholder="your@email.com"
+            <div class="field">
+                <label class="field-lbl" for="username">Username or Email</label>
+                <div class="field-wrap">
+                    <input type="text" class="field-in" id="username" name="username"
+                        placeholder="you@email.com"
                         autocapitalize="none" autocomplete="username email" spellcheck="false"
                         value="<?= isset($_SESSION['last_login_identifier']) ? htmlspecialchars($_SESSION['last_login_identifier']) : '' ?>"
                         required>
-                    <i class="fas fa-user field-icon"></i>
+                    <i class="fas fa-user field-ico"></i>
                 </div>
-                <div class="field-error" id="usernameError">Enter a valid username or email.</div>
+                <div class="ferr" id="uErr">Enter a valid username or email.</div>
             </div>
 
-            <div class="field-wrap">
-                <label class="field-label" for="password">Password</label>
-                <div class="pw-wrap">
-                    <div class="field-inner">
-                        <input type="password" class="field-input" id="password" name="password"
+            <div class="field">
+                <label class="field-lbl" for="password">Password</label>
+                <div class="pw-row">
+                    <div class="field-wrap">
+                        <input type="password" class="field-in" id="password" name="password"
                             placeholder="••••••••"
                             autocomplete="current-password"
                             style="padding-right:2.6rem;"
                             required>
-                        <i class="fas fa-lock field-icon"></i>
-                        <button type="button" class="pw-toggle" tabindex="-1" id="pwToggle" aria-label="Toggle password">
-                            <i class="fas fa-eye" id="pwIcon"></i>
+                        <i class="fas fa-lock field-ico"></i>
+                        <button type="button" class="pw-eye" id="eyeBtn" tabindex="-1" aria-label="Toggle password">
+                            <i class="fas fa-eye" id="eyeIco"></i>
                         </button>
                     </div>
-                    <div class="field-error" id="passwordError">Password is required.</div>
-                    <div id="capsLockHint"><i class="fas fa-exclamation-triangle"></i> Caps Lock is ON</div>
+                    <div class="ferr" id="pErr">Password is required.</div>
+                    <div id="caps"><i class="fas fa-triangle-exclamation"></i> Caps Lock is ON</div>
                 </div>
             </div>
 
-            <button type="submit" class="btn-signin" id="submitBtn">
-                <span class="btn-text">Sign In</span>
+            <button type="submit" class="btn-go" id="subBtn">
+                <span class="btn-lbl">Sign In &nbsp;<i class="fas fa-arrow-right" style="font-size:.78rem"></i></span>
                 <span class="btn-spinner"><i class="fas fa-circle-notch fa-spin"></i></span>
             </button>
 
-            <div id="lockHintWrap"></div>
+            <div id="lockWrap"></div>
         </form>
 
-        <div class="divider">
-            <div class="divider-line"></div>
-            <div class="divider-text">Secure access</div>
-            <div class="divider-line"></div>
+        <div class="div-row">
+            <div class="div-line"></div>
+            <span class="div-txt">Secure access</span>
+            <div class="div-line"></div>
         </div>
 
-        <div class="form-footer">
+        <div class="form-foot">
             <a href="forgot_password.php"><i class="fas fa-key me-1"></i>Forgot your password?</a>
         </div>
     </div>
 </div>
 
 <script>
-(function () {
-    /* ── Theme toggle ── */
-    const body   = document.body;
-    const toggle = document.getElementById('themeToggle');
-
-    // Load saved preference; default = light
-    if (localStorage.getItem('sw_theme') === 'dark') {
-        body.classList.add('dark');
-    }
-
-    toggle.addEventListener('click', () => {
-        const isDark = body.classList.toggle('dark');
-        localStorage.setItem('sw_theme', isDark ? 'dark' : 'light');
+(function(){
+    /* theme */
+    const body = document.body;
+    if(localStorage.getItem('sw_theme')==='dark') body.classList.add('dark');
+    document.getElementById('themeBtn').addEventListener('click',()=>{
+        const d = body.classList.toggle('dark');
+        localStorage.setItem('sw_theme', d?'dark':'light');
     });
 
-    /* ── Form logic ── */
-    const form      = document.getElementById('loginForm');
-    const username  = document.getElementById('username');
-    const password  = document.getElementById('password');
-    const submitBtn = document.getElementById('submitBtn');
-    const pwToggle  = document.getElementById('pwToggle');
-    const pwIcon    = document.getElementById('pwIcon');
-    const caps      = document.getElementById('capsLockHint');
-    const uErr      = document.getElementById('usernameError');
-    const pErr      = document.getElementById('passwordError');
-    const lockWrap  = document.getElementById('lockHintWrap');
+    /* form */
+    const form   = document.getElementById('lf');
+    const uInput = document.getElementById('username');
+    const pInput = document.getElementById('password');
+    const subBtn = document.getElementById('subBtn');
+    const eyeBtn = document.getElementById('eyeBtn');
+    const eyeIco = document.getElementById('eyeIco');
+    const caps   = document.getElementById('caps');
+    const uErr   = document.getElementById('uErr');
+    const pErr   = document.getElementById('pErr');
+    const lockW  = document.getElementById('lockWrap');
 
-    pwToggle.addEventListener('click', () => {
-        const isText = password.type === 'text';
-        password.type = isText ? 'password' : 'text';
-        pwIcon.className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
+    eyeBtn.addEventListener('click',()=>{
+        const t = pInput.type==='text';
+        pInput.type = t?'password':'text';
+        eyeIco.className = t?'fas fa-eye':'fas fa-eye-slash';
     });
 
-    function updateCaps(e) {
-        try { caps.classList.toggle('caps-visible', e.getModifierState('CapsLock')); } catch (_) {}
+    const updCaps = e=>{ try{ caps.classList.toggle('on',e.getModifierState('CapsLock')); }catch(_){} };
+    pInput.addEventListener('keydown',updCaps);
+    pInput.addEventListener('keyup',updCaps);
+    pInput.addEventListener('focus',updCaps);
+    pInput.addEventListener('blur',()=>caps.classList.remove('on'));
+
+    const params   = new URLSearchParams(location.search);
+    let remain     = parseInt(params.get('remain')||'0',10);
+    const isLocked = params.get('lock')==='1' && remain>0;
+
+    if(isLocked){
+        const a=document.querySelector('.alert-err'); if(a) a.style.display='none';
+        pInput.disabled=true; subBtn.disabled=true; countdown();
     }
-    password.addEventListener('keydown', updateCaps);
-    password.addEventListener('keyup',   updateCaps);
-    password.addEventListener('focus',   updateCaps);
-    password.addEventListener('blur', () => caps.classList.remove('caps-visible'));
-
-    const params   = new URLSearchParams(window.location.search);
-    let remain     = parseInt(params.get('remain') || '0', 10);
-    const isLocked = params.get('lock') === '1' && remain > 0;
-
-    if (isLocked) {
-        const alertEl = document.querySelector('.login-alert');
-        if (alertEl) alertEl.style.display = 'none';
-        password.disabled = true;
-        submitBtn.disabled = true;
-        startCountdown();
-    }
-
-    const serverError = params.get('error');
-    if (!isLocked && serverError) {
-        const alertEl = document.querySelector('.login-alert');
-        if (alertEl) alertEl.style.display = 'none';
-        pErr.textContent = serverError;
-        pErr.classList.add('show');
-        password.classList.add('is-invalid');
-        try { password.focus(); } catch (_) {}
+    const srvErr = params.get('error');
+    if(!isLocked && srvErr){
+        const a=document.querySelector('.alert-err'); if(a) a.style.display='none';
+        pErr.textContent=srvErr; pErr.classList.add('show');
+        pInput.classList.add('bad'); try{pInput.focus();}catch(_){}
     }
 
-    function renderLock(s) {
-        lockWrap.innerHTML = `<div class="lock-hint"><i class="fas fa-clock"></i> Too many attempts — retry in ${s}s</div>`;
+    function renderLock(s){
+        lockW.innerHTML=`<div class="lock-box"><i class="fas fa-clock"></i> Too many attempts — retry in ${s}s</div>`;
     }
-    function startCountdown() {
+    function countdown(){
         renderLock(remain);
-        const iv = setInterval(() => {
-            remain = Math.max(0, remain - 1);
-            renderLock(remain);
-            if (remain <= 0) {
-                clearInterval(iv);
-                password.disabled = false;
-                submitBtn.disabled = false;
-                lockWrap.innerHTML = '';
-                try {
-                    const url = new URL(window.location);
-                    url.searchParams.delete('lock');
-                    url.searchParams.delete('remain');
-                    window.history.replaceState({}, '', url);
-                } catch (_) {}
+        const iv=setInterval(()=>{
+            remain=Math.max(0,remain-1); renderLock(remain);
+            if(remain<=0){
+                clearInterval(iv); pInput.disabled=false; subBtn.disabled=false; lockW.innerHTML='';
+                try{ const u=new URL(location); u.searchParams.delete('lock'); u.searchParams.delete('remain'); history.replaceState({},'',u); }catch(_){}
             }
-        }, 1000);
+        },1000);
     }
 
-    function validateUsername() {
-        const v  = (username.value || '').trim();
-        const ok = /^[A-Za-z0-9_]{3,20}$/.test(v) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-        username.classList.toggle('is-invalid', !ok);
-        uErr.classList.toggle('show', !ok);
-        return ok;
-    }
-    function validatePassword() {
-        const ok = password.value.length > 0;
-        password.classList.toggle('is-invalid', !ok);
-        pErr.classList.toggle('show', !ok);
-        return ok;
-    }
+    const valU=()=>{ const v=(uInput.value||'').trim(); const ok=/^[A-Za-z0-9_]{3,20}$/.test(v)||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); uInput.classList.toggle('bad',!ok); uErr.classList.toggle('show',!ok); return ok; };
+    const valP=()=>{ const ok=pInput.value.length>0; pInput.classList.toggle('bad',!ok); pErr.classList.toggle('show',!ok); return ok; };
 
-    username.addEventListener('input', () => { username.classList.remove('is-invalid'); uErr.classList.remove('show'); });
-    password.addEventListener('input', () => { password.classList.remove('is-invalid'); pErr.classList.remove('show'); });
+    uInput.addEventListener('input',()=>{ uInput.classList.remove('bad'); uErr.classList.remove('show'); });
+    pInput.addEventListener('input',()=>{ pInput.classList.remove('bad'); pErr.classList.remove('show'); });
 
-    form.addEventListener('submit', function (e) {
-        if (isLocked && remain > 0) { e.preventDefault(); return; }
-        const ok = validateUsername() & validatePassword();
-        if (!ok) { e.preventDefault(); return; }
-        submitBtn.classList.add('loading');
-        submitBtn.disabled = true;
+    form.addEventListener('submit',e=>{
+        if(isLocked&&remain>0){e.preventDefault();return;}
+        if(!(valU()&valP())){e.preventDefault();return;}
+        subBtn.classList.add('spin'); subBtn.disabled=true;
     });
 })();
 </script>
