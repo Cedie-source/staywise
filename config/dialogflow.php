@@ -38,6 +38,9 @@ class DialogflowIntentRouter {
         ],
     ];
     
+    /**
+     * Detect intent from user message
+     */
     public static function detectIntent(string $message): array {
         $message = strtolower($message);
         $confidence = 0;
@@ -46,11 +49,14 @@ class DialogflowIntentRouter {
         foreach (self::$intents as $intent => $data) {
             $patterns = $data['patterns'];
             $matches = 0;
+            
             foreach ($patterns as $pattern) {
                 if (strpos($message, $pattern) !== false) {
                     $matches++;
                 }
             }
+            
+            // Calculate confidence score
             $score = $matches / count($patterns);
             if ($score > $confidence) {
                 $confidence = $score;
@@ -66,17 +72,26 @@ class DialogflowIntentRouter {
         ];
     }
     
+    /**
+     * Enhance AI response with intent-aware suggestions
+     */
     public static function enhanceResponse(string $aiResponse, string $userMessage): string {
         $intent = self::detectIntent($userMessage);
+        
         if ($intent['confidence'] > 0.5 && $intent['action']) {
             $suggestion = " → Visit the <strong>" . ucfirst($intent['action']) . "</strong> section for more details.";
             return $aiResponse . $suggestion;
         }
+        
         return $aiResponse;
     }
     
+    /**
+     * Get quick action for common queries
+     */
     public static function getQuickAction(string $message): ?array {
         $intent = self::detectIntent($message);
+        
         if ($intent['confidence'] > 0.7) {
             return [
                 'type' => 'quick_action',
@@ -85,7 +100,9 @@ class DialogflowIntentRouter {
                 'url' => $intent['action_url'],
             ];
         }
+        
         return null;
     }
 }
+
 ?>
