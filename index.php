@@ -238,8 +238,7 @@ $page_title = "Welcome";
             font-family: 'Cormorant Garamond', serif;
             font-size: 2.6rem; font-weight: 600; line-height: 1.15;
             color: var(--text); margin-bottom: 1rem; transition: color .35s;
-            /* lock height so both modes take identical space */
-            min-height: 3.45em;
+            height: 9rem; overflow: hidden;
             display: flex; flex-direction: column; justify-content: flex-start;
         }
         .panel-heading span {
@@ -249,10 +248,8 @@ $page_title = "Welcome";
         }
         .panel-desc {
             font-size: .875rem; color: var(--muted-2); line-height: 1.7;
-            /* lock to same height as tallest desc */
-            min-height: 5.1em;
-            max-width: 260px;
-            transition: color .35s;
+            height: 5.95rem; overflow: hidden;
+            max-width: 260px; transition: color .35s;
         }
 
         .panel-text-dark { display: block; }
