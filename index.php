@@ -108,71 +108,67 @@ $page_title = "Welcome";
            LIGHT MODE — Warm Cream & Amber
         ═══════════════════════════════════════ */
         body.light {
-            --gold:         #b45309;
-            --gold-light:   #d97706;
-            --gold-dim:     rgba(180,83,9,.12);
+            --gold:         #0284c7;
+            --gold-light:   #38bdf8;
+            --gold-dim:     rgba(2,132,199,.12);
 
-            --bg:           #fdf6e3;
-            --surface:      #fffdf7;
-            --surface-2:    #fef9ec;
-            --border:       rgba(180,83,9,.1);
-            --border-acc:   rgba(180,83,9,.3);
-            --text:         #1c1004;
-            --muted:        #92400e;
-            --muted-2:      #b45309;
-            --placeholder:  #d4a96a;
+            --bg:           #f0f9ff;
+            --surface:      #ffffff;
+            --surface-2:    #e0f2fe;
+            --border:       rgba(2,132,199,.12);
+            --border-acc:   rgba(2,132,199,.35);
+            --text:         #0c1a2e;
+            --muted:        #0369a1;
+            --muted-2:      #0284c7;
+            --placeholder:  #7dd3fc;
 
-            /* orbs */
-            --orb1:  rgba(217,119,6,.12);
-            --orb2:  rgba(180,83,9,.08);
-            --orb3:  rgba(251,191,36,.07);
             /* bg glows */
-            --glow1: rgba(217,119,6,.1);
-            --glow2: rgba(251,191,36,.07);
-            --glow3: rgba(180,83,9,.05);
+            --glow1: rgba(2,132,199,.1);
+            --glow2: rgba(20,184,166,.08);
+            --glow3: rgba(56,189,248,.06);
             /* grid */
-            --grid:  rgba(180,83,9,.04);
+            --grid:  rgba(2,132,199,.05);
 
-            /* left panel — warm parchment */
-            --panel-l:       linear-gradient(160deg,#fef3c7 0%,#fde68a 60%,#fcd34d 100%);
-            --panel-l-glow1: rgba(180,83,9,.08);
-            --panel-l-glow2: rgba(217,119,6,.06);
-            --ring1: rgba(180,83,9,.12);
-            --ring2: rgba(180,83,9,.18);
-            --ring3: rgba(180,83,9,.25);
-            --brand-icon-bg: linear-gradient(135deg,#fef3c7,#fde68a);
+            /* left panel — blue→teal gradient */
+            --panel-l:       linear-gradient(160deg,#0ea5e9 0%,#0284c7 45%,#0d9488 100%);
+            --panel-l-glow1: rgba(255,255,255,.06);
+            --panel-l-glow2: rgba(20,184,166,.08);
+            --ring1: rgba(255,255,255,.1);
+            --ring2: rgba(255,255,255,.15);
+            --ring3: rgba(255,255,255,.22);
+            --brand-icon-bg: linear-gradient(135deg,rgba(255,255,255,.25),rgba(255,255,255,.12));
 
             /* right panel */
-            --panel-r:      #fffdf7;
+            --panel-r:      #ffffff;
 
             /* inputs */
-            --input-bg:     #fef9ec;
-            --input-bdr:    rgba(180,83,9,.15);
-            --focus-bdr:    rgba(180,83,9,.4);
-            --focus-ring:   rgba(217,119,6,.1);
-            --caret:        #b45309;
+            --input-bg:     #f0f9ff;
+            --input-bdr:    rgba(2,132,199,.18);
+            --focus-bdr:    rgba(2,132,199,.5);
+            --focus-ring:   rgba(2,132,199,.1);
+            --caret:        #0284c7;
 
-            /* button */
-            --btn-from:     #b45309;
-            --btn-to:       #d97706;
-            --btn-text:     #fff8ed;
-            --btn-shimmer:  rgba(255,255,255,.2);
-            --btn-shadow:   rgba(180,83,9,.3);
-            --btn-shadow-h: rgba(180,83,9,.45);
+            /* button — blue→teal */
+            --btn-from:     #0284c7;
+            --btn-to:       #0d9488;
+            --btn-text:     #ffffff;
+            --btn-shimmer:  rgba(255,255,255,.22);
+            --btn-shadow:   rgba(2,132,199,.32);
+            --btn-shadow-h: rgba(2,132,199,.48);
 
             /* alerts */
             --err-bg:   rgba(220,38,38,.06);
-            --err-bdr:  rgba(220,38,38,.18);
-            --err-txt:  #b91c1c;
-            --lock-bg:  rgba(180,83,9,.06);
-            --lock-bdr: rgba(180,83,9,.2);
-            --lock-txt: #92400e;
+            --err-bdr:  rgba(220,38,38,.2);
+            --err-txt:  #dc2626;
+            --lock-bg:  rgba(2,132,199,.06);
+            --lock-bdr: rgba(2,132,199,.2);
+            --lock-txt: #0369a1;
 
             /* shell */
             --shell-shadow:
-                0 0 0 1px rgba(180,83,9,.1),
-                0 24px 60px rgba(120,53,15,.12),
-                0 4px 16px rgba(120,53,15,.07);
+                0 0 0 1px rgba(2,132,199,.12),
+                0 24px 60px rgba(2,132,199,.1),
+                0 4px 16px rgba(2,132,199,.07);
         }
 
         /* ═══════════════════════════════════════
@@ -220,9 +216,9 @@ $page_title = "Welcome";
         }
         body.light .bg-scene::after {
             background:
-                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(217,119,6,.1) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(251,191,36,.07) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(180,83,9,.05) 0%, transparent 70%);
+                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(2,132,199,.1) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(20,184,166,.08) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(56,189,248,.06) 0%, transparent 70%);
         }
 
         /* floating orbs — explicit per mode */
@@ -236,9 +232,9 @@ $page_title = "Welcome";
         body:not(.light) .orb-2 { background: rgba(201,168,76,.04); }
         body:not(.light) .orb-3 { background: rgba(78,214,193,.04); }
         /* light orbs */
-        body.light .orb-1 { background: rgba(217,119,6,.13); }
-        body.light .orb-2 { background: rgba(180,83,9,.09); }
-        body.light .orb-3 { background: rgba(251,191,36,.08); }
+        body.light .orb-1 { background: rgba(2,132,199,.1); }
+        body.light .orb-2 { background: rgba(13,148,136,.08); }
+        body.light .orb-3 { background: rgba(56,189,248,.07); }
 
         .orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; animation-delay: 0s; }
         .orb-2 { width: 500px; height: 500px; bottom: -150px; right: -100px; animation-delay: -6s; }
@@ -546,7 +542,20 @@ $page_title = "Welcome";
         .divider-line { flex: 1; height: 1px; background: var(--border); transition: background .35s; }
         .divider-text { font-size: .7rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; transition: color .35s; }
 
-        /* Responsive */
+        /* left panel text stays white in light mode (panel is dark blue/teal) */
+        body.light .brand-name,
+        body.light .panel-heading,
+        body.light .panel-desc,
+        body.light .feature-list li { color: rgba(255,255,255,.92) !important; }
+        body.light .brand-name em { color: #7dd3fc !important; }
+        body.light .panel-heading span {
+            background: linear-gradient(90deg,#7dd3fc,#5eead4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        body.light .brand-icon { color: #fff; border-color: rgba(255,255,255,.35); }
+        body.light .feature-list li i { background: rgba(255,255,255,.15); color: #fff; }
         @media (max-width: 700px) {
             .login-shell { grid-template-columns: 1fr; max-width: 420px; }
             .panel-left  { display: none; }
