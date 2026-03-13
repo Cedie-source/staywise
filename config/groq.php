@@ -1,30 +1,24 @@
 <?php
 /**
  * Groq API Configuration
- * Free cloud AI - ultra-fast and reliable
- * 
- * SETUP INSTRUCTIONS:
- * 1. Get free API key from: https://console.groq.com
- * 2. Create API key
- * 3. Set GROQ_API_KEY below
- * 4. Done! No credit card needed
+ * Uses Railway environment variables — do NOT hardcode keys here.
+ * Set GROQ_API_KEY, GROQ_MODEL, GROQ_API_URL in your Railway dashboard.
  */
 
-// === GROQ FREE API ===
-// Get your free token from: https://console.groq.com
-putenv('GROQ_API_KEY=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');
-
-// Model choice (all free on Groq, ultra-fast):
-// - llama-3.3-70b-versatile: Latest, best quality (RECOMMENDED)
-// - llama-3.1-8b-instant: Lightweight, fastest
-putenv('GROQ_MODEL=llama-3.3-70b-versatile');
-
-// Groq API endpoint
-putenv('GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions');
+// Only set fallbacks if Railway env vars are not already set
+if (!getenv('GROQ_API_KEY')) {
+    putenv('GROQ_API_KEY=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');
+}
+if (!getenv('GROQ_MODEL')) {
+    putenv('GROQ_MODEL=llama-3.3-70b-versatile');
+}
+if (!getenv('GROQ_API_URL')) {
+    putenv('GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions');
+}
 
 // === SYSTEM PROMPT ===
-putenv('AI_SYSTEM_PROMPT=' . <<<'PROMPT'
-You are StayWise AI Assistant, a helpful property management assistant for tenants.
+if (!getenv('AI_SYSTEM_PROMPT')) {
+    putenv('AI_SYSTEM_PROMPT=' . 'You are StayWise AI Assistant, a helpful property management assistant for tenants.
 
 Your responsibilities:
 1. Answer questions about rent payments, maintenance requests, and building rules
@@ -37,13 +31,5 @@ Guidelines:
 - For account-specific questions, direct users to their profile or admin
 - Never ask for or accept payment information
 - If unsure, suggest contacting the property admin
-- Always be helpful and courteous
-
-Current date: February 6, 2026
-PROMPT
-);
-
-// === DEVELOPER OPTIONS ===
-// Uncomment to debug API calls:
-// error_log('Groq API: Using model ' . getenv('GROQ_MODEL'));
-?>
+- Always be helpful and courteous');
+}
