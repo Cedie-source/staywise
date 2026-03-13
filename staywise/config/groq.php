@@ -12,7 +12,7 @@
 
 // === GROQ FREE API ===
 // Get your free token from: https://console.groq.com
-putenv('GROQ_API_KEY=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');
+putenv('GROQ_API_KEY=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');
 
 // Model choice (all free on Groq, ultra-fast):
 // - llama-3.3-70b-versatile: Latest, best quality (RECOMMENDED)
