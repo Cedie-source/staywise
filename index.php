@@ -185,11 +185,15 @@ $page_title = "Welcome";
             color: var(--text);
             display: flex; align-items: center; justify-content: center;
             overflow: hidden;
-            transition: background .35s, color .35s;
+            transition: background .5s, color .35s;
         }
 
         /* ── Background scene ── */
-        .bg-scene { position: fixed; inset: 0; z-index: 0; transition: background .35s; }
+        .bg-scene {
+            position: fixed; inset: 0; z-index: 0;
+            background: var(--bg);
+            transition: background .5s;
+        }
 
         /* grid texture */
         .bg-scene::before {
@@ -200,54 +204,99 @@ $page_title = "Welcome";
                 linear-gradient(90deg, var(--grid) 1px, transparent 1px);
             background-size: 48px 48px;
             mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
-            transition: background-image .35s;
         }
 
-        /* ambient glows */
+        /* ambient glows — explicit per mode so they actually change */
         .bg-scene::after {
             content: '';
             position: absolute; inset: 0;
+            transition: opacity .5s;
+        }
+        body:not(.light) .bg-scene::after {
             background:
-                radial-gradient(ellipse 60% 50% at 15% 20%, var(--glow1) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 60% at 85% 80%, var(--glow2) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 40% at 50% 50%, var(--glow3) 0%, transparent 70%);
-            transition: background .35s;
+                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(0,125,254,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(78,214,193,.05) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(201,168,76,.03) 0%, transparent 70%);
+        }
+        body.light .bg-scene::after {
+            background:
+                radial-gradient(ellipse 60% 50% at 15% 20%, rgba(217,119,6,.1) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 80%, rgba(251,191,36,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(180,83,9,.05) 0%, transparent 70%);
         }
 
-        /* floating orbs */
+        /* floating orbs — explicit per mode */
         .orb {
             position: absolute; border-radius: 50%; filter: blur(80px);
             animation: float 16s ease-in-out infinite alternate;
-            transition: background .35s;
+            transition: background .5s;
         }
-        .orb-1 { width: 600px; height: 600px; background: var(--orb1); top: -200px; left: -150px; animation-delay: 0s; }
-        .orb-2 { width: 500px; height: 500px; background: var(--orb2); bottom: -150px; right: -100px; animation-delay: -6s; }
-        .orb-3 { width: 300px; height: 300px; background: var(--orb3); top: 40%; left: 55%; animation-delay: -12s; }
+        /* dark orbs */
+        body:not(.light) .orb-1 { background: rgba(0,125,254,.05); }
+        body:not(.light) .orb-2 { background: rgba(201,168,76,.04); }
+        body:not(.light) .orb-3 { background: rgba(78,214,193,.04); }
+        /* light orbs */
+        body.light .orb-1 { background: rgba(217,119,6,.13); }
+        body.light .orb-2 { background: rgba(180,83,9,.09); }
+        body.light .orb-3 { background: rgba(251,191,36,.08); }
+
+        .orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; animation-delay: 0s; }
+        .orb-2 { width: 500px; height: 500px; bottom: -150px; right: -100px; animation-delay: -6s; }
+        .orb-3 { width: 300px; height: 300px; top: 40%; left: 55%; animation-delay: -12s; }
         @keyframes float {
             from { transform: translate(0,0) scale(1); }
             to   { transform: translate(25px,15px) scale(1.06); }
         }
 
-        /* ── Theme toggle ── */
+        /* ── Theme toggle — pill style ── */
         .theme-toggle {
             position: fixed; top: 1.25rem; right: 1.5rem; z-index: 200;
-            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; gap: .5rem;
+            padding: .4rem .75rem .4rem .55rem;
+            border-radius: 999px;
             border: 1px solid var(--border-acc);
-            background: var(--surface-2);
+            background: var(--surface);
             color: var(--gold);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: .88rem;
-            box-shadow: 0 2px 12px var(--gold-dim);
+            cursor: pointer;
+            font-size: .78rem; font-family: 'DM Sans', sans-serif; font-weight: 600;
+            letter-spacing: .01em;
+            box-shadow: 0 2px 12px var(--gold-dim), 0 1px 3px rgba(0,0,0,.08);
             transition: all .25s;
+            white-space: nowrap;
         }
         .theme-toggle:hover {
             box-shadow: 0 4px 20px var(--btn-shadow);
-            transform: translateY(-1px) scale(1.06);
+            transform: translateY(-1px);
+            border-color: var(--gold);
         }
-        .theme-toggle .i-sun  { display: none; }
-        .theme-toggle .i-moon { display: block; }
-        body.light .theme-toggle .i-sun  { display: block; }
-        body.light .theme-toggle .i-moon { display: none; }
+        /* track */
+        .toggle-track {
+            width: 32px; height: 18px; border-radius: 999px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-acc);
+            position: relative;
+            transition: background .3s, border-color .3s;
+            flex-shrink: 0;
+        }
+        body.light .toggle-track { background: var(--gold); border-color: var(--gold); }
+        /* knob */
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--gold);
+            top: 2px; left: 2px;
+            transition: transform .3s, background .3s;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+        }
+        body.light .toggle-track::after {
+            transform: translateX(14px);
+            background: #fff;
+        }
+        .toggle-label-dark { display: flex; align-items: center; gap: .3rem; }
+        .toggle-label-light { display: none; align-items: center; gap: .3rem; }
+        body.light .toggle-label-dark  { display: none; }
+        body.light .toggle-label-light { display: flex; }
 
         /* ── Shell ── */
         .login-shell {
@@ -470,10 +519,19 @@ $page_title = "Welcome";
         .btn-signin .btn-spinner { display: none; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
         .btn-signin.loading .btn-spinner { opacity: 1; }
 
-        /* Footer */
-        .form-footer { margin-top: 1.25rem; text-align: center; font-size: .78rem; color: var(--muted); }
-        .form-footer a { color: var(--gold); font-weight: 600; text-decoration: none; transition: color .2s; }
-        .form-footer a:hover { color: var(--gold-light); }
+        /* Footer / forgot password */
+        .form-footer { margin-top: 1.25rem; text-align: center; font-size: .78rem; color: var(--muted); transition: color .35s; }
+        .form-footer a {
+            color: var(--gold);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color .25s;
+            border-bottom: 1px solid transparent;
+        }
+        .form-footer a:hover {
+            color: var(--gold-light);
+            border-bottom-color: var(--gold-light);
+        }
 
         /* Lock */
         .lock-hint {
@@ -505,8 +563,9 @@ $page_title = "Welcome";
 </div>
 
 <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
-    <i class="fas fa-sun i-sun"></i>
-    <i class="fas fa-moon i-moon"></i>
+    <div class="toggle-track"></div>
+    <span class="toggle-label-dark"><i class="fas fa-moon"></i> Dark</span>
+    <span class="toggle-label-light"><i class="fas fa-sun"></i> Light</span>
 </button>
 
 <div class="login-shell">
