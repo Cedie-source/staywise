@@ -375,13 +375,13 @@ $page_title = "Welcome";
                 </p>
             </div>
 
-            <!-- Light mode text (different copy, same size) -->
+            <!-- Light mode text -->
             <div class="panel-text-light">
-                <div class="panel-heading panel-heading-light">
+                <div class="panel-heading panel-heading-light" style="font-size:2.1rem;">
                     Made for landlords<br>who do it
                     <span>all themselves.</span>
                 </div>
-                <p class="panel-desc">
+                <p class="panel-desc" style="font-size:.8rem;max-width:240px;">
                     StayWise helps small apartment owners manage rent, tenants, and requests — without the overwhelm.
                 </p>
             </div>
