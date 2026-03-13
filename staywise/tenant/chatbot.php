@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'tenant') {
 }
 
 // Define base URL for API calls
-$base_url = '/StayWise/';
+$base_url = '/';
 
 // Load proactive alerts for this tenant
 define('STAYWISE_ROOT', dirname(__DIR__));
