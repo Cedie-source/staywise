@@ -64,8 +64,9 @@ if (isset($_SESSION['user_id'])) {
 <link href="<?php echo $base_url; ?>assets/css/style.css?v=2026030602" rel="stylesheet"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" type="image/svg+xml" href="<?php echo $base_url; ?>assets/favicon.svg"/>
-<link rel="alternate icon" type="image/png" href="<?php echo $base_url; ?>assets/favicon-32.png"/>
+<link rel="icon" type="image/x-icon" href="<?php echo $base_url; ?>assets/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="<?php echo $base_url; ?>assets/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="64x64" href="<?php echo $base_url; ?>assets/favicon.png"/>
 <link rel="apple-touch-icon" href="<?php echo $base_url; ?>assets/icon-192.png"/>
 <link rel="manifest" href="<?php echo $base_url; ?>site.webmanifest"/>
 <meta name="theme-color" content="#4ED6C1"/>
@@ -394,7 +395,7 @@ body.dark-mode #mobileBottomNav .mnav-item:hover { color: #4ED6C1; }
 
   <!-- Brand -->
   <a href="<?php echo $base_url; ?>" class="topbar-brand">
-    <div class="brand-icon"><i class="fas fa-home"></i></div>
+    <div class="brand-icon" style="background:none;border:none;box-shadow:none;padding:0;overflow:hidden;"><img src="<?php echo $base_url; ?>assets/icon-192.png" alt="StayWise" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>
     <span><span style="color:#4ED6C1;">Stay</span><span>Wise</span></span>
   </a>
 
