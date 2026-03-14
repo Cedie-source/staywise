@@ -70,8 +70,12 @@ $lease_start = $tenant['lease_start_date'] ?? date('Y-m-01');
 $lease_start_dt = new DateTime(date('Y-m-01', strtotime($lease_start)));
 $current_dt     = new DateTime(date('Y-m-01'));
 $interval       = $lease_start_dt->diff($current_dt);
-$billing_months = ($interval->y * 12) + $interval->m + 1; // inclusive of current month
-if ($billing_months < 1) $billing_months = 1;
+$months_since_start = ($interval->y * 12) + $interval->m; // 0 = same month as lease start
+
+// Advance covers the first month, so rent billing starts from month 2 onwards.
+// billing_months = how many rent payments are actually due so far (after advance)
+$billing_months = max(0, $months_since_start); // 0 = still in advance-covered month
+if ($billing_months < 0) $billing_months = 0;
 
 $total_rent_owed = $billing_months * $rent_amount;
 
@@ -349,11 +353,11 @@ $payments_stmt->bind_param("i", $tenant_id);
 $payments_stmt->execute();
 $payments = $payments_stmt->get_result();
 
-// Summary stats
+// Summary stats — exclude deposit and advance from totals shown to tenant
 $stats_stmt = $conn->prepare("SELECT 
-    COALESCE(SUM(CASE WHEN status='verified' THEN amount END), 0) as total_paid,
+    COALESCE(SUM(CASE WHEN status='verified' AND (payment_type IS NULL OR payment_type NOT IN ('deposit','advance')) THEN amount END), 0) as total_paid,
     COALESCE(SUM(CASE WHEN status='pending' THEN 1 END), 0) as pending_count,
-    COALESCE(SUM(CASE WHEN status='verified' THEN 1 END), 0) as verified_count
+    COALESCE(SUM(CASE WHEN status='verified' AND (payment_type IS NULL OR payment_type NOT IN ('deposit','advance')) THEN 1 END), 0) as verified_count
     FROM payments WHERE tenant_id = ?");
 $stats_stmt->bind_param("i", $tenant_id);
 $stats_stmt->execute();
