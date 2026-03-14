@@ -675,14 +675,14 @@ ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL;
                                         $noBadgesClass = (!$hasPending && !$hasRejected && !$mustChange) ? ' no-badges' : '';
                                     ?>
                                     <td class="tenant-name-cell<?php echo $noBadgesClass; ?>">
-                                        <div style="display:flex;align-items:center;gap:10px;">
+                                        <div class="tenant-name-wrap" style="display:flex;align-items:center;gap:10px;">
                                           <?php
                                             $tp = $tenant['profile_photo'] ?? '';
-                                            $tpPath = '../uploads/profiles/' . $tp;
                                             $tInitials = strtoupper(substr($tenant['name'], 0, 2));
                                           ?>
-                                          <?php if (!empty($tp) && file_exists($tpPath)): ?>
-                                            <img src="<?php echo htmlspecialchars($tpPath) ?>" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(78,214,193,.35);">
+                                          <?php if (!empty($tp)): ?>
+                                            <img src="/uploads/profiles/<?php echo htmlspecialchars($tp) ?>" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(78,214,193,.35);" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                            <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4ED6C1,#007DFE);display:none;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;"><?php echo $tInitials ?></div>
                                           <?php else: ?>
                                             <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4ED6C1,#007DFE);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;"><?php echo $tInitials ?></div>
                                           <?php endif; ?>
@@ -701,12 +701,17 @@ ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL;
                                     </td>
                                     <td><?php echo htmlspecialchars($tenant['email']); ?></td>
                                     <td>
-                                        <?php 
-                                            $contact = preg_replace('/^0?/', '', trim($tenant['contact']));
-                                            if (preg_match('/^\d{10}$/', $contact)) {
-                                                echo '+63' . htmlspecialchars($contact);
+                                        <?php
+                                            $contactRaw = trim($tenant['contact'] ?? '');
+                                            if ($contactRaw === '') {
+                                                echo '<span class="text-muted">—</span>';
                                             } else {
-                                                echo htmlspecialchars($tenant['contact']);
+                                                $contact = preg_replace('/^\+?63/', '', $contactRaw);
+                                                if (preg_match('/^\d{10}$/', $contact)) {
+                                                    echo '+63' . htmlspecialchars($contact);
+                                                } else {
+                                                    echo htmlspecialchars($contactRaw);
+                                                }
                                             }
                                         ?>
                                     </td>
@@ -1107,15 +1112,14 @@ function viewTenantDetails(tenant) {
     new bootstrap.Modal(modal).show();
 }
 function editTenant(tenant) {
-    document.getElementById('edit_tenant_id').value = tenant.tenant_id;
-    document.getElementById('edit_name').value = tenant.name;
-    document.getElementById('edit_email').value = tenant.email;
-    document.getElementById('edit_contact').value = tenant.contact || '';
-    document.getElementById('edit_unit_number').value = tenant.unit_number;
-    document.getElementById('edit_rent_amount').value = tenant.rent_amount;
+    document.getElementById('edit_tenant_id').value = tenant.tenant_id || '';
+    document.getElementById('edit_name').value = tenant.name || '';
+    document.getElementById('edit_email').value = tenant.email || '';
+    document.getElementById('edit_contact').value = tenant.contact != null ? tenant.contact : '';
+    document.getElementById('edit_unit_number').value = tenant.unit_number || '';
+    document.getElementById('edit_rent_amount').value = tenant.rent_amount || '';
     document.getElementById('edit_lease_start_date').value = tenant.lease_start_date || '';
     document.getElementById('edit_lease_end_date').value = tenant.lease_end_date || '';
-    
     new bootstrap.Modal(document.getElementById('editTenantModal')).show();
 }
 </script>
