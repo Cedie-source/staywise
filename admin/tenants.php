@@ -688,11 +688,13 @@ ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL;
                                           <?php endif; ?>
                                           <div>
                                             <strong class="tenant-name-text"><?php echo htmlspecialchars($tenant['name']); ?></strong>
+                                            <?php if ($hasPending || $hasRejected || $mustChange): ?>
                                             <div class="tenant-name-badges">
                                                 <?php if (isset($tenant['status']) && $tenant['status'] === 'pending'): ?><span class="badge bg-warning text-dark">Pending</span><?php endif; ?>
                                                 <?php if (isset($tenant['status']) && $tenant['status'] === 'rejected'): ?><span class="badge bg-danger">Rejected</span><?php endif; ?>
                                                 <?php if (!empty($tenant['u_force_password_change'])): ?><span class="badge bg-danger">Must change password</span><?php endif; ?>
                                             </div>
+                                            <?php endif; ?>
                                           </div>
                                         </div>
                                     </td>
