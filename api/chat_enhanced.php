@@ -134,17 +134,16 @@ try {
     // ── Build messages for Groq ──
     $basePrompt = getenv('AI_SYSTEM_PROMPT') ?: 'You are StayWise, a helpful assistant for tenants.';
 
-    // Enhance system prompt with proactive AI instructions
+    // Enhance system prompt with strict grounding instructions
     $enhancedPrompt = $basePrompt . "\n\n"
-        . "ENHANCED CAPABILITIES:\n"
-        . "- You have access to the tenant's real-time account data, payment status, and complaint history.\n"
-        . "- You can see AI-generated maintenance predictions for their unit.\n"
-        . "- Proactively mention relevant predictions or advisories when appropriate.\n"
-        . "- If a tenant asks about maintenance issues, reference any active predictions for their unit.\n"
-        . "- If they ask about payments, use their actual payment data to give accurate answers.\n"
-        . "- Suggest preventive actions when maintenance predictions exist.\n"
-        . "- Be proactive: if you see alerts or predictions, briefly mention them even if not directly asked.\n"
-        . "- For admins: provide data-driven summaries and actionable recommendations.\n"
+        . "IMPORTANT RULES:\n"
+        . "- You MUST only use the data provided in the TENANT CONTEXT block below. Never invent, assume, or guess any information.\n"
+        . "- Only mention maintenance predictions if they are explicitly listed in the TENANT CONTEXT block under 'Active maintenance predictions'. If that section is absent or empty, there are NO predictions — do NOT mention any.\n"
+        . "- Only mention complaints that are explicitly listed in the TENANT CONTEXT block. Do not invent complaints or maintenance issues.\n"
+        . "- If a tenant asks about maintenance predictions and none exist in the context, tell them there are currently no active predictions for their unit.\n"
+        . "- If they ask about payments, use only their actual payment data from the context.\n"
+        . "- Do NOT suggest, imply, or hint at any maintenance issues that are not in the context data.\n"
+        . "- For admins: only reference prediction and insight data explicitly provided in the context.\n"
         . "- Always remain helpful, concise (under 200 words), and professional.\n"
         . $contextBlock;
 
