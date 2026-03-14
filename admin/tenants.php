@@ -870,7 +870,7 @@ ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL;
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="contact" class="form-label <?php echo !empty($addFieldErrors['contact']) ? 'text-danger fw-semibold' : ''; ?>">Contact</label>
-                            <input type="tel" class="form-control <?php echo !empty($addFieldErrors['contact']) ? 'is-invalid' : ''; ?>" name="contact" aria-invalid="<?php echo !empty($addFieldErrors['contact']) ? 'true' : 'false'; ?>" placeholder="+63XXXXXXXXXX or 09XXXXXXXXX" pattern="^(\+63\d{10}|09\d{9})$" maxlength="13" title="Enter a valid Philippine mobile number (+63XXXXXXXXXX or 09XXXXXXXXX)" value="<?php echo isset($addPrefill['contact']) ? htmlspecialchars($addPrefill['contact']) : ''; ?>">
+                            <input type="text" class="form-control <?php echo !empty($addFieldErrors['contact']) ? 'is-invalid' : ''; ?>" name="contact" aria-invalid="<?php echo !empty($addFieldErrors['contact']) ? 'true' : 'false'; ?>" placeholder="+63XXXXXXXXXX or 09XXXXXXXXX" maxlength="15" autocomplete="off" value="<?php echo isset($addPrefill['contact']) ? htmlspecialchars($addPrefill['contact']) : ''; ?>">
                             <?php if (!empty($addFieldErrors['contact'])): ?>
                                 <div class="invalid-feedback d-block"><?php echo htmlspecialchars($addFieldErrors['contact']); ?></div>
                             <?php endif; ?>
@@ -1004,8 +1004,8 @@ function confirmDelete(message){
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="edit_contact" class="form-label">Contact</label>
-                            <input type="tel" class="form-control" name="contact" id="edit_contact" placeholder="+63XXXXXXXXXX or 09XXXXXXXXX" maxlength="15" title="Enter a valid Philippine mobile number (+63XXXXXXXXXX or 09XXXXXXXXX)">
-                            <small class="text-muted">Accepted: +63 followed by 10 digits, or 09 followed by 9 digits. Saved as +63 format.</small>
+                            <input type="text" class="form-control" name="contact" id="edit_contact" placeholder="+63XXXXXXXXXX or 09XXXXXXXXX" maxlength="15" autocomplete="off">
+                            <small class="text-muted">Format: +63XXXXXXXXXX or 09XXXXXXXXX</small>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="edit_unit_number" class="form-label">Unit Number *</label>
