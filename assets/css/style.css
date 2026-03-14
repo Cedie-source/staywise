@@ -1334,12 +1334,13 @@ body.dark-mode .admin-ui .report-filter-card .form-label {
 
 /* ===== Manage Tenants Layout ===== */
 .admin-ui.manage-tenants td.tenant-name-cell {
+    vertical-align: middle;
+}
+
+.admin-ui.manage-tenants td.tenant-name-cell .tenant-name-wrap {
     display: flex;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: .25rem !important;
-    min-height: 3rem;
-    flex-wrap: nowrap;
+    flex-direction: column;
+    gap: .25rem;
 }
 
 .admin-ui.manage-tenants td.tenant-name-cell .tenant-name-text {
@@ -1349,7 +1350,6 @@ body.dark-mode .admin-ui .report-filter-card .form-label {
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
-    flex: 0 1 auto;
     line-height: 1.25rem;
 }
 
@@ -1357,11 +1357,7 @@ body.dark-mode .admin-ui .report-filter-card .form-label {
     display: flex;
     flex-wrap: wrap;
     gap: .25rem;
-    min-height: 1.5rem;
-}
-
-.admin-ui.manage-tenants td.tenant-name-cell.no-badges {
-    justify-content: center;
+    min-height: 0;
 }
 
 .admin-ui.manage-tenants td.tenant-name-cell.no-badges .tenant-name-badges {
