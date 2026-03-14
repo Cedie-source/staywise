@@ -47,8 +47,7 @@ if (isset($_SESSION['user_id'])) {
             $__pr = $__ps->get_result()->fetch_assoc();
             $__ps->close();
             if (!empty($__pr['profile_photo'])) {
-                $__path = __DIR__ . '/../uploads/profiles/' . $__pr['profile_photo'];
-                if (file_exists($__path)) $_headerPhoto = '/uploads/profiles/' . $__pr['profile_photo'];
+                $_headerPhoto = '/uploads/profiles/' . $__pr['profile_photo'];
             }
         }
     } catch (Throwable $e) {}
