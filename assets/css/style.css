@@ -1339,17 +1339,16 @@ body.dark-mode .admin-ui .report-filter-card .form-label {
 
 .admin-ui.manage-tenants td.tenant-name-cell .tenant-name-wrap {
     display: flex;
-    flex-direction: column;
-    gap: .25rem;
+    align-items: center;
+    gap: 10px;
 }
 
 .admin-ui.manage-tenants td.tenant-name-cell .tenant-name-text {
-    display: inline-block;
+    display: block;
     max-width: clamp(160px, 28vw, 420px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: 0;
     line-height: 1.25rem;
 }
 
@@ -1357,7 +1356,7 @@ body.dark-mode .admin-ui .report-filter-card .form-label {
     display: flex;
     flex-wrap: wrap;
     gap: .25rem;
-    min-height: 0;
+    margin-top: .2rem;
 }
 
 .admin-ui.manage-tenants td.tenant-name-cell.no-badges .tenant-name-badges {
