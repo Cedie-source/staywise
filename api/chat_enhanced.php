@@ -254,7 +254,8 @@ try {
     $confidence = 0;
 
     $msgLower = strtolower($message);
-    if (preg_match('/\b(pay|payment|rent|bill|due|balance)\b/', $msgLower)) {
+    if (preg_match('/\b(payment|rent|due|balance|paid|receipt|gcash|paymongo)\b/', $msgLower)
+        && !preg_match('/\b(electricity|electric|water|utility|utilities|bill|bills|meralco|submeter)\b/', $msgLower)) {
         $intent = 'payment_inquiry';
         $confidence = 0.85;
         $quickAction = ['label' => 'View Payments', 'url' => '/tenant/payments.php'];
