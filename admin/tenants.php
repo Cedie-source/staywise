@@ -1,4 +1,5 @@
 <?php
+ob_start();
 require_once '../includes/security.php';
 set_secure_session_cookies(); // Must be before session_start()
 session_start();
@@ -991,6 +992,13 @@ function confirmDelete(message){
                 <?php echo csrf_input(); ?>
                 <input type="hidden" name="tenant_id" id="edit_tenant_id">
                 <div class="modal-body">
+                    <?php if (!empty($editErrors) && !empty($showEditModal)): ?>
+                    <div class="alert alert-danger py-2 mb-3">
+                        <?php foreach ($editErrors as $err): ?>
+                            <div><i class="fas fa-exclamation-circle me-1"></i><?php echo htmlspecialchars($err); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="edit_name" class="form-label">Full Name *</label>
