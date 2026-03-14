@@ -988,7 +988,7 @@ function confirmDelete(message){
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" class="needs-validation" novalidate>
+            <form method="POST">
                 <?php echo csrf_input(); ?>
                 <input type="hidden" name="tenant_id" id="edit_tenant_id">
                 <div class="modal-body">
@@ -1128,8 +1128,11 @@ function editTenant(tenant) {
     document.getElementById('edit_contact').value = tenant.contact != null ? tenant.contact : '';
     document.getElementById('edit_unit_number').value = tenant.unit_number || '';
     document.getElementById('edit_rent_amount').value = tenant.rent_amount || '';
-    document.getElementById('edit_lease_start_date').value = tenant.lease_start_date || '';
-    document.getElementById('edit_lease_end_date').value = tenant.lease_end_date || '';
+    // Strip time part from datetime — date inputs need YYYY-MM-DD only
+    var ls = tenant.lease_start_date || '';
+    var le = tenant.lease_end_date || '';
+    document.getElementById('edit_lease_start_date').value = ls ? ls.substring(0, 10) : '';
+    document.getElementById('edit_lease_end_date').value = le ? le.substring(0, 10) : '';
     new bootstrap.Modal(document.getElementById('editTenantModal')).show();
 }
 </script>
