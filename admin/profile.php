@@ -241,11 +241,10 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
         <input type="hidden" name="update_photo" value="1">
         <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
         <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
-          <?php if (!empty($profilePhoto) && file_exists('../uploads/profiles/' . $profilePhoto)): ?>
-            <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo">
-          <?php else: ?>
-            <div class="photo-circle-initials"><?= $initials ?></div>
+          <?php if (!empty($profilePhoto)): ?>
+            <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo" onerror="this.style.display='none';document.querySelector('.photo-circle-initials').style.display='flex';">
           <?php endif; ?>
+          <div class="photo-circle-initials" <?= !empty($profilePhoto) ? 'style="display:none;"' : '' ?>><?= $initials ?></div>
           <div class="photo-overlay"><i class="fas fa-camera"></i><span>Update</span></div>
         </div>
       </form>
