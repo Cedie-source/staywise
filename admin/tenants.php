@@ -278,7 +278,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             logAdminAction($conn, $_SESSION['user_id'], 'add_tenant', $details);
 
             $conn->commit();
-            $success = "Tenant added successfully! Deposit (₱" . number_format($deposit_amount, 2) . ") and advance (₱" . number_format($advance_amount, 2) . ") recorded.";
+            $_SESSION['tenant_success'] = "Tenant added successfully! Deposit (₱" . number_format($deposit_amount, 2) . ") and advance (₱" . number_format($advance_amount, 2) . ") recorded.";
+            header("Location: tenants.php");
+            exit();
         } catch (mysqli_sql_exception $e) {
             $conn->rollback();
             error_log("Error: " . $e->getMessage());
@@ -509,7 +511,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 logAdminAction($conn, $_SESSION['user_id'], 'update_tenant', $details);
 
                 $conn->commit();
-                $success = "Tenant updated successfully!";
+                $_SESSION['tenant_success'] = "Tenant updated successfully!";
+                header("Location: tenants.php");
+                exit();
             } catch (mysqli_sql_exception $e) {
                 $conn->rollback();
                 $error = "Failed to update tenant: " . $e->getMessage();
@@ -556,7 +560,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 logAdminAction($conn, $_SESSION['user_id'], 'delete_tenant', "Soft-deleted tenant ID: $tenant_id and user ID: $uid");
                 $conn->commit();
-                $success = "Tenant removed successfully.";
+                $_SESSION['tenant_success'] = "Tenant removed successfully.";
+                header("Location: tenants.php");
+                exit();
             } catch (mysqli_sql_exception $e) {
                 $conn->rollback();
                 $error = "Failed to delete tenant: " . $e->getMessage();
@@ -571,6 +577,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $tenants = $conn->query("SELECT t.*, u.username, u.profile_photo, u.force_password_change AS u_force_password_change FROM tenants t JOIN users u ON t.user_id = u.id WHERE t.deleted_at IS NULL ORDER BY t.name");
 
 $page_title = "Manage Tenants";
+
+// Flash message from PRG redirect
+if (!empty($_SESSION['tenant_success'])) {
+    $success = $_SESSION['tenant_success'];
+    unset($_SESSION['tenant_success']);
+}
+
 include '../includes/header.php';
 ?>
 
