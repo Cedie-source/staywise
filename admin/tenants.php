@@ -570,6 +570,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Get all tenants (exclude soft-deleted; order by name; status column may not exist)
 $tenants = $conn->query("SELECT t.*, u.username, u.profile_photo, u.force_password_change AS u_force_password_change FROM tenants t JOIN users u ON t.user_id = u.id WHERE t.deleted_at IS NULL ORDER BY t.name");
 
+$page_title = "Manage Tenants";
 include '../includes/header.php';
 ?>
 
@@ -983,7 +984,7 @@ function confirmDelete(message){
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="edit_contact" class="form-label">Contact</label>
-                            <input type="tel" class="form-control" name="contact" id="edit_contact" placeholder="+63XXXXXXXXXX or 09XXXXXXXXX" pattern="^(\+63\d{10}|09\d{9})$" maxlength="13" title="Enter a valid Philippine mobile number (+63XXXXXXXXXX or 09XXXXXXXXX)">
+                            <input type="tel" class="form-control" name="contact" id="edit_contact" placeholder="+63XXXXXXXXXX or 09XXXXXXXXX" maxlength="15" title="Enter a valid Philippine mobile number (+63XXXXXXXXXX or 09XXXXXXXXX)">
                             <small class="text-muted">Accepted: +63 followed by 10 digits, or 09 followed by 9 digits. Saved as +63 format.</small>
                         </div>
                         <div class="col-md-4 mb-3">
