@@ -66,13 +66,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         $success = "Payment status updated successfully!";
         $details = "Changed payment ID $payment_id status to $status";
         logAdminAction($conn, $_SESSION['user_id'], 'update_payment_status', $details);
-
-        // Email notification removed to avoid slow page load
-        // Tenants can check their payment status on their dashboard
     } else {
         $error = "Failed to update payment status";
     }
     $stmt->close();
+}
+
+// Handle admin recording cash payment (instantly verified)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['record_cash_payment'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        http_response_code(400);
+        die('Invalid request token.');
+    }
+    $tenant_id = intval($_POST['tenant_id']);
+    $amount    = floatval($_POST['amount']);
+    $for_month = trim($_POST['for_month'] ?? '');
+    $pay_date  = date('Y-m-d');
+    if ($tenant_id <= 0 || $amount <= 0 || empty($for_month)) {
+        $error = "Please fill in all required fields.";
+    } else {
+        $now = date('Y-m-d H:i:s');
+        $stmt = $conn->prepare("INSERT INTO payments (tenant_id, amount, payment_method, payment_date, for_month, status, payment_type, paid_at) VALUES (?, ?, 'cash', ?, ?, 'verified', 'rent', ?)");
+        $stmt->bind_param("idsss", $tenant_id, $amount, $pay_date, $for_month, $now);
+        if ($stmt->execute()) {
+            logAdminAction($conn, $_SESSION['user_id'], 'record_cash_payment', "Recorded cash ₱" . number_format($amount, 2) . " tenant ID $tenant_id month $for_month");
+            $success = "Cash payment of ₱" . number_format($amount, 2) . " recorded and verified!";
+        } else {
+            $error = "Failed to record payment.";
+        }
+        $stmt->close();
+    }
 }
 
 // Auto-verify any stuck PayMongo payments by re-checking with the API
@@ -86,14 +109,12 @@ if ($paymongoHelper->isConfigured()) {
             $pmPaymentId = '';
             $paid = false;
 
-            // Try Payment Links API first (new flow)
             $linkCheck = $paymongoHelper->checkPaymentLinkStatus($linkId);
             if ($linkCheck['paid']) {
                 $pmPaymentId = $linkCheck['payment_id'] ?? '';
                 $paid = true;
             }
 
-            // Fallback: try legacy Checkout Session API
             if (!$paid) {
                 $session = $paymongoHelper->getCheckoutSession($linkId);
                 if (isset($session['data']['attributes']['payments']) && !empty($session['data']['attributes']['payments'])) {
@@ -116,6 +137,11 @@ if ($paymongoHelper->isConfigured()) {
     }
 }
 
+// Get all active tenants for record cash payment modal
+$allTenants = $conn->query("SELECT tenant_id, name, unit_number, rent_amount FROM tenants WHERE deleted_at IS NULL ORDER BY unit_number ASC");
+$tenantsList = [];
+while ($t = $allTenants->fetch_assoc()) $tenantsList[] = $t;
+
 // Get all payments with tenant information
 $payments = $conn->query("
     SELECT p.*, t.name, t.unit_number, t.email 
@@ -131,15 +157,20 @@ include '../includes/header.php';
 <div class="container mt-4 admin-ui">
     <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="dashboard-title"><i class="fas fa-credit-card me-2"></i>Manage Payments</h2>
-        <div class="btn-group" role="group">
-            <input type="radio" class="btn-check" name="filter" id="all" autocomplete="off" checked>
-            <label class="btn btn-outline-primary" for="all">All</label>
-            
-            <input type="radio" class="btn-check" name="filter" id="pending" autocomplete="off">
-            <label class="btn btn-outline-warning" for="pending">Pending</label>
-            
-            <input type="radio" class="btn-check" name="filter" id="verified" autocomplete="off">
-            <label class="btn btn-outline-success" for="verified">Verified</label>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#recordCashModal">
+                <i class="fas fa-plus me-2"></i>Record Cash Payment
+            </button>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="filter" id="all" autocomplete="off" checked>
+                <label class="btn btn-outline-primary" for="all">All</label>
+                
+                <input type="radio" class="btn-check" name="filter" id="pending" autocomplete="off">
+                <label class="btn btn-outline-warning" for="pending">Pending</label>
+                
+                <input type="radio" class="btn-check" name="filter" id="verified" autocomplete="off">
+                <label class="btn btn-outline-success" for="verified">Verified</label>
+            </div>
         </div>
     </div>
 
@@ -334,7 +365,60 @@ include '../includes/header.php';
     </div>
 </div>
 
+<!-- Record Cash Payment Modal -->
+<div class="modal fade" id="recordCashModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-money-bill-wave me-2"></i>Record Cash Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <?php echo csrf_input(); ?>
+                <input type="hidden" name="record_cash_payment" value="1">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tenant *</label>
+                        <select class="form-select" name="tenant_id" id="cashTenantSelect" required onchange="fillRentAmount(this)">
+                            <option value="">— Select tenant —</option>
+                            <?php foreach ($tenantsList as $t): ?>
+                            <option value="<?php echo $t['tenant_id']; ?>" data-rent="<?php echo $t['rent_amount']; ?>">
+                                Unit <?php echo htmlspecialchars($t['unit_number']); ?> — <?php echo htmlspecialchars($t['name']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Amount (₱) *</label>
+                        <input type="number" class="form-control" name="amount" id="cashAmount" step="0.01" min="1" required placeholder="0.00">
+                        <div class="form-text">Auto-filled with tenant's monthly rent when selected.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">For Month *</label>
+                        <input type="month" class="form-control" name="for_month" value="<?php echo date('Y-m'); ?>" required>
+                    </div>
+                    <div class="alert alert-success py-2 mb-0">
+                        <small><i class="fas fa-check-circle me-1"></i>This payment will be <strong>instantly verified</strong> — no approval step needed.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Record & Verify
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+function fillRentAmount(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    var rent = opt.getAttribute('data-rent');
+    if (rent) document.getElementById('cashAmount').value = parseFloat(rent).toFixed(2);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const table = document.getElementById('paymentsTable');
     const filterButtons = document.querySelectorAll('input[name="filter"]');
