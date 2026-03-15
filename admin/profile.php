@@ -29,24 +29,19 @@ $middleName = $user['middle_name'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_photo'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
     if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === 0) {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->file($_FILES['profile_photo']['tmp_name']);
-        $extMap = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];
-        $ext = $extMap[$mime] ?? '';
-        if (!$ext) { $error = "Invalid image type."; }
-        elseif ($_FILES['profile_photo']['size'] > 3 * 1024 * 1024) { $error = "Image too large (max 3MB)."; }
-        else {
-            $upload_dir = '../uploads/profiles/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-            $filename = 'profile_' . $_SESSION['user_id'] . '_' . time() . '.' . $ext;
-            if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_dir . $filename)) {
-                $upd = $conn->prepare("UPDATE users SET profile_photo = ? WHERE id = ?");
-                $upd->bind_param("si", $filename, $_SESSION['user_id']);
-                $upd->execute(); $upd->close();
-                $success = "Profile photo updated.";
-                $user['profile_photo'] = $filename;
-            } else { $error = "Upload failed."; }
+        try {
+            require_once '../includes/photo_helper.php';
+            $dataUri = process_photo_to_base64($_FILES['profile_photo']);
+            $upd = $conn->prepare("UPDATE users SET profile_photo = ? WHERE id = ?");
+            $upd->bind_param("si", $dataUri, $_SESSION['user_id']);
+            $upd->execute(); $upd->close();
+            $success = "Profile photo updated.";
+            $user['profile_photo'] = $dataUri;
+        } catch (Exception $e) {
+            $error = $e->getMessage();
         }
+    }
+}
     }
 }
 
@@ -242,7 +237,12 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
         <input type="file" id="photoInput" name="profile_photo" accept="image/*" style="display:none" onchange="this.form.submit()">
         <div class="photo-circle" onclick="document.getElementById('photoInput').click()" title="Update image">
           <?php if (!empty($profilePhoto)): ?>
-            <img src="../uploads/profiles/<?= htmlspecialchars($profilePhoto) ?>" alt="Profile photo" onerror="this.style.display='none';document.querySelector('.photo-circle-initials').style.display='flex';">
+            <?php
+              $photoSrc = str_starts_with($profilePhoto, 'data:')
+                ? $profilePhoto
+                : '../uploads/profiles/' . htmlspecialchars($profilePhoto);
+            ?>
+            <img src="<?= $photoSrc ?>" alt="Profile photo" onerror="this.style.display='none';document.querySelector('.photo-circle-initials').style.display='flex';">
           <?php endif; ?>
           <div class="photo-circle-initials" <?= !empty($profilePhoto) ? 'style="display:none;"' : '' ?>><?= $initials ?></div>
           <div class="photo-overlay"><i class="fas fa-camera"></i><span>Update</span></div>
