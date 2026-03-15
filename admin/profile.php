@@ -42,8 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_photo'])) {
         }
     }
 }
-    }
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
