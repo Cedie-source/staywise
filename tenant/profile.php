@@ -261,7 +261,7 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
       </form>
       <div class="profile-header-info">
         <div class="profile-header-name"><?= htmlspecialchars($user['full_name'] ?: $user['username']) ?></div>
-        <div class="profile-header-meta"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; <?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?></div>
+        <div class="profile-header-meta"><?= htmlspecialchars($user['email']) ?> &nbsp;·&nbsp; Tenant</div>
         <div style="font-size:.72rem;color:#94a3b8;margin-top:4px;">Click photo to update</div>
       </div>
     </div>
@@ -299,7 +299,7 @@ body.dark-mode .tenant-card-name { color: #e2e8f0; }
         </div>
         <div class="col-sm-6">
           <label class="tc-label">Role</label>
-          <input type="text" class="tc-input" disabled value="<?= isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin' ? 'Super Admin' : 'Admin' ?>">
+          <input type="text" class="tc-input" disabled value="Tenant">
         </div>
       </div>
       <div class="mt-4">
