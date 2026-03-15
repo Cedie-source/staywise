@@ -174,13 +174,6 @@ include '../includes/header.php';
                             <div class="form-text">Upload your GCash QR code image (JPG, PNG, WEBP, max 2MB)</div>
                         </div>
 
-                        <div class="alert alert-info">
-                            <small>
-                                <i class="fas fa-info-circle me-1"></i>
-                                <strong>How it works:</strong> Tenants will see your GCash number/QR code, send the payment through the GCash app, and upload a screenshot as proof. You still need to verify these payments manually.
-                            </small>
-                        </div>
-
                         <button type="submit" name="save_gcash" class="btn btn-primary" style="background: #007DFE; border-color: #007DFE;">
                             <i class="fas fa-save me-2"></i>Save GCash Settings
                         </button>
@@ -208,18 +201,6 @@ include '../includes/header.php';
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Secret Key *</label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" name="paymongo_secret_key" id="pmSecretKey"
-                                       value="<?php echo htmlspecialchars($paymongo_secret); ?>" placeholder="sk_test_xxxxxxxx">
-                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('pmSecretKey')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Starts with <code>sk_test_</code> (test) or <code>sk_live_</code> (production)</div>
-                        </div>
-
-                        <div class="mb-3">
                             <label class="form-label">Public Key *</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" name="paymongo_public_key" id="pmPublicKey"
@@ -228,49 +209,6 @@ include '../includes/header.php';
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Webhook Secret</label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" name="paymongo_webhook_secret" id="pmWebhookSecret"
-                                       value="<?php echo htmlspecialchars($paymongo_webhook); ?>" placeholder="whsk_xxxxxxxx">
-                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('pmWebhookSecret')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Optional. Used to verify webhook signatures from PayMongo.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Webhook URL</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" readonly value="<?php echo htmlspecialchars((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/../api/paymongo_webhook.php'); ?>" id="webhookUrl">
-                                <button type="button" class="btn btn-outline-primary" onclick="copyWebhookUrl()">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Register this URL in your <a href="https://dashboard.paymongo.com/developers/webhooks" target="_blank">PayMongo dashboard</a></div>
-                        </div>
-
-                        <div class="alert alert-success border">
-                            <small>
-                                <i class="fas fa-shield-alt me-1"></i>
-                                <strong>How it works:</strong> Tenants choose GCash, GrabPay, or Card on the payment page. They're redirected to PayMongo's secure checkout. On successful payment, the status is automatically set to "verified".
-                            </small>
-                        </div>
-
-                        <div class="alert alert-light border">
-                            <small>
-                                <strong>Setup Steps:</strong>
-                                <ol class="mb-0 mt-1">
-                                    <li>Create an account at <a href="https://paymongo.com" target="_blank">paymongo.com</a></li>
-                                    <li>Get your API keys from the <a href="https://dashboard.paymongo.com/developers" target="_blank">Developers page</a></li>
-                                    <li>Enter the Secret Key and Public Key above</li>
-                                    <li>(Optional) Set up a webhook at PayMongo and paste the secret here</li>
-                                    <li>Enable PayMongo payments with the toggle above</li>
-                                </ol>
-                            </small>
                         </div>
 
                         <button type="submit" name="save_paymongo" class="btn btn-success">
@@ -287,11 +225,6 @@ include '../includes/header.php';
 function togglePassword(id) {
     var input = document.getElementById(id);
     input.type = input.type === 'password' ? 'text' : 'password';
-}
-function copyWebhookUrl() {
-    var input = document.getElementById('webhookUrl');
-    input.select();
-    navigator.clipboard.writeText(input.value);
 }
 </script>
 
