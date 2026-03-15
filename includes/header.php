@@ -47,7 +47,10 @@ if (isset($_SESSION['user_id'])) {
             $__pr = $__ps->get_result()->fetch_assoc();
             $__ps->close();
             if (!empty($__pr['profile_photo'])) {
-                $_headerPhoto = '/uploads/profiles/' . $__pr['profile_photo'];
+                $__val = $__pr['profile_photo'];
+                $_headerPhoto = str_starts_with($__val, 'data:')
+                    ? $__val
+                    : '/uploads/profiles/' . $__val;
             }
         }
     } catch (Throwable $e) {}
