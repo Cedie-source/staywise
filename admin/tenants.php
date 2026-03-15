@@ -682,7 +682,8 @@ ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL;
                                             $tInitials = strtoupper(substr($tenant['name'], 0, 2));
                                           ?>
                                           <?php if (!empty($tp)): ?>
-                                            <img src="/uploads/profiles/<?php echo htmlspecialchars($tp) ?>" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(78,214,193,.35);" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                            <?php $tpSrc = str_starts_with($tp, 'data:') ? $tp : '/uploads/profiles/' . htmlspecialchars($tp); ?>
+                                            <img src="<?= $tpSrc ?>" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(78,214,193,.35);" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                                             <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4ED6C1,#007DFE);display:none;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;"><?php echo $tInitials ?></div>
                                           <?php else: ?>
                                             <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4ED6C1,#007DFE);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;"><?php echo $tInitials ?></div>
