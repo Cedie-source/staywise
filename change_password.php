@@ -461,7 +461,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
         <?php elseif ($otp_sent): ?>
             Step 2 of 2 &mdash; Enter the verification code sent to your email.
         <?php else: ?>
-            Step 1 of 2 &mdash; Enter your current and new password.
+            Enter your current and new password.
         <?php endif; ?>
     </div>
 
@@ -614,6 +614,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
         </div>
         <?php endif; ?>
 
+
         <div class="d-flex justify-content-between align-items-center">
             <?php if (!empty($_SESSION['must_change_password'])): ?>
                 <a href="logout.php" class="btn-outline-tc"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -624,7 +625,7 @@ body.dark-mode .pw-strength-bar { background: #2d3748; }
                 <?php if (!empty($_SESSION['must_change_password'])): ?>
                     <i class="fas fa-key"></i> Set New Password
                 <?php else: ?>
-                    <i class="fas fa-paper-plane"></i> Send Verification Code
+                    <i class="fas fa-paper-plane"></i> Change Password
                 <?php endif; ?>
             </button>
         </div>
