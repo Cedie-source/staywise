@@ -150,9 +150,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $errors[] = $fieldErrors['rent_amount'];
         }
 
-        // Check if the username already exists
+        // Check if the username already exists (exclude soft-deleted users)
         if (empty($errors)) {
-            $check_username_stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+            $usersHasDeletedAt = db_column_exists($conn, 'users', 'deleted_at');
+            $uSql = $usersHasDeletedAt
+                ? "SELECT id FROM users WHERE username = ? AND deleted_at IS NULL"
+                : "SELECT id FROM users WHERE username = ?";
+            $check_username_stmt = $conn->prepare($uSql);
             $check_username_stmt->bind_param("s", $username);
             $check_username_stmt->execute();
             $check_username_stmt->store_result();
@@ -175,7 +179,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Duplicate email check across users and tenants (if provided)
         if (empty($errors) && !empty($email)) {
-            $check_email_users = $conn->prepare("SELECT id FROM users WHERE email = ?");
+            $usersHasDeletedAt = $usersHasDeletedAt ?? db_column_exists($conn, 'users', 'deleted_at');
+            $eSql = $usersHasDeletedAt
+                ? "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL"
+                : "SELECT id FROM users WHERE email = ?";
+            $check_email_users = $conn->prepare($eSql);
             $check_email_users->bind_param("s", $email);
             $check_email_users->execute();
             $check_email_users->store_result();
@@ -186,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $check_email_users->close();
 
             if (empty($fieldErrors['email'])) {
-                $check_email_tenants = $conn->prepare("SELECT tenant_id FROM tenants WHERE email = ?");
+                $check_email_tenants = $conn->prepare("SELECT tenant_id FROM tenants WHERE email = ? AND deleted_at IS NULL");
                 $check_email_tenants->bind_param("s", $email);
                 $check_email_tenants->execute();
                 $check_email_tenants->store_result();
@@ -198,9 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        // Duplicate unit number check
+        // Duplicate unit number check (exclude soft-deleted tenants)
         if (empty($errors) && !empty($unit_number)) {
-            $check_unit = $conn->prepare("SELECT tenant_id FROM tenants WHERE unit_number = ?");
+            $check_unit = $conn->prepare("SELECT tenant_id FROM tenants WHERE unit_number = ? AND deleted_at IS NULL");
             $check_unit->bind_param("s", $unit_number);
             $check_unit->execute();
             $check_unit->store_result();
@@ -456,9 +464,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $editErrors[] = $editFieldErrors['rent_amount'];
         }
 
-        // Check duplicates for email and unit_number (exclude current tenant)
+        // Check duplicates for email and unit_number (exclude current tenant and soft-deleted)
         if (empty($editErrors)) {
-            $dupeEmailTenants = $conn->prepare("SELECT tenant_id FROM tenants WHERE email = ? AND tenant_id <> ?");
+            $dupeEmailTenants = $conn->prepare("SELECT tenant_id FROM tenants WHERE email = ? AND tenant_id <> ? AND deleted_at IS NULL");
             $dupeEmailTenants->bind_param("si", $email, $tenant_id);
             $dupeEmailTenants->execute();
             $dupeEmailTenants->store_result();
@@ -468,7 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             $dupeEmailTenants->close();
 
-            $dupeUnit = $conn->prepare("SELECT tenant_id FROM tenants WHERE unit_number = ? AND tenant_id <> ?");
+            $dupeUnit = $conn->prepare("SELECT tenant_id FROM tenants WHERE unit_number = ? AND tenant_id <> ? AND deleted_at IS NULL");
             $dupeUnit->bind_param("si", $unit_number, $tenant_id);
             $dupeUnit->execute();
             $dupeUnit->store_result();
