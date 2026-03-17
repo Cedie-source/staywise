@@ -419,8 +419,9 @@ $page_title = "Welcome";
 
         <style>
         .otp-row{display:flex;gap:.6rem;justify-content:center;margin:1.5rem 0;}
-        .otp-digit{width:48px;height:58px;text-align:center;font-size:1.6rem;font-weight:700;border:2px solid var(--border,#e2e8f0);border-radius:10px;background:var(--field-bg,#fff);color:var(--text,#0f172a);outline:none;transition:border-color .2s,box-shadow .2s;caret-color:transparent;}
+        .otp-digit{width:48px;height:58px;text-align:center;font-size:1.6rem;font-weight:700;border:2px solid var(--input-bdr,#e2e8f0);border-radius:10px;background:var(--input-bg,#fff);color:var(--text,#0f172a);outline:none;transition:border-color .2s,box-shadow .2s;caret-color:var(--caret,#c9a84c);}
         .otp-digit:focus{border-color:var(--gold,#c9a84c);box-shadow:0 0 0 3px rgba(201,168,76,.15);}
+        .otp-digit::placeholder{color:var(--placeholder,#94a3b8);}
         .otp-timer{text-align:center;font-size:.78rem;color:var(--muted,#94a3b8);margin-bottom:1rem;}
         #otpCountdown{font-weight:700;color:var(--gold,#c9a84c);}
         </style>
