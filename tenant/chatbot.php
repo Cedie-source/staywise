@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'tenant') {
 
 $base_url = '/';
 
-define('STAYWISE_ROOT', dirname(__DIR__));
+if (!defined('STAYWISE_ROOT')) define('STAYWISE_ROOT', dirname(__DIR__));
 require_once STAYWISE_ROOT . '/includes/predictive_analytics.php';
 ai_ensure_tables($conn);
 
@@ -22,7 +22,6 @@ $tenantPredictions = [];
 // Handle clear chat
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_chat'])) {
     if (verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        $conn->prepare("DELETE FROM chat_history WHERE user_id = ?")->bind_param('i', $userId) && true;
         $del = $conn->prepare("DELETE FROM chat_history WHERE user_id = ?");
         $del->bind_param('i', $userId);
         $del->execute();
