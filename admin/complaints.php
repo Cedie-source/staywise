@@ -96,6 +96,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_send_reply'])) {
     $reply = $fe->get_result()->fetch_assoc();
     $fe->close();
 
+    // Fallback if SELECT fails - build reply from known data
+    if (!$reply) {
+        $reply = [
+            'reply_id'     => $rid,
+            'complaint_id' => $cid,
+            'role'         => 'admin',
+            'message'      => $msg,
+            'created_at'   => date('Y-m-d H:i:s'),
+            'full_name'    => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Admin',
+            'username'     => $_SESSION['username'] ?? 'Admin',
+        ];
+    }
+
     try { logAdminAction($conn, $uid, 'reply_complaint', "Replied to complaint #$cid"); } catch (Throwable $e) {}
 
     echo json_encode(['success' => true, 'reply' => $reply]);
@@ -226,10 +239,14 @@ body.dark-mode .chat-bubble.tenant{background:#2a2a2a;color:#e2e8f0;}
                             </div>
                         </div>
                         <div class="thread-input-row">
-                            <input type="text" class="form-control thread-reply-input"
-                                   id="replyInput<?= $cid ?>" placeholder="Type reply, press Enter..."
-                                   data-cid="<?= $cid ?>">
-                            <button class="btn btn-primary thread-send-btn" data-cid="<?= $cid ?>">
+                            <textarea class="form-control thread-reply-input"
+                                   id="replyInput<?= $cid ?>"
+                                   placeholder="Type reply, press Ctrl+Enter to send..."
+                                   data-cid="<?= $cid ?>"
+                                   rows="2"
+                                   style="border-radius:12px;resize:none;"></textarea>
+                            <button class="btn btn-primary thread-send-btn" data-cid="<?= $cid ?>"
+                                    style="align-self:flex-end;">
                                 <i class="fas fa-paper-plane me-1"></i>Send
                             </button>
                         </div>
@@ -370,9 +387,7 @@ body.dark-mode .chat-bubble.tenant{background:#2a2a2a;color:#e2e8f0;}
                 return r.json();
             })
             .then(function(data){
-                // DEBUG - remove after fixing
-                if(!data.success){ alert('DEBUG ERROR: '+JSON.stringify(data)); }
-                if(data.success){
+                if(data.success && data.reply){
                     var box=document.getElementById('threadMessages'+cid);
                     var empty=box.querySelector('p.text-muted');
                     if(empty)empty.remove();
@@ -394,7 +409,15 @@ body.dark-mode .chat-bubble.tenant{background:#2a2a2a;color:#e2e8f0;}
     }
 
     document.addEventListener('click',function(e){var b=e.target.closest('.thread-send-btn');if(b)send(b.dataset.cid);});
-    document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.classList.contains('thread-reply-input'))send(e.target.dataset.cid);});
+    document.addEventListener('keydown',function(e){
+        if(e.target.classList.contains('thread-reply-input')){
+            // Ctrl+Enter or Cmd+Enter to send, plain Enter = new line
+            if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){
+                e.preventDefault();
+                send(e.target.dataset.cid);
+            }
+        }
+    });
 })();
 </script>
 
