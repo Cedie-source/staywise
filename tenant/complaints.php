@@ -94,6 +94,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_send_reply'])) {
     ");
     $fe->bind_param("i", $rid); $fe->execute();
     $reply = $fe->get_result()->fetch_assoc(); $fe->close();
+
+    // Fallback if SELECT fails
+    if (!$reply) {
+        $reply = [
+            'reply_id'     => $rid,
+            'complaint_id' => $cid,
+            'role'         => 'tenant',
+            'message'      => $msg,
+            'created_at'   => date('Y-m-d H:i:s'),
+            'full_name'    => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'You',
+            'username'     => $_SESSION['username'] ?? 'You',
+        ];
+    }
     echo json_encode(['success' => true, 'reply' => $reply]);
     exit();
 }
@@ -209,10 +222,14 @@ body.dark-mode .chat-bubble.tenant{background:#1d4ed8;}
                                         </div>
                                     </div>
                                     <div class="thread-input-row">
-                                        <input type="text" class="form-control thread-reply-input"
-                                               id="replyInput<?= $cid ?>" placeholder="Type your reply..."
-                                               data-cid="<?= $cid ?>">
-                                        <button class="btn btn-primary thread-send-btn" data-cid="<?= $cid ?>">
+                                        <textarea class="form-control thread-reply-input"
+                                               id="replyInput<?= $cid ?>"
+                                               placeholder="Type your reply..."
+                                               data-cid="<?= $cid ?>"
+                                               rows="2"
+                                               style="border-radius:12px;resize:none;"></textarea>
+                                        <button class="btn btn-primary thread-send-btn" data-cid="<?= $cid ?>"
+                                                style="align-self:flex-end;">
                                             <i class="fas fa-paper-plane me-1"></i>Send
                                         </button>
                                     </div>
@@ -349,7 +366,7 @@ body.dark-mode .chat-bubble.tenant{background:#1d4ed8;}
                 return r.json();
             })
             .then(function(data){
-                if(data.success){
+                if(data.success && data.reply){
                     var box=document.getElementById('threadMessages'+cid);
                     var empty=box.querySelector('p.text-muted'); if(empty)empty.remove();
                     box.appendChild(makeBubble(data.reply)); scrollBot(box); inp.value='';
@@ -362,7 +379,14 @@ body.dark-mode .chat-bubble.tenant{background:#1d4ed8;}
     }
 
     document.addEventListener('click',function(e){var b=e.target.closest('.thread-send-btn');if(b)send(b.dataset.cid);});
-    document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.classList.contains('thread-reply-input'))send(e.target.dataset.cid);});
+    document.addEventListener('keydown',function(e){
+        if(e.target.classList.contains('thread-reply-input')){
+            if(e.key==='Enter' && (e.ctrlKey || e.metaKey)){
+                e.preventDefault();
+                send(e.target.dataset.cid);
+            }
+        }
+    });
 })();
 </script>
 
