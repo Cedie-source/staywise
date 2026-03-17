@@ -49,17 +49,57 @@ $_SESSION['tenant_id'] = $tenant['tenant_id'];
 $stats = [];
 
 // --- Monthly rent due date and status ---
-// Assumption: Rent is due on the 1st of each month unless tenant-specific due_day exists.
-$RENT_DUE_DAY = 1; // default monthly due day (1..28 recommended)
-
 $now = new DateTime('now');
+$today = new DateTime('today');
 $currentMonthStart = new DateTime($now->format('Y-m-01'));
-$currentMonthEnd = new DateTime($now->format('Y-m-t'));
-// Use per-tenant due_day if available, otherwise default
-$tenantDueDay = isset($tenant['due_day']) && (int)$tenant['due_day'] > 0 ? (int)$tenant['due_day'] : $RENT_DUE_DAY;
+$currentMonthEnd   = new DateTime($now->format('Y-m-t'));
+
+// Use lease_start_date day as the due day (e.g. March 3 → due on 3rd every month)
+$leaseStartRaw = $tenant['lease_start_date'] ?? '';
+$leaseStartObj2 = !empty($leaseStartRaw) ? new DateTime(substr($leaseStartRaw, 0, 10)) : null;
+
+// The due day is the day of the month the tenant signed (lease start day)
+$tenantDueDay = $leaseStartObj2 ? (int)$leaseStartObj2->format('d') : 1;
+if (isset($tenant['due_day']) && (int)$tenant['due_day'] > 0) {
+    $tenantDueDay = (int)$tenant['due_day'];
+}
+
+// Advance covers the first month after lease start.
+// First actual rent is due 2 months after lease start on the same day.
+// e.g. Lease start March 3 → advance covers March 3–April 3 → first due May 3
+$firstDueDate = null;
+if ($leaseStartObj2) {
+    $firstDueDate = (clone $leaseStartObj2)->modify('+2 months');
+    // Clamp day to valid days in that month
+    $maxDay = (int)$firstDueDate->format('t');
+    if ($tenantDueDay > $maxDay) {
+        $firstDueDate->setDate((int)$firstDueDate->format('Y'), (int)$firstDueDate->format('m'), $maxDay);
+    } else {
+        $firstDueDate->setDate((int)$firstDueDate->format('Y'), (int)$firstDueDate->format('m'), $tenantDueDay);
+    }
+}
+
+// Calculate the next due date from today
+// Find the due date for the current month, if past then next month
 $daysInMonth = (int)$now->format('t');
 $dueDayUsed = max(1, min($tenantDueDay, $daysInMonth));
 $dueDate = new DateTime($now->format('Y-m-') . str_pad($dueDayUsed, 2, '0', STR_PAD_LEFT));
+
+// If first due date hasn't arrived yet, use first due date
+if ($firstDueDate && $today < $firstDueDate) {
+    $dueDate = clone $firstDueDate;
+} elseif ($today > $dueDate) {
+    // Past due date this month, next due is next month
+    $nextMonth = (clone $dueDate)->modify('+1 month');
+    $maxNextDay = (int)$nextMonth->format('t');
+    $nextDay = min($tenantDueDay, $maxNextDay);
+    $nextMonth->setDate((int)$nextMonth->format('Y'), (int)$nextMonth->format('m'), $nextDay);
+    // Only advance to next month due if current month is paid
+    // (keep current month due if still unpaid)
+}
+
+// For display: show "Next due" as first due date if still in advance period
+$isInAdvancePeriod = $firstDueDate && $today < $firstDueDate;
 
 // Sum of verified payments for this tenant in the current month
 $paid_stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) AS total_paid FROM payments WHERE tenant_id = ? AND status = 'verified' AND payment_date BETWEEN ? AND ?");
@@ -74,18 +114,20 @@ $paid_stmt->close();
 
 // Determine status using rent amount and payments
 $rentAmount = (float)($tenant['rent_amount'] ?? 0);
-$today = new DateTime('today');
 $rentStatus = 'Pending';
-if ($rentAmount > 0) {
-    if ($total_paid_this_month >= $rentAmount - 0.01) { // allow tiny rounding tolerance
+
+// During advance period, rent is covered — no payment due yet
+if ($isInAdvancePeriod) {
+    $rentStatus = 'Covered';
+} elseif ($rentAmount > 0) {
+    if ($total_paid_this_month >= $rentAmount - 0.01) {
         $rentStatus = 'Paid';
     } elseif ($total_paid_this_month > 0 && $total_paid_this_month < $rentAmount) {
         $rentStatus = ($today > $dueDate) ? 'Overdue' : 'Partial';
-    } else { // no payment yet
+    } else {
         $rentStatus = ($today > $dueDate) ? 'Overdue' : 'Pending';
     }
 } else {
-    // No configured rent amount; consider paid if any verified payment exists
     $rentStatus = $total_paid_this_month > 0 ? 'Paid' : (($today > $dueDate) ? 'Overdue' : 'Pending');
 }
 
@@ -94,7 +136,7 @@ $daysUntilDue = (int)$today->diff($dueDate)->format('%r%a');
 
 // Choose badge color for due date based on status
 $dueBadgeClass = 'bg-secondary';
-if ($rentStatus === 'Paid') {
+if ($rentStatus === 'Paid' || $rentStatus === 'Covered') {
     $dueBadgeClass = 'bg-success';
 } elseif ($rentStatus === 'Overdue') {
     $dueBadgeClass = 'bg-danger';
@@ -106,29 +148,25 @@ if ($rentStatus === 'Paid') {
 
 // Outstanding balance (remaining due for the current month)
 $remaining_this_month = 0.0;
-if ($rentAmount > 0) {
+if ($rentAmount > 0 && !$isInAdvancePeriod) {
     $remaining_this_month = max(0.0, round($rentAmount - $total_paid_this_month, 2));
 }
 $stats['balance'] = $remaining_this_month;
 
-// Choose colors for the "Unpaid This Month" card (bring back colored UI)
+// Choose colors for the "Unpaid This Month" card
 $unpaid = $stats['balance'];
-$balanceBg = '#f8f9fa'; // default light
+$balanceBg = '#f8f9fa';
 $balanceText = '#212529';
-if ($unpaid <= 0.009) { // effectively zero
-    // Success subtle
+if ($isInAdvancePeriod || $unpaid <= 0.009) {
     $balanceBg = '#d1e7dd';
     $balanceText = '#0f5132';
 } elseif ($rentStatus === 'Overdue') {
-    // Danger subtle
     $balanceBg = '#f8d7da';
     $balanceText = '#842029';
 } elseif ($rentStatus === 'Partial') {
-    // Info subtle
     $balanceBg = '#cff4fc';
     $balanceText = '#055160';
-} else { // Pending
-    // Warning subtle
+} else {
     $balanceBg = '#fff3cd';
     $balanceText = '#664d03';
 }
@@ -189,8 +227,8 @@ while ($cp = $cal_pay_res->fetch_assoc()) {
 }
 $cal_pay_stmt->close();
 
-// Determine due day for calendar highlighting
-$calDueDay = isset($tenant['due_day']) && (int)$tenant['due_day'] > 0 ? (int)$tenant['due_day'] : 1;
+// Determine due day for calendar highlighting — use lease start day
+$calDueDay = $tenantDueDay; // already calculated above from lease_start_date
 $calDueDayUsed = min($calDueDay, $cal_days_in_month);
 
 // Check if rent is paid for calendar month
@@ -293,7 +331,13 @@ include '../includes/header.php';
                 <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
                     <div class="mb-2 mb-md-0">
                         <strong>Rent for <?php echo $now->format('F Y'); ?></strong>
-                        <span class="ms-2">Due Date: <span class="badge <?php echo $dueBadgeClass; ?>"><?php echo $dueDate->format('M d, Y'); ?></span></span>
+                        <span class="ms-2">
+                            <?php if ($isInAdvancePeriod): ?>
+                                First due: <span class="badge bg-success"><?php echo $dueDate->format('M d, Y'); ?></span>
+                            <?php else: ?>
+                                Due Date: <span class="badge <?php echo $dueBadgeClass; ?>"><?php echo $dueDate->format('M d, Y'); ?></span>
+                            <?php endif; ?>
+                        </span>
                         <?php if ($rentAmount > 0): ?>
                             <span class="ms-3 small text-muted">Paid: ₱<?php echo number_format($total_paid_this_month, 2); ?> / ₱<?php echo number_format($rentAmount, 2); ?></span>
                         <?php endif; ?>
@@ -301,6 +345,8 @@ include '../includes/header.php';
                     <div>
                         <?php if ($rentStatus === 'Paid'): ?>
                             <span class="badge bg-success px-3 py-2">Paid</span>
+                        <?php elseif ($rentStatus === 'Covered'): ?>
+                            <span class="badge bg-success px-3 py-2">Advance Covers This Month</span>
                         <?php elseif ($rentStatus === 'Overdue'): ?>
                             <span class="badge bg-danger px-3 py-2">Overdue</span>
                         <?php elseif ($rentStatus === 'Partial'): ?>
@@ -313,6 +359,10 @@ include '../includes/header.php';
                 <?php if ($rentStatus === 'Overdue'): ?>
                     <div class="alert alert-danger mb-0 mx-3 mt-2">
                         <i class="fas fa-exclamation-triangle me-2"></i>Your rent for this month is overdue. Please settle immediately.
+                    </div>
+                <?php elseif ($isInAdvancePeriod): ?>
+                    <div class="alert alert-success mb-0 mx-3 mt-2">
+                        <i class="fas fa-check-circle me-2"></i>Your advance payment covers this month. First rent payment is due on <?php echo $dueDate->format('M d, Y'); ?>.
                     </div>
                 <?php elseif (($rentStatus === 'Pending' || $rentStatus === 'Partial') && $daysUntilDue >= 0 && $daysUntilDue <= 3): ?>
                     <div class="alert alert-warning mb-0 mx-3 mt-2">
