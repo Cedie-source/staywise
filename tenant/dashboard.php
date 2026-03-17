@@ -242,7 +242,7 @@ $cal_paid_stmt->close();
 $cal_rent_paid = ($rentAmount > 0 && $cal_paid_total >= $rentAmount - 0.01);
 
 // Load proactive AI notifications & predictions
-define('STAYWISE_ROOT', dirname(__DIR__));
+if (!defined('STAYWISE_ROOT')) define('STAYWISE_ROOT', dirname(__DIR__));
 require_once STAYWISE_ROOT . '/includes/predictive_analytics.php';
 ai_ensure_tables($conn);
 
