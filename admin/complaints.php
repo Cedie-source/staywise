@@ -69,7 +69,6 @@ $sql = "SELECT c.complaint_id, c.complaint_date, c.title, c.description,
        ($hasUrgent ? ", c.urgent AS urgent" : ", 0 AS urgent") .
        " FROM complaints c
     JOIN tenants t ON c.tenant_id = t.tenant_id
-    WHERE t.deleted_at IS NULL
     ORDER BY c.complaint_date DESC";
 
 $result = $conn->query($sql);
