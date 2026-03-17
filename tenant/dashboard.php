@@ -288,36 +288,80 @@ include '../includes/header.php';
 
     <!-- Current Billing Cycle -->
     <?php
-        // Calculate billing cycle based on lease start day
-        $leaseStartDay = !empty($tenant['lease_start_date']) ? (int)date('d', strtotime($tenant['lease_start_date'])) : 1;
-        $todayObj = new DateTime('today');
-        $currentDay = (int)$todayObj->format('d');
+        $leaseStartRaw2 = $tenant['lease_start_date'] ?? $tenant['created_at'] ?? date('Y-m-d');
+        $leaseStartDt   = new DateTime(date('Y-m-d', strtotime($leaseStartRaw2)));
+        $rentAmt2       = (float)($tenant['rent_amount'] ?? 0);
+        $advancePaid2   = (int)($tenant['advance_paid'] ?? 0);
+        $advanceAmt2    = (float)($tenant['advance_amount'] ?? $rentAmt2);
 
-        // Billing cycle: starts on lease_start_day of current or previous month
-        if ($currentDay >= $leaseStartDay) {
-            // We're past the start day, so cycle is this month's start day → next month's start day
-            $cycleStart = new DateTime($todayObj->format('Y-m-') . str_pad($leaseStartDay, 2, '0', STR_PAD_LEFT));
-            $cycleEnd = (clone $cycleStart)->modify('+1 month');
+        // Total verified rent payments (exclude deposit/advance)
+        $vpStmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) AS total FROM payments WHERE tenant_id=? AND status='verified' AND (payment_type IS NULL OR payment_type NOT IN ('deposit','advance'))");
+        $vpStmt->bind_param("i", $tenant['tenant_id']); $vpStmt->execute();
+        $totalRentPaid = (float)$vpStmt->get_result()->fetch_assoc()['total'];
+        $vpStmt->close();
+
+        // Advance credit
+        $advCredit = ($advancePaid2 && $advanceAmt2 > 0) ? $advanceAmt2 : 0;
+
+        // How many full months are covered from lease start?
+        // Advance covers month 1. Each full rent payment covers one more month.
+        if ($rentAmt2 > 0) {
+            $totalCreditForMonths = $advCredit + $totalRentPaid;
+            $coveredMonths2 = (int)floor($totalCreditForMonths / $rentAmt2);
+            // Always at least 1 month if advance was paid
+            if ($advCredit > 0 && $coveredMonths2 < 1) $coveredMonths2 = 1;
         } else {
-            // We haven't reached the start day yet, so cycle is last month's start day → this month's start day
-            $cycleEnd = new DateTime($todayObj->format('Y-m-') . str_pad($leaseStartDay, 2, '0', STR_PAD_LEFT));
-            $cycleStart = (clone $cycleEnd)->modify('-1 month');
+            $coveredMonths2 = 1;
         }
+
+        // Billing start = lease start
+        $billingStart2 = clone $leaseStartDt;
+
+        // Billing end = lease start + covered months
+        $billingEnd2 = (clone $leaseStartDt)->modify("+{$coveredMonths2} months");
+
+        // Next billing end (one more month)
+        $nextBillingEnd2 = (clone $billingEnd2)->modify('+1 month');
+
+        $todayNow = new DateTime('today');
+        $isPastEnd = $todayNow >= $billingEnd2;
+
+        // How much more to pay to extend to next period
+        $totalCreditUsed = $rentAmt2 > 0 ? fmod($advCredit + $totalRentPaid, $rentAmt2) : 0;
+        $amountToExtend2 = $rentAmt2 > 0 ? round($rentAmt2 - $totalCreditUsed, 2) : 0;
+        if ($amountToExtend2 >= $rentAmt2) $amountToExtend2 = $rentAmt2;
     ?>
-    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: #f0f4ff;">
-        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between py-3 px-4">
-            <div class="d-flex align-items-center mb-2 mb-md-0">
-                <i class="fas fa-calendar-alt fa-lg text-primary me-3"></i>
-                <div>
-                    <span class="fw-bold text-dark">Billing Start:</span>
-                    <span class="ms-1 fw-semibold"><?php echo $cycleStart->format('F d, Y'); ?></span>
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: <?= $isPastEnd ? '#fff0f0' : '#f0f4ff' ?>;">
+        <div class="card-body py-3 px-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4 d-flex align-items-center">
+                    <i class="fas fa-calendar-alt fa-lg text-primary me-3"></i>
+                    <div>
+                        <div class="text-muted" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Billing Start</div>
+                        <div class="fw-bold"><?= $billingStart2->format('F d, Y') ?></div>
+                    </div>
                 </div>
-            </div>
-            <div class="d-flex align-items-center">
-                <i class="fas fa-calendar-check fa-lg text-success me-3"></i>
-                <div>
-                    <span class="fw-bold text-dark">Billing End:</span>
-                    <span class="ms-1 fw-semibold"><?php echo $cycleEnd->format('F d, Y'); ?></span>
+                <div class="col-md-4 d-flex align-items-center">
+                    <i class="fas fa-calendar-check fa-lg <?= $isPastEnd ? 'text-danger' : 'text-success' ?> me-3"></i>
+                    <div>
+                        <div class="text-muted" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Covered Until</div>
+                        <div class="fw-bold <?= $isPastEnd ? 'text-danger' : 'text-success' ?>">
+                            <?= $billingEnd2->format('F d, Y') ?>
+                            <span class="badge <?= $isPastEnd ? 'bg-danger' : 'bg-success' ?> ms-1" style="font-size:.65rem;"><?= $isPastEnd ? 'Overdue' : 'Active' ?></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <i class="fas fa-arrow-circle-right fa-lg text-warning me-3"></i>
+                    <div>
+                        <div class="text-muted" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Extends To (Next)</div>
+                        <div class="fw-bold"><?= $nextBillingEnd2->format('F d, Y') ?></div>
+                        <?php if ($rentAmt2 > 0 && $amountToExtend2 > 0): ?>
+                            <div style="font-size:.73rem;color:#64748b;">Pay ₱<?= number_format($amountToExtend2, 2) ?> to reach this</div>
+                        <?php else: ?>
+                            <div style="font-size:.73rem;color:#16a34a;">✅ Next period covered</div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
