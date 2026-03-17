@@ -38,7 +38,7 @@ if (isset($_GET['poll_since'])) {
         SELECT p.*, t.name, t.unit_number, t.email
         FROM payments p
         JOIN tenants t ON p.tenant_id = t.tenant_id
-        WHERE t.deleted_at IS NULL AND p.created_at > ?
+        WHERE p.created_at > ?
         ORDER BY p.created_at DESC
     ");
     $stmt->bind_param("s", $since);
@@ -147,7 +147,6 @@ $payments = $conn->query("
     SELECT p.*, t.name, t.unit_number, t.email 
     FROM payments p 
     JOIN tenants t ON p.tenant_id = t.tenant_id 
-    WHERE t.deleted_at IS NULL
     ORDER BY p.created_at DESC
 ");
 
