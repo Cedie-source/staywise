@@ -1477,6 +1477,33 @@ body.dark-mode .complaint-thread .bg-light * {
 body.dark-mode .complaint-thread .bg-light .text-muted {
     color: #aab2bd !important;
 }
+/* Reset temp password code visibility */
+.reset-temp-code {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: .95em;
+}
+body:not(.dark-mode) .reset-temp-code {
+    background: #e9ecef;
+    color: #212529;
+}
+body.dark-mode .reset-temp-code {
+    background: rgba(255,255,255,.15);
+    color: #f1f5f9;
+}
+
+/* Dark mode: fix alert-success text and code readability */
+body.dark-mode .alert-success,
+body.dark-mode .alert-success * {
+    color: #0f5132 !important;
+}
+body.dark-mode .alert-success code {
+    background: rgba(0,0,0,.15) !important;
+    color: #0a3622 !important;
+    font-weight: 700;
+}
+
 /* Dark mode: admin response alert text black */
 body.dark-mode .alert-secondary,
 body.dark-mode .alert-secondary *,
