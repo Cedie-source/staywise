@@ -7,7 +7,7 @@
 
 // Only set fallbacks if Railway env vars are not already set
 if (!getenv('GROQ_API_KEY')) {
-    putenv('GROQ_API_KEY=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');
+    putenv('GROQ_API_KEY=REPLACE_WITH_YOUR_KEY_IN_RAILWAY_VARIABLES');
 }
 if (!getenv('GROQ_MODEL')) {
     putenv('GROQ_MODEL=llama-3.3-70b-versatile');
