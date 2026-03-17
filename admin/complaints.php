@@ -337,9 +337,13 @@ body.dark-mode .chat-bubble.tenant{background:#2a2a2a;color:#e2e8f0;}
             });
     }
 
-    document.querySelectorAll('.collapse[id^="thread"]').forEach(function(el){
-        var cid=el.dataset.cid;
-        el.addEventListener('show.bs.collapse',function(){loadReplies(cid);});
+    // Load replies when Thread button is clicked
+    document.addEventListener('click', function(e){
+        var btn = e.target.closest('[data-bs-target^="#thread"]');
+        if (!btn) return;
+        var target = btn.getAttribute('data-bs-target');
+        var cid = target ? target.replace('#thread','') : null;
+        if (cid) setTimeout(function(){ loadReplies(cid); }, 150);
     });
 
     function send(cid){
@@ -366,6 +370,8 @@ body.dark-mode .chat-bubble.tenant{background:#2a2a2a;color:#e2e8f0;}
                 return r.json();
             })
             .then(function(data){
+                // DEBUG - remove after fixing
+                if(!data.success){ alert('DEBUG ERROR: '+JSON.stringify(data)); }
                 if(data.success){
                     var box=document.getElementById('threadMessages'+cid);
                     var empty=box.querySelector('p.text-muted');
