@@ -45,11 +45,13 @@ if (isset($_GET['ajax_replies'])) {
     ob_clean();
     header('Content-Type: application/json');
     $cid = intval($_GET['complaint_id'] ?? 0);
-    // Verify ownership
-    $own = $conn->prepare("SELECT complaint_id FROM complaints WHERE complaint_id = ? AND tenant_id = ?");
-    $own->bind_param("ii", $cid, $tenant_id); $own->execute(); $own->store_result();
-    if ($own->num_rows === 0) { echo json_encode(['success'=>false,'error'=>'Not found']); exit(); }
-    $own->close();
+
+    // Verify ownership and get admin_response
+    $own = $conn->prepare("SELECT complaint_id, admin_response, created_at FROM complaints WHERE complaint_id = ? AND tenant_id = ?");
+    $own->bind_param("ii", $cid, $tenant_id); $own->execute();
+    $complaint_row = $own->get_result()->fetch_assoc(); $own->close();
+    if (!$complaint_row) { echo json_encode(['success'=>false,'error'=>'Not found']); exit(); }
+
     $rows = [];
     $st = $conn->prepare("
         SELECT cr.reply_id, cr.complaint_id, cr.role, cr.message, cr.created_at,
@@ -60,6 +62,28 @@ if (isset($_GET['ajax_replies'])) {
         ORDER BY cr.created_at ASC
     ");
     if ($st) { $st->bind_param("i", $cid); $st->execute(); $res = $st->get_result(); while ($r = $res->fetch_assoc()) $rows[] = $r; $st->close(); }
+
+    // Inject admin_response as a synthetic bubble if it exists and isn't already mirrored
+    if (!empty($complaint_row['admin_response'])) {
+        $alreadyMirrored = false;
+        foreach ($rows as $r) {
+            if ($r['role'] === 'admin' && trim($r['message']) === trim($complaint_row['admin_response'])) {
+                $alreadyMirrored = true; break;
+            }
+        }
+        if (!$alreadyMirrored) {
+            array_unshift($rows, [
+                'reply_id'     => 0,
+                'complaint_id' => $cid,
+                'role'         => 'admin',
+                'message'      => $complaint_row['admin_response'],
+                'created_at'   => $complaint_row['created_at'],
+                'full_name'    => 'Admin',
+                'username'     => 'admin',
+            ]);
+        }
+    }
+
     echo json_encode(['success' => true, 'replies' => $rows]);
     exit();
 }
@@ -305,7 +329,6 @@ body.dark-mode .chat-bubble.tenant{background:#1d4ed8;}
 <script>
 (function(){
     var CSRF=<?= json_encode(csrf_token()) ?>;
-    var loaded={};
 
     function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -326,19 +349,25 @@ body.dark-mode .chat-bubble.tenant{background:#1d4ed8;}
     function scrollBot(b){b.scrollTop=b.scrollHeight;}
     function showErr(cid,msg){var el=document.getElementById('threadError'+cid);if(el){el.textContent=msg;el.style.display=msg?'block':'none';}}
 
+    // Always reload fresh — no caching
     function loadReplies(cid){
-        if(loaded[cid])return;
+        var box=document.getElementById('threadMessages'+cid);
+        box.innerHTML='<div class="thread-loading"><i class="fas fa-circle-notch fa-spin me-1"></i>Loading...</div>';
+
         fetch('complaints.php?ajax_replies=1&complaint_id='+cid,{credentials:'same-origin'})
             .then(function(r){return r.json();})
             .then(function(data){
-                var box=document.getElementById('threadMessages'+cid);
-                var ldr=document.getElementById('threadLoading'+cid);
-                if(ldr)ldr.remove(); box.innerHTML='';
-                if(data.replies&&data.replies.length>0){data.replies.forEach(function(r){box.appendChild(makeBubble(r));});}
-                else{box.innerHTML='<p class="text-muted text-center small py-3 mb-0"><em>No messages yet.</em></p>';}
-                scrollBot(box); loaded[cid]=true;
+                box.innerHTML='';
+                if(data.replies&&data.replies.length>0){
+                    data.replies.forEach(function(r){box.appendChild(makeBubble(r));});
+                } else {
+                    box.innerHTML='<p class="text-muted text-center small py-3 mb-0"><em>No messages yet.</em></p>';
+                }
+                scrollBot(box);
             })
-            .catch(function(){var box=document.getElementById('threadMessages'+cid);if(box)box.innerHTML='<p class="text-danger text-center small py-3">Could not load.</p>';});
+            .catch(function(){
+                box.innerHTML='<p class="text-danger text-center small py-3">Could not load replies.</p>';
+            });
     }
 
     document.querySelectorAll('.collapse[id^="thread"]').forEach(function(el){
