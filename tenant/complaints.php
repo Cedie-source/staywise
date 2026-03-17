@@ -3,419 +3,352 @@ require_once '../includes/security.php';
 set_secure_session_cookies();
 session_start();
 require_once '../config/db.php';
-require_once '../includes/logger.php';
-require_once '../includes/email_helper.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
-    header("Location: ../index.php");
-    exit();
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'tenant') {
+    header("Location: ../index.php"); exit();
 }
 
-// ── AJAX: fetch replies for a complaint ──────────────────────────────
-if (isset($_GET['ajax_replies']) && isset($_GET['complaint_id'])) {
-    header('Content-Type: application/json');
-    $cid = intval($_GET['complaint_id']);
-    $stmt = $conn->prepare("
-        SELECT cr.reply_id, cr.complaint_id, cr.role, cr.message, cr.created_at,
-               u.username, u.full_name
-        FROM complaint_replies cr
-        JOIN users u ON cr.user_id = u.id
-        WHERE cr.complaint_id = ?
-        ORDER BY cr.created_at ASC
-    ");
-    $stmt->bind_param("i", $cid);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $replies = [];
-    while ($r = $result->fetch_assoc()) {
-        $replies[] = $r;
-    }
-    $stmt->close();
-    echo json_encode(['success' => true, 'replies' => $replies]);
-    exit();
-}
+$page_title = "My Complaints";
 
-// ── AJAX: send a reply ───────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_send_reply'])) {
-    header('Content-Type: application/json');
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        echo json_encode(['success' => false, 'error' => 'Invalid token']);
-        exit();
-    }
-    $complaint_id = intval($_POST['complaint_id']);
-    $message = trim($_POST['reply_message'] ?? '');
-    if (empty($message)) {
-        echo json_encode(['success' => false, 'error' => 'Empty message']);
-        exit();
-    }
-    $stmt = $conn->prepare("INSERT INTO complaint_replies (complaint_id, user_id, role, message) VALUES (?, ?, 'admin', ?)");
-    $stmt->bind_param("iis", $complaint_id, $_SESSION['user_id'], $message);
-    $ok = $stmt->execute();
-    $reply_id = $stmt->insert_id;
-    $stmt->close();
+// Get tenant
+$ts = $conn->prepare("SELECT tenant_id FROM tenants WHERE user_id = ?");
+$ts->bind_param("i", $_SESSION['user_id']);
+$ts->execute();
+$tenant = $ts->get_result()->fetch_assoc();
+$ts->close();
+if (!$tenant) { header("Location: ../logout.php"); exit(); }
 
-    if ($ok) {
-        $fetch = $conn->prepare("
-            SELECT cr.reply_id, cr.complaint_id, cr.role, cr.message, cr.created_at,
-                   u.username, u.full_name
-            FROM complaint_replies cr
-            JOIN users u ON cr.user_id = u.id
-            WHERE cr.reply_id = ?
-        ");
-        $fetch->bind_param("i", $reply_id);
-        $fetch->execute();
-        $reply = $fetch->get_result()->fetch_assoc();
-        $fetch->close();
-        logAdminAction($conn, $_SESSION['user_id'], 'reply_complaint', "Replied to complaint #$complaint_id");
-        echo json_encode(['success' => true, 'reply' => $reply]);
-    } else {
-        echo json_encode(['success' => false, 'error' => 'DB error']);
-    }
-    exit();
-}
-
-// ── Standard POST: status/response update ───────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['complaint_id'])) {
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        http_response_code(400);
-        die('Invalid request token.');
-    }
-    $complaint_id = intval($_POST['complaint_id']);
-
-    if (isset($_POST['update_complaint'])) {
-        $status = $_POST['status'] ?? '';
-        $admin_response = trim($_POST['admin_response'] ?? '');
-        $stmt = $conn->prepare("UPDATE complaints SET status = ?, admin_response = ? WHERE complaint_id = ?");
-        $stmt->bind_param("ssi", $status, $admin_response, $complaint_id);
-        $stmt->execute();
-        $stmt->close();
-        logAdminAction($conn, $_SESSION['user_id'], 'update_complaint', "Updated complaint #$complaint_id status to $status");
-        header("Location: complaints.php?updated=1");
-        exit();
-    }
-}
-
-if (isset($_GET['updated'])) $success = "Complaint updated successfully!";
-
+$tenant_id = $tenant['tenant_id'];
 $hasUrgent = db_column_exists($conn, 'complaints', 'urgent');
 
-$sql = "SELECT c.complaint_id, c.complaint_date, c.title, c.description,
-           c.status, c.admin_response, c.created_at,
-           t.name AS tenant_name, t.unit_number" .
-       ($hasUrgent ? ", c.urgent AS urgent" : ", 0 AS urgent") .
-       " FROM complaints c
-    JOIN tenants t ON c.tenant_id = t.tenant_id
-    ORDER BY c.complaint_date DESC";
-
-$result = $conn->query($sql);
-if (!$result) die("Database query failed: " . $conn->error);
-
-// Reply counts per complaint
-$replyCounts = [];
-$rcResult = $conn->query("SELECT complaint_id, COUNT(*) as cnt FROM complaint_replies GROUP BY complaint_id");
-if ($rcResult) {
-    while ($rc = $rcResult->fetch_assoc()) {
-        $replyCounts[$rc['complaint_id']] = (int)$rc['cnt'];
+// Emergency phone
+$emergency_phone = '(555) 123-4567';
+try {
+    $ep = $conn->prepare("SELECT setting_value FROM app_settings WHERE setting_key = 'emergency_phone'");
+    if ($ep) {
+        $ep->execute();
+        $epRow = $ep->get_result()->fetch_assoc();
+        if ($epRow) $emergency_phone = $epRow['setting_value'];
+        $ep->close();
     }
+} catch (Throwable $e) {}
+
+// ── AJAX: load replies ───────────────────────────────────────────────
+if (isset($_GET['ajax_replies'])) {
+    header('Content-Type: application/json');
+    $cid = intval($_GET['complaint_id'] ?? 0);
+    $own = $conn->prepare("SELECT complaint_id FROM complaints WHERE complaint_id=? AND tenant_id=?");
+    $own->bind_param("ii", $cid, $tenant_id);
+    $own->execute(); $own->store_result();
+    if ($own->num_rows === 0) { echo json_encode(['success'=>false,'error'=>'Not found']); exit(); }
+    $own->close();
+    $st = $conn->prepare("SELECT cr.reply_id,cr.complaint_id,cr.role,cr.message,cr.created_at,u.username,u.full_name FROM complaint_replies cr JOIN users u ON cr.user_id=u.id WHERE cr.complaint_id=? ORDER BY cr.created_at ASC");
+    $st->bind_param("i", $cid); $st->execute();
+    $rows = []; $res = $st->get_result();
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $st->close();
+    echo json_encode(['success'=>true,'replies'=>$rows]); exit();
 }
 
-$page_title = "Manage Complaints";
+// ── AJAX: send reply ─────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['ajax_send_reply'])) {
+    header('Content-Type: application/json');
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { echo json_encode(['success'=>false,'error'=>'Invalid token']); exit(); }
+    $cid = intval($_POST['complaint_id'] ?? 0);
+    $msg = trim($_POST['reply_message'] ?? '');
+    $own = $conn->prepare("SELECT complaint_id FROM complaints WHERE complaint_id=? AND tenant_id=?");
+    $own->bind_param("ii", $cid, $tenant_id); $own->execute(); $own->store_result();
+    if ($own->num_rows===0 || empty($msg)) { echo json_encode(['success'=>false,'error'=>'Not allowed']); exit(); }
+    $own->close();
+    $ins = $conn->prepare("INSERT INTO complaint_replies (complaint_id,user_id,role,message) VALUES (?,?,'tenant',?)");
+    $ins->bind_param("iis", $cid, $_SESSION['user_id'], $msg);
+    $ok = $ins->execute(); $rid = $ins->insert_id; $ins->close();
+    if ($ok) {
+        $fe = $conn->prepare("SELECT cr.reply_id,cr.complaint_id,cr.role,cr.message,cr.created_at,u.username,u.full_name FROM complaint_replies cr JOIN users u ON cr.user_id=u.id WHERE cr.reply_id=?");
+        $fe->bind_param("i", $rid); $fe->execute();
+        $reply = $fe->get_result()->fetch_assoc(); $fe->close();
+        echo json_encode(['success'=>true,'reply'=>$reply]);
+    } else { echo json_encode(['success'=>false,'error'=>'DB error']); }
+    exit();
+}
+
+// ── Submit new complaint ─────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['submit_complaint'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) { http_response_code(400); die('Invalid token.'); }
+    $title       = trim($_POST['title'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $comp_date   = $_POST['complaint_date'] ?? date('Y-m-d');
+    $urgentFlag  = isset($_POST['urgent']) ? 1 : 0;
+    if (!empty($title) && !empty($description)) {
+        if ($hasUrgent) {
+            $ins = $conn->prepare("INSERT INTO complaints (tenant_id,title,description,complaint_date,status,urgent) VALUES (?,?,?,?,'pending',?)");
+            $ins->bind_param("isssi", $tenant_id, $title, $description, $comp_date, $urgentFlag);
+        } else {
+            if ($urgentFlag && stripos($title,'[URGENT]')!==0) $title='[URGENT] '.$title;
+            $ins = $conn->prepare("INSERT INTO complaints (tenant_id,title,description,complaint_date,status) VALUES (?,?,?,?,'pending')");
+            $ins->bind_param("isss", $tenant_id, $title, $description, $comp_date);
+        }
+        $success = $ins->execute() ? "Complaint submitted! We'll respond soon." : "Failed to submit.";
+        $ins->close();
+    } else { $error = "Please fill in all required fields."; }
+}
+
+// Fetch complaints
+$cst = $conn->prepare("SELECT * FROM complaints WHERE tenant_id=? ORDER BY created_at DESC");
+$cst->bind_param("i", $tenant_id); $cst->execute();
+$complaints = $cst->get_result();
+
+// Reply counts
+$replyCounts = [];
+$rct = $conn->prepare("SELECT cr.complaint_id,COUNT(*) as cnt FROM complaint_replies cr JOIN complaints c ON cr.complaint_id=c.complaint_id WHERE c.tenant_id=? GROUP BY cr.complaint_id");
+$rct->bind_param("i", $tenant_id); $rct->execute();
+$rcRes = $rct->get_result();
+while ($rc = $rcRes->fetch_assoc()) $replyCounts[$rc['complaint_id']] = (int)$rc['cnt'];
+$rct->close();
+
 include '../includes/header.php';
 ?>
 
 <style>
-.complaint-thread-box {
-    max-height: 380px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-    padding: .5rem 0;
-    scroll-behavior: smooth;
-}
-.chat-bubble {
-    display: flex;
-    flex-direction: column;
-    max-width: 78%;
-    padding: .55rem .85rem;
-    border-radius: 14px;
-    font-size: .875rem;
-    line-height: 1.5;
-    word-break: break-word;
-}
-.chat-bubble.admin  { align-self: flex-end;  background: #1e293b; color: #f1f5f9; border-bottom-right-radius: 4px; }
-.chat-bubble.tenant { align-self: flex-start; background: #f1f5f9; color: #0f172a; border-bottom-left-radius: 4px; }
-body.dark-mode .chat-bubble.tenant { background: #2a2a2a; color: #e2e8f0; }
-.chat-bubble .bubble-meta  { font-size: .7rem; opacity: .6; margin-bottom: .2rem; }
-.chat-bubble .bubble-time  { font-size: .68rem; opacity: .5; margin-top: .25rem; text-align: right; }
-.chat-bubble.tenant .bubble-time { text-align: left; }
-.thread-input-row { display: flex; gap: .5rem; margin-top: .75rem; align-items: center; }
-.thread-input-row input  { flex: 1; border-radius: 20px; padding: .45rem 1rem; }
-.thread-input-row button { border-radius: 20px; padding: .45rem 1.1rem; white-space: nowrap; }
-.thread-sending { opacity: .5; pointer-events: none; }
-.thread-loading { text-align: center; padding: 1.5rem 0; color: #94a3b8; font-size: .85rem; }
+.complaint-thread-box{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:.45rem;padding:.4rem 0;scroll-behavior:smooth;}
+.chat-bubble{display:flex;flex-direction:column;max-width:80%;padding:.5rem .8rem;border-radius:14px;font-size:.875rem;line-height:1.5;word-break:break-word;}
+.chat-bubble.tenant{align-self:flex-end;background:#007DFE;color:#fff;border-bottom-right-radius:4px;}
+.chat-bubble.admin{align-self:flex-start;background:#f1f5f9;color:#0f172a;border-bottom-left-radius:4px;}
+body.dark-mode .chat-bubble.admin{background:#2a2a2a;color:#e2e8f0;}
+body.dark-mode .chat-bubble.tenant{background:#1d4ed8;}
+.chat-bubble .bubble-meta{font-size:.7rem;opacity:.65;margin-bottom:.15rem;}
+.chat-bubble .bubble-time{font-size:.67rem;opacity:.55;margin-top:.2rem;text-align:right;}
+.chat-bubble.admin .bubble-time{text-align:left;}
+.thread-input-row{display:flex;gap:.5rem;margin-top:.75rem;align-items:center;}
+.thread-input-row input{flex:1;border-radius:20px;padding:.4rem .9rem;}
+.thread-input-row button{border-radius:20px;padding:.4rem 1rem;white-space:nowrap;}
+.thread-loading{text-align:center;padding:1.2rem 0;color:#94a3b8;font-size:.83rem;}
 </style>
 
-<div class="container mt-4 admin-ui">
-    <h2 class="dashboard-title"><i class="fas fa-exclamation-triangle me-2"></i>Tenant Complaints</h2>
-
-    <?php if (isset($success)): ?>
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <div class="mb-3">
-        <input type="text" class="form-control" id="complaintSearch" placeholder="Search by tenant, unit, title, or status...">
-    </div>
-
-    <?php if ($result->num_rows > 0): ?>
-    <div class="row" id="complaintsList">
-        <?php while ($complaint = $result->fetch_assoc()):
-            $cid = $complaint['complaint_id'];
-            $replyCount = $replyCounts[$cid] ?? 0;
-            $isUrgent = (isset($complaint['urgent']) && (int)$complaint['urgent'] === 1)
-                     || stripos((string)$complaint['title'], '[URGENT]') === 0;
-        ?>
-        <div class="col-12 mb-3 complaint-card-wrapper">
-            <div class="card <?= $isUrgent ? 'border-danger' : '' ?>">
-                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div>
-                        <?php if ($isUrgent): ?>
-                            <span class="badge bg-danger me-2"><i class="fas fa-bolt me-1"></i>Urgent</span>
-                        <?php endif; ?>
-                        <strong><?= htmlspecialchars($complaint['title']) ?></strong>
-                        <span class="badge status-<?= htmlspecialchars(str_replace(' ', '-', strtolower($complaint['status']))) ?> ms-2">
-                            <?= ucfirst($complaint['status']) ?>
-                        </span>
-                        <span class="badge bg-info ms-1" id="badge-<?= $cid ?>">
-                            <i class="fas fa-comments me-1"></i><span><?= $replyCount ?></span>
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <small class="text-muted">
-                            <i class="fas fa-user me-1"></i><?= htmlspecialchars($complaint['tenant_name']) ?>
-                            <span class="badge bg-primary ms-1"><?= htmlspecialchars($complaint['unit_number']) ?></span>
-                        </small>
-                        <button class="btn btn-sm btn-dark"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#thread<?= $cid ?>"
-                                data-cid="<?= $cid ?>">
-                            <i class="fas fa-comments me-1"></i>Thread
-                        </button>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editModal<?= $cid ?>">
-                            <i class="fas fa-edit me-1"></i>Edit
-                        </button>
-                    </div>
+<div class="container mt-4 tenant-ui">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>My Complaints & Requests</h4>
                 </div>
-
-                <div class="card-body">
-                    <p class="mb-2"><?= nl2br(htmlspecialchars($complaint['description'])) ?></p>
-                    <small class="text-muted">
-                        <i class="fas fa-calendar me-1"></i>Issue Date: <?= date('M d, Y', strtotime($complaint['complaint_date'])) ?>
-                        <span class="ms-3"><i class="fas fa-clock me-1"></i>Submitted: <?= date('M d, Y g:i A', strtotime($complaint['created_at'])) ?></span>
-                    </small>
-                    <?php if (!empty($complaint['admin_response'])): ?>
-                        <div class="alert alert-secondary mt-2 mb-0">
-                            <strong><i class="fas fa-reply me-1"></i>Admin Response:</strong><br>
-                            <?= nl2br(htmlspecialchars($complaint['admin_response'])) ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Collapsible Thread -->
-                <div class="collapse" id="thread<?= $cid ?>">
-                    <div class="card-body border-top pt-3">
-                        <h6 class="mb-2"><i class="fas fa-comments me-2"></i>Conversation Thread</h6>
-                        <div class="complaint-thread-box" id="threadMessages<?= $cid ?>">
-                            <div class="thread-loading" id="threadLoading<?= $cid ?>">
-                                <i class="fas fa-circle-notch fa-spin me-1"></i>Loading messages...
+                <div class="card-body complaint-form-body">
+                <?php if ($complaints->num_rows > 0):
+                    while ($complaint = $complaints->fetch_assoc()):
+                        $cid = $complaint['complaint_id'];
+                        $rc  = $replyCounts[$cid] ?? 0;
+                ?>
+                    <div class="card mb-3">
+                        <div class="card-body complaint-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0"><?= htmlspecialchars($complaint['title']) ?></h6>
+                                <div class="d-flex gap-1 align-items-center flex-wrap">
+                                    <?php if (!empty($hasUrgent) && !empty($complaint['urgent'])): ?>
+                                        <span class="badge bg-danger"><i class="fas fa-bolt me-1"></i>Urgent</span>
+                                    <?php endif; ?>
+                                    <span class="badge status-<?= htmlspecialchars(str_replace(' ','-',strtolower($complaint['status']))) ?>">
+                                        <?= ucfirst($complaint['status']) ?>
+                                    </span>
+                                    <span class="badge bg-info" id="badge-<?= $cid ?>">
+                                        <i class="fas fa-comments me-1"></i><span><?= $rc ?></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <p class="mb-2 complaint-text"><?= htmlspecialchars($complaint['description']) ?></p>
+                            <?php if (!empty($complaint['admin_response'])): ?>
+                                <div class="alert alert-info mb-2">
+                                    <strong><i class="fas fa-reply me-1"></i>Admin Response:</strong><br>
+                                    <?= nl2br(htmlspecialchars($complaint['admin_response'])) ?>
+                                </div>
+                            <?php endif; ?>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>Submitted: <?= date('M d, Y g:i A', strtotime($complaint['created_at'])) ?>
+                                <span class="ms-3"><i class="fas fa-clock me-1"></i>Issue Date: <?= date('M d, Y', strtotime($complaint['complaint_date'])) ?></span>
+                            </small>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#thread<?= $cid ?>"
+                                        data-cid="<?= $cid ?>">
+                                    <i class="fas fa-comments me-1"></i><?= $rc > 0 ? "Thread ($rc)" : 'Reply' ?>
+                                </button>
+                            </div>
+                            <div class="collapse mt-3" id="thread<?= $cid ?>">
+                                <div class="border-top pt-3">
+                                    <div class="complaint-thread-box" id="threadMessages<?= $cid ?>">
+                                        <div class="thread-loading" id="threadLoading<?= $cid ?>">
+                                            <i class="fas fa-circle-notch fa-spin me-1"></i>Loading...
+                                        </div>
+                                    </div>
+                                    <div class="thread-input-row">
+                                        <input type="text" class="form-control thread-reply-input"
+                                               id="replyInput<?= $cid ?>"
+                                               placeholder="Type your reply..."
+                                               data-cid="<?= $cid ?>">
+                                        <button class="btn btn-primary thread-send-btn" data-cid="<?= $cid ?>">
+                                            <i class="fas fa-paper-plane me-1"></i>Send
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="thread-input-row">
-                            <input type="text"
-                                   class="form-control thread-reply-input"
-                                   id="replyInput<?= $cid ?>"
-                                   placeholder="Type your reply..."
-                                   data-cid="<?= $cid ?>">
-                            <button class="btn btn-primary thread-send-btn" data-cid="<?= $cid ?>">
-                                <i class="fas fa-paper-plane me-1"></i>Send
+                    </div>
+                <?php endwhile; else: ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-3x complaint-text mb-3"></i>
+                        <h5 class="complaint-text">No Complaints Submitted</h5>
+                        <p class="complaint-text">Submit your first maintenance request or complaint.</p>
+                    </div>
+                <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card complaint-form-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Submit New Complaint</h5>
+                </div>
+                <div class="card-body complaint-form-body">
+                    <?php if (isset($success)): ?>
+                        <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><?= $success ?></div>
+                    <?php endif; ?>
+                    <?php if (isset($error)): ?>
+                        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i><?= $error ?></div>
+                    <?php endif; ?>
+                    <form method="POST" novalidate>
+                        <?= csrf_input() ?>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-tag me-1"></i>Issue Title *</label>
+                            <input type="text" class="form-control" name="title" placeholder="e.g., Leaky faucet" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-align-left me-1"></i>Description *</label>
+                            <textarea class="form-control" name="description" rows="4" placeholder="Describe the issue..." required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-calendar me-1"></i>Issue Date *</label>
+                            <input type="date" class="form-control" name="complaint_date" value="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="urgent" name="urgent">
+                            <label class="form-check-label" for="urgent"><i class="fas fa-bolt me-1"></i>Mark as urgent</label>
+                            <div class="form-text">For leaks, electrical hazards, or security issues.</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" name="submit_complaint" class="btn btn-warning">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Complaint
                             </button>
                         </div>
-                    </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header"><h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Common Issues</h6></div>
+                <div class="card-body">
+                    <small><ul class="mb-0">
+                        <li>Plumbing issues (leaks, clogs)</li>
+                        <li>Electrical problems</li>
+                        <li>Heating/cooling issues</li>
+                        <li>Appliance malfunctions</li>
+                        <li>Pest control</li>
+                        <li>Noise complaints</li>
+                        <li>Security concerns</li>
+                    </ul></small>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Emergency Contact</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>For urgent issues:</strong></p>
+                    <p class="mb-1"><i class="fas fa-phone me-2"></i><strong>Emergency Line:</strong> <?= htmlspecialchars($emergency_phone) ?></p>
+                    <small class="text-muted">Available 24/7 for water leaks, electrical hazards, security issues.</small>
                 </div>
             </div>
         </div>
-
-        <!-- Edit Modal -->
-        <div class="modal fade" id="editModal<?= $cid ?>" tabindex="-1">
-            <div class="modal-dialog">
-                <form method="POST">
-                    <?= csrf_input() ?>
-                    <input type="hidden" name="complaint_id" value="<?= $cid ?>">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Update Complaint</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label class="form-label">Status</label>
-                                <select class="form-select" name="status" required>
-                                    <option value="pending"  <?= $complaint['status'] == 'pending'  ? 'selected' : '' ?>>Pending</option>
-                                    <option value="ongoing"  <?= $complaint['status'] == 'ongoing'  ? 'selected' : '' ?>>Ongoing</option>
-                                    <option value="resolved" <?= $complaint['status'] == 'resolved' ? 'selected' : '' ?>>Resolved</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Admin Response</label>
-                                <textarea class="form-control" name="admin_response" rows="3"><?= htmlspecialchars($complaint['admin_response']) ?></textarea>
-                                <div class="form-text">Primary response shown on the tenant's card. Use the thread for follow-up messages.</div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" name="update_complaint" class="btn btn-primary">Save changes</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endwhile; ?>
     </div>
-    <?php else: ?>
-        <p class="no-record-message dashboard-title">No complaints found.</p>
-    <?php endif; ?>
 </div>
 
 <script>
-(function () {
+(function(){
     var csrfToken = <?= json_encode(csrf_token()) ?>;
-    var loadedThreads = {};
+    var loaded = {};
 
-    // Search filter
-    var search = document.getElementById('complaintSearch');
-    if (search) {
-        search.addEventListener('input', function () {
-            var q = this.value.toLowerCase();
-            document.querySelectorAll('.complaint-card-wrapper').forEach(function (c) {
-                c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
-            });
-        });
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function bubble(r){
+        var isAdmin = r.role==='admin';
+        var name = r.full_name||r.username||(isAdmin?'Admin':'You');
+        var time = new Date(r.created_at.replace(' ','T')).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+        var d = document.createElement('div');
+        d.className = 'chat-bubble '+r.role;
+        d.innerHTML = '<div class="bubble-meta"><i class="fas '+(isAdmin?'fa-user-shield':'fa-user')+' me-1"></i>'+esc(name)
+            +' <span class="badge '+(isAdmin?'bg-secondary':'bg-light text-dark')+' ms-1" style="font-size:.63rem;">'+(isAdmin?'Admin':'You')+'</span></div>'
+            +'<div>'+esc(r.message).replace(/\n/g,'<br>')+'</div>'
+            +'<div class="bubble-time">'+time+'</div>';
+        return d;
     }
 
-    function escHtml(str) {
-        return String(str || '')
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    function scrollBot(box){ box.scrollTop = box.scrollHeight; }
 
-    function formatBubble(reply) {
-        var isAdmin = reply.role === 'admin';
-        var name = reply.full_name || reply.username || (isAdmin ? 'Admin' : 'Tenant');
-        var icon = isAdmin ? 'fa-user-shield' : 'fa-user';
-        var badgeCls = isAdmin ? 'bg-light text-dark' : 'bg-secondary';
-        var time = new Date(reply.created_at.replace(' ', 'T')).toLocaleString('en-PH', {
-            month:'short', day:'numeric', hour:'numeric', minute:'2-digit'
-        });
-        var div = document.createElement('div');
-        div.className = 'chat-bubble ' + reply.role;
-        div.innerHTML =
-            '<div class="bubble-meta"><i class="fas ' + icon + ' me-1"></i>' + escHtml(name) +
-            ' <span class="badge ' + badgeCls + ' ms-1" style="font-size:.65rem;">' + (isAdmin?'Admin':'Tenant') + '</span></div>' +
-            '<div>' + escHtml(reply.message).replace(/\n/g,'<br>') + '</div>' +
-            '<div class="bubble-time">' + time + '</div>';
-        return div;
-    }
-
-    function scrollBottom(box) { box.scrollTop = box.scrollHeight; }
-
-    function loadReplies(cid) {
-        if (loadedThreads[cid]) return;
-        fetch('complaints.php?ajax_replies=1&complaint_id=' + cid)
-            .then(function(r){ return r.json(); })
+    function loadReplies(cid){
+        if(loaded[cid]) return;
+        fetch('complaints.php?ajax_replies=1&complaint_id='+cid)
+            .then(function(r){return r.json();})
             .then(function(data){
-                var box = document.getElementById('threadMessages' + cid);
-                var loader = document.getElementById('threadLoading' + cid);
-                if (loader) loader.remove();
-                box.innerHTML = '';
-                if (data.replies && data.replies.length > 0) {
-                    data.replies.forEach(function(r){ box.appendChild(formatBubble(r)); });
-                } else {
-                    box.innerHTML = '<p class="text-muted text-center small py-3 mb-0"><em>No messages yet. Start the conversation.</em></p>';
-                }
-                scrollBottom(box);
-                loadedThreads[cid] = true;
+                var box = document.getElementById('threadMessages'+cid);
+                var ldr = document.getElementById('threadLoading'+cid);
+                if(ldr) ldr.remove();
+                box.innerHTML='';
+                if(data.replies && data.replies.length>0){ data.replies.forEach(function(r){box.appendChild(bubble(r));}); }
+                else { box.innerHTML='<p class="text-muted text-center small py-3 mb-0"><em>No messages yet.</em></p>'; }
+                scrollBot(box); loaded[cid]=true;
             })
             .catch(function(){
-                var box = document.getElementById('threadMessages' + cid);
-                if (box) box.innerHTML = '<p class="text-danger text-center small py-3">Failed to load messages.</p>';
+                var box=document.getElementById('threadMessages'+cid);
+                if(box) box.innerHTML='<p class="text-danger text-center small py-3">Failed to load.</p>';
             });
     }
 
-    // Load replies when thread is opened
-    document.querySelectorAll('.collapse[id^="thread"]').forEach(function(el) {
-        var cid = el.id.replace('thread','');
-        el.addEventListener('show.bs.collapse', function(){ loadReplies(cid); });
+    document.querySelectorAll('.collapse[id^="thread"]').forEach(function(el){
+        var cid=el.id.replace('thread','');
+        el.addEventListener('show.bs.collapse',function(){ loadReplies(cid); });
     });
 
-    // Send reply
-    function sendReply(cid) {
-        var input = document.getElementById('replyInput' + cid);
-        var btn = document.querySelector('.thread-send-btn[data-cid="' + cid + '"]');
-        var message = input ? input.value.trim() : '';
-        if (!message) return;
-
-        input.disabled = true;
-        btn.classList.add('thread-sending');
-        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
-
-        var fd = new FormData();
-        fd.append('ajax_send_reply', '1');
-        fd.append('complaint_id', cid);
-        fd.append('reply_message', message);
-        fd.append('csrf_token', csrfToken);
-
-        fetch('complaints.php', { method:'POST', body:fd })
-            .then(function(r){ return r.json(); })
+    function send(cid){
+        var inp = document.getElementById('replyInput'+cid);
+        var btn = document.querySelector('.thread-send-btn[data-cid="'+cid+'"]');
+        var msg = inp ? inp.value.trim() : '';
+        if(!msg) return;
+        inp.disabled=true; btn.disabled=true;
+        btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i>';
+        var fd=new FormData();
+        fd.append('ajax_send_reply','1');
+        fd.append('complaint_id',cid);
+        fd.append('reply_message',msg);
+        fd.append('csrf_token',csrfToken);
+        fetch('complaints.php',{method:'POST',body:fd})
+            .then(function(r){return r.json();})
             .then(function(data){
-                if (data.success) {
-                    var box = document.getElementById('threadMessages' + cid);
-                    var empty = box.querySelector('p.text-muted');
-                    if (empty) empty.remove();
-                    box.appendChild(formatBubble(data.reply));
-                    scrollBottom(box);
-                    input.value = '';
-                    // Update badge count
-                    var badge = document.getElementById('badge-' + cid);
-                    if (badge) {
-                        var sp = badge.querySelector('span');
-                        if (sp) sp.textContent = parseInt(sp.textContent||'0') + 1;
-                    }
-                } else {
-                    alert('Failed to send: ' + (data.error || 'Unknown error'));
-                }
+                if(data.success){
+                    var box=document.getElementById('threadMessages'+cid);
+                    var empty=box.querySelector('p.text-muted'); if(empty) empty.remove();
+                    box.appendChild(bubble(data.reply)); scrollBot(box); inp.value='';
+                    var badge=document.getElementById('badge-'+cid);
+                    if(badge){ var sp=badge.querySelector('span'); if(sp) sp.textContent=parseInt(sp.textContent||'0')+1; }
+                } else { alert('Error: '+(data.error||'Unknown')); }
             })
-            .catch(function(){ alert('Network error. Please try again.'); })
-            .finally(function(){
-                input.disabled = false;
-                btn.classList.remove('thread-sending');
-                btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send';
-                input.focus();
-            });
+            .catch(function(){ alert('Network error.'); })
+            .finally(function(){ inp.disabled=false; btn.disabled=false; btn.innerHTML='<i class="fas fa-paper-plane me-1"></i>Send'; inp.focus(); });
     }
 
-    document.addEventListener('click', function(e){
-        var btn = e.target.closest('.thread-send-btn');
-        if (btn) sendReply(btn.dataset.cid);
-    });
-
-    document.addEventListener('keydown', function(e){
-        if (e.key === 'Enter' && e.target.classList.contains('thread-reply-input')) {
-            sendReply(e.target.dataset.cid);
-        }
-    });
+    document.addEventListener('click',function(e){ var b=e.target.closest('.thread-send-btn'); if(b) send(b.dataset.cid); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Enter' && e.target.classList.contains('thread-reply-input')) send(e.target.dataset.cid); });
 })();
 </script>
 
