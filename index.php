@@ -399,6 +399,119 @@ $page_title = "Welcome";
 
     <!-- RIGHT -->
     <div class="panel-right">
+
+    <?php if (isset($_GET['step']) && $_GET['step'] === '2fa' && !empty($_SESSION['2fa_user_id'])): ?>
+
+        <?php
+        $masked   = htmlspecialchars($_SESSION['2fa_masked_email'] ?? 'your email');
+        $expireMs = max(0, (($_SESSION['2fa_expires'] ?? time()) - time())) * 1000;
+        ?>
+
+        <div class="form-heading">Check your email</div>
+        <div class="form-sub">We sent a 6-digit code to <strong><?= $masked ?></strong>. Enter it below.</div>
+
+        <?php if (isset($_GET['error'])): ?>
+        <div class="login-alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <?= htmlspecialchars($_GET['error']) ?>
+        </div>
+        <?php endif; ?>
+
+        <style>
+        .otp-row{display:flex;gap:.6rem;justify-content:center;margin:1.5rem 0;}
+        .otp-digit{width:48px;height:58px;text-align:center;font-size:1.6rem;font-weight:700;border:2px solid var(--border,#e2e8f0);border-radius:10px;background:var(--field-bg,#fff);color:var(--text,#0f172a);outline:none;transition:border-color .2s,box-shadow .2s;caret-color:transparent;}
+        .otp-digit:focus{border-color:var(--gold,#c9a84c);box-shadow:0 0 0 3px rgba(201,168,76,.15);}
+        .otp-timer{text-align:center;font-size:.78rem;color:var(--muted,#94a3b8);margin-bottom:1rem;}
+        #otpCountdown{font-weight:700;color:var(--gold,#c9a84c);}
+        </style>
+
+        <form action="login.php" method="POST" id="otpForm">
+            <?= csrf_input() ?>
+            <input type="hidden" name="verify_2fa" value="1">
+            <input type="hidden" name="otp_code" id="otpHidden">
+
+            <div class="otp-row" id="otpBoxes">
+                <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                <input type="text" class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            </div>
+
+            <div class="otp-timer">Code expires in <span id="otpCountdown">10:00</span></div>
+
+            <button type="submit" class="btn-signin" id="otpSubmitBtn" disabled>
+                <span class="btn-text"><i class="fas fa-shield-alt me-2"></i>Verify Code</span>
+                <span class="btn-spinner"><i class="fas fa-circle-notch fa-spin"></i></span>
+            </button>
+        </form>
+
+        <div class="divider" style="margin:1.2rem 0;">
+            <div class="divider-line"></div><div class="divider-text">or</div><div class="divider-line"></div>
+        </div>
+        <div class="form-footer">
+            <a href="index.php"><i class="fas fa-arrow-left me-1"></i>Back to login</a>
+        </div>
+
+        <script>
+        (function(){
+            var digits    = document.querySelectorAll('.otp-digit');
+            var hidden    = document.getElementById('otpHidden');
+            var submitBtn = document.getElementById('otpSubmitBtn');
+            var expireAt  = Date.now() + <?= $expireMs ?>;
+
+            if(digits[0]) digits[0].focus();
+
+            function sync(){
+                var code = Array.from(digits).map(function(d){return d.value;}).join('');
+                hidden.value = code;
+                submitBtn.disabled = code.length < 6;
+            }
+
+            digits.forEach(function(inp, i){
+                inp.addEventListener('input', function(){
+                    this.value = this.value.replace(/[^0-9]/g,'').slice(-1);
+                    if(this.value && i < digits.length-1) digits[i+1].focus();
+                    sync();
+                    if(Array.from(digits).every(function(d){return d.value.length===1;})){
+                        setTimeout(function(){ document.getElementById('otpForm').submit(); }, 80);
+                    }
+                });
+                inp.addEventListener('keydown', function(e){
+                    if(e.key==='Backspace'&&!this.value&&i>0){ digits[i-1].focus(); digits[i-1].value=''; sync(); }
+                    if(e.key==='ArrowLeft'&&i>0) digits[i-1].focus();
+                    if(e.key==='ArrowRight'&&i<digits.length-1) digits[i+1].focus();
+                });
+                inp.addEventListener('paste', function(e){
+                    e.preventDefault();
+                    var p = (e.clipboardData||window.clipboardData).getData('text').replace(/[^0-9]/g,'');
+                    p.split('').forEach(function(ch,j){ if(digits[i+j]) digits[i+j].value=ch; });
+                    var next = Math.min(i+p.length, digits.length-1);
+                    digits[next].focus(); sync();
+                });
+            });
+
+            // Countdown
+            function tick(){
+                var left = Math.max(0, Math.round((expireAt-Date.now())/1000));
+                var m=Math.floor(left/60), s=left%60;
+                var el=document.getElementById('otpCountdown');
+                if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+                if(left<=30&&el) el.style.color='#ef4444';
+                if(left>0) setTimeout(tick,1000);
+                else{ submitBtn.disabled=true; digits.forEach(function(d){d.disabled=true;}); if(el)el.textContent='Expired'; }
+            }
+            tick();
+
+            document.getElementById('otpForm').addEventListener('submit',function(){
+                submitBtn.classList.add('loading'); submitBtn.disabled=true;
+            });
+        })();
+        </script>
+
+    <?php else: ?>
+
         <div class="form-heading">Sign in</div>
         <div class="form-sub">Enter your credentials to access your account</div>
 
@@ -461,6 +574,9 @@ $page_title = "Welcome";
         <div class="form-footer">
             <a href="forgot_password.php"><i class="fas fa-key me-1"></i>Forgot your password?</a>
         </div>
+
+    <?php endif; ?>
+
     </div>
 </div>
 
