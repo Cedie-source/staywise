@@ -67,6 +67,21 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&isset($_POST['ajax_send_reply'])){
     if(!$ok||!$rid){echo json_encode(['success'=>false,'error'=>$err]);exit();}
     $name=$_SESSION['full_name']??$_SESSION['username']??'You';
     $reply=['reply_id'=>$rid,'complaint_id'=>$cid,'role'=>'tenant','message'=>$msg,'created_at'=>date('Y-m-d H:i:s'),'full_name'=>$name];
+
+    // Notify ALL admins that tenant replied
+    try {
+        $admins = $conn->query("SELECT id FROM users WHERE role='admin' AND is_active=1");
+        if ($admins) {
+            $nTitle = "💬 Tenant replied to complaint";
+            $nMsg   = htmlspecialchars($name) . ": " . mb_substr($msg,0,100) . (mb_strlen($msg)>100?'…':'');
+            while ($adm = $admins->fetch_assoc()) {
+                $nIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url,related_id) VALUES (?,'advisory',?,?,'medium','admin/complaints.php',?)");
+                $nIns->bind_param("issi",$adm['id'],$nTitle,$nMsg,$cid);
+                $nIns->execute(); $nIns->close();
+            }
+        }
+    } catch(Throwable $e){}
+
     echo json_encode(['success'=>true,'reply'=>$reply]);
     exit();
 }
@@ -99,6 +114,23 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&isset($_POST['submit_complaint'])){
                 $nIns2  = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'advisory',?,?,'low','tenant/complaints.php')");
                 $nIns2->bind_param("iss", $_SESSION['user_id'], $nTitle, $nMsg);
                 $nIns2->execute(); $nIns2->close();
+            } catch(Throwable $e){}
+
+            // Notify ALL admins - new complaint submitted
+            try {
+                $tenantName = $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'A tenant';
+                $admins2 = $conn->query("SELECT id FROM users WHERE role='admin' AND is_active=1");
+                if ($admins2) {
+                    $aNTitle = "🚨 New Complaint Submitted";
+                    $aNMsg   = htmlspecialchars($tenantName) . " submitted: \"" . mb_substr($title,0,80) . "\"" . ($urg ? " [URGENT]" : "");
+                    $newCid  = $conn->insert_id;
+                    while ($adm2 = $admins2->fetch_assoc()) {
+                        $aNIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url,related_id) VALUES (?,'advisory',?,?,?,'admin/complaints.php',?)");
+                        $pri   = $urg ? 'high' : 'medium';
+                        $aNIns->bind_param("isssi",$adm2['id'],$aNTitle,$aNMsg,$pri,$newCid);
+                        $aNIns->execute(); $aNIns->close();
+                    }
+                }
             } catch(Throwable $e){}
         }
         $ins->close();
