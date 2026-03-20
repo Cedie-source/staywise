@@ -239,6 +239,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_manual_gcash']
                 $nIns->bind_param("iss", $_SESSION['user_id'], $nTitle, $nMsg);
                 $nIns->execute(); $nIns->close();
             } catch (Throwable $e) {}
+            // Notify ALL admins - new payment submitted
+            try {
+                $tName2   = $tenant['name'] ?? ($_SESSION['full_name'] ?? 'A tenant');
+                $monthLabel2 = $for_month ? date('F Y', strtotime($for_month.'-01')) : '';
+                $admins3  = $conn->query("SELECT id FROM users WHERE role='admin' AND is_active=1");
+                if ($admins3) {
+                    $aNTitle3 = "💳 New Payment Submitted";
+                    $aNMsg3   = htmlspecialchars($tName2) . " submitted ₱" . number_format($amount,2) . ($monthLabel2 ? " for $monthLabel2" : "") . " via GCash — needs verification.";
+                    while ($adm3 = $admins3->fetch_assoc()) {
+                        $aNIns3 = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'payment',?,?,'high','admin/payments.php')");
+                        $aNIns3->bind_param("iss",$adm3['id'],$aNTitle3,$aNMsg3);
+                        $aNIns3->execute(); $aNIns3->close();
+                    }
+                }
+            } catch (Throwable $e) {}
             header("Location: payments.php?uploaded=1");
             exit();
         } else {
@@ -287,6 +302,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cash'])) {
                 $nIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'payment',?,?,'low','tenant/payments.php')");
                 $nIns->bind_param("iss", $_SESSION['user_id'], $nTitle, $nMsg);
                 $nIns->execute(); $nIns->close();
+            } catch (Throwable $e) {}
+            // Notify ALL admins - new cash payment submitted
+            try {
+                $tName4   = $tenant['name'] ?? ($_SESSION['full_name'] ?? 'A tenant');
+                $monthLabel4 = $for_month ? date('F Y', strtotime($for_month.'-01')) : '';
+                $admins4  = $conn->query("SELECT id FROM users WHERE role='admin' AND is_active=1");
+                if ($admins4) {
+                    $aNTitle4 = "💳 New Payment Submitted";
+                    $aNMsg4   = htmlspecialchars($tName4) . " submitted ₱" . number_format($amount,2) . ($monthLabel4 ? " for $monthLabel4" : "") . " via Cash — needs verification.";
+                    while ($adm4 = $admins4->fetch_assoc()) {
+                        $aNIns4 = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'payment',?,?,'high','admin/payments.php')");
+                        $aNIns4->bind_param("iss",$adm4['id'],$aNTitle4,$aNMsg4);
+                        $aNIns4->execute(); $aNIns4->close();
+                    }
+                }
             } catch (Throwable $e) {}
             header("Location: payments.php?uploaded=1");
             exit();
