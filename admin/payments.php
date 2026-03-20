@@ -66,6 +66,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         $success = "Payment status updated successfully!";
         $details = "Changed payment ID $payment_id status to $status";
         logAdminAction($conn, $_SESSION['user_id'], 'update_payment_status', $details);
+
+        // ── Send in-app + email notification to tenant ──────────────
+        try {
+            // Get payment + tenant info
+            $pInfo = $conn->prepare("SELECT p.amount, p.for_month, p.tenant_id, t.name, t.email, t.user_id FROM payments p JOIN tenants t ON p.tenant_id = t.tenant_id WHERE p.payment_id = ?");
+            $pInfo->bind_param("i", $payment_id);
+            $pInfo->execute();
+            $pRow = $pInfo->get_result()->fetch_assoc();
+            $pInfo->close();
+
+            if ($pRow) {
+                $tUserId  = (int)$pRow['user_id'];
+                $tName    = $pRow['name'];
+                $tEmail   = $pRow['email'];
+                $amount   = number_format((float)$pRow['amount'], 2);
+                $forMonth = $pRow['for_month'] ? date('F Y', strtotime($pRow['for_month'] . '-01')) : '';
+
+                if ($status === 'verified') {
+                    $notifTitle = "Payment Verified ✅";
+                    $notifMsg   = "Your payment of ₱{$amount}" . ($forMonth ? " for {$forMonth}" : "") . " has been verified.";
+                    $actionUrl  = "tenant/payments.php";
+                    $priority   = "high";
+                } elseif ($status === 'rejected') {
+                    $notifTitle = "Payment Rejected ❌";
+                    $notifMsg   = "Your payment of ₱{$amount}" . ($forMonth ? " for {$forMonth}" : "") . " was rejected. Please resubmit.";
+                    $actionUrl  = "tenant/payments.php";
+                    $priority   = "high";
+                } else {
+                    $notifTitle = "Payment Update";
+                    $notifMsg   = "Your payment of ₱{$amount} status changed to: " . ucfirst($status) . ".";
+                    $actionUrl  = "tenant/payments.php";
+                    $priority   = "medium";
+                }
+
+                // Insert in-app notification
+                $ins = $conn->prepare("INSERT INTO ai_notifications (user_id, type, title, message, priority, action_url, related_id) VALUES (?, 'payment', ?, ?, ?, ?, ?)");
+                $ins->bind_param("issssi", $tUserId, $notifTitle, $notifMsg, $priority, $actionUrl, $payment_id);
+                $ins->execute(); $ins->close();
+
+                // Email notification removed - in-app only
+            }
+        } catch (Throwable $e) { /* never break the page */ }
+
     } else {
         $error = "Failed to update payment status";
     }
@@ -89,8 +132,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['record_cash_payment'])
         $stmt = $conn->prepare("INSERT INTO payments (tenant_id, amount, payment_method, payment_date, for_month, status, payment_type, paid_at) VALUES (?, ?, 'cash', ?, ?, 'verified', 'rent', ?)");
         $stmt->bind_param("idsss", $tenant_id, $amount, $pay_date, $for_month, $now);
         if ($stmt->execute()) {
+            $newPaymentId = $conn->insert_id;
             logAdminAction($conn, $_SESSION['user_id'], 'record_cash_payment', "Recorded cash ₱" . number_format($amount, 2) . " tenant ID $tenant_id month $for_month");
             $success = "Cash payment of ₱" . number_format($amount, 2) . " recorded and verified!";
+
+            // Notify tenant
+            try {
+                $tInfo = $conn->prepare("SELECT name, email, user_id FROM tenants WHERE tenant_id = ?");
+                $tInfo->bind_param("i", $tenant_id); $tInfo->execute();
+                $tRow = $tInfo->get_result()->fetch_assoc(); $tInfo->close();
+                if ($tRow) {
+                    $tUserId2  = (int)$tRow['user_id'];
+                    $forMonthLabel = $for_month ? date('F Y', strtotime($for_month . '-01')) : '';
+                    $notifTitle2 = "Payment Verified ✅";
+                    $notifMsg2   = "Your cash payment of ₱" . number_format($amount, 2) . ($forMonthLabel ? " for {$forMonthLabel}" : "") . " has been recorded and verified.";
+                    $ins2 = $conn->prepare("INSERT INTO ai_notifications (user_id, type, title, message, priority, action_url, related_id) VALUES (?, 'payment', ?, ?, 'high', 'tenant/payments.php', ?)");
+                    $ins2->bind_param("issi", $tUserId2, $notifTitle2, $notifMsg2, $newPaymentId);
+                    $ins2->execute(); $ins2->close();
+                    // Email notification removed - in-app only
+                }
+            } catch (Throwable $e) {}
         } else {
             $error = "Failed to record payment.";
         }
