@@ -230,6 +230,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_manual_gcash']
 
         if ($stmt->execute()) {
             $stmt->close();
+            // Notify tenant - payment submitted
+            try {
+                $monthLabel = $for_month ? date('F Y', strtotime($for_month.'-01')) : '';
+                $nTitle = "📤 Payment Submitted";
+                $nMsg   = "Your GCash payment of ₱" . number_format($amount, 2) . ($monthLabel ? " for $monthLabel" : "") . " is pending admin verification.";
+                $nIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'payment',?,?,'low','tenant/payments.php')");
+                $nIns->bind_param("iss", $_SESSION['user_id'], $nTitle, $nMsg);
+                $nIns->execute(); $nIns->close();
+            } catch (Throwable $e) {}
             header("Location: payments.php?uploaded=1");
             exit();
         } else {
@@ -270,6 +279,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cash'])) {
 
         if ($stmt->execute()) {
             $stmt->close();
+            // Notify tenant - payment submitted
+            try {
+                $monthLabel = $for_month ? date('F Y', strtotime($for_month.'-01')) : '';
+                $nTitle = "📤 Payment Submitted";
+                $nMsg   = "Your cash payment of ₱" . number_format($amount, 2) . ($monthLabel ? " for $monthLabel" : "") . " is pending admin verification.";
+                $nIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'payment',?,?,'low','tenant/payments.php')");
+                $nIns->bind_param("iss", $_SESSION['user_id'], $nTitle, $nMsg);
+                $nIns->execute(); $nIns->close();
+            } catch (Throwable $e) {}
             header("Location: payments.php?uploaded=1");
             exit();
         } else {
