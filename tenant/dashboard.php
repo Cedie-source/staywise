@@ -185,6 +185,63 @@ $complaints_stmt->execute();
 $complaints_result = $complaints_stmt->get_result();
 $stats['pending_complaints'] = $complaints_result->fetch_assoc()['count'];
 
+// ── Due Date Notification (triggered on dashboard visit) ─────────────
+// Sends in-app bell when: 3 days before due, on due day, or overdue
+// Uses ai_notifications to avoid duplicate spam (checks if already sent today)
+try {
+    $tenantUserId  = (int)$_SESSION['user_id'];
+    $tenantId      = $tenant['tenant_id'];
+    $rentAmt       = (float)($tenant['rent_amount'] ?? 0);
+    $todayStr      = date('Y-m-d');
+
+    if ($rentAmt > 0 && !$isInAdvancePeriod && $rentStatus !== 'Paid' && $rentStatus !== 'Covered') {
+
+        // Check if we already sent a due-date notification TODAY for this tenant
+        $dupCheck = $conn->prepare("SELECT notification_id FROM ai_notifications WHERE user_id=? AND type='payment' AND DATE(created_at)=? AND (title LIKE '%Due%' OR title LIKE '%Overdue%') LIMIT 1");
+        $dupCheck->bind_param("is", $tenantUserId, $todayStr);
+        $dupCheck->execute();
+        $dupCheck->store_result();
+        $alreadySent = $dupCheck->num_rows > 0;
+        $dupCheck->close();
+
+        if (!$alreadySent) {
+            $notifTitle = null;
+            $notifMsg   = null;
+            $priority   = 'medium';
+
+            if ($daysUntilDue === 3) {
+                // 3 days before due
+                $notifTitle = "⏰ Rent Due in 3 Days";
+                $notifMsg   = "Your rent of ₱" . number_format($rentAmt, 2) . " is due on " . $dueDate->format('M d, Y') . ". Please prepare your payment.";
+                $priority   = 'medium';
+            } elseif ($daysUntilDue === 1) {
+                // 1 day before due
+                $notifTitle = "⚠️ Rent Due Tomorrow";
+                $notifMsg   = "Your rent of ₱" . number_format($rentAmt, 2) . " is due tomorrow, " . $dueDate->format('M d, Y') . ". Pay now to avoid being overdue.";
+                $priority   = 'high';
+            } elseif ($daysUntilDue === 0) {
+                // Due today
+                $notifTitle = "🔴 Rent Due Today";
+                $notifMsg   = "Your rent of ₱" . number_format($rentAmt, 2) . " is due today! Please make your payment as soon as possible.";
+                $priority   = 'high';
+            } elseif ($daysUntilDue < 0 && $rentStatus === 'Overdue') {
+                // Overdue
+                $daysLate = abs($daysUntilDue);
+                $notifTitle = "🚨 Rent Overdue by " . $daysLate . " day" . ($daysLate > 1 ? 's' : '');
+                $notifMsg   = "Your rent of ₱" . number_format($rentAmt, 2) . " was due on " . $dueDate->format('M d, Y') . ". Please pay immediately to avoid penalties.";
+                $priority   = 'high';
+            }
+
+            if ($notifTitle) {
+                $notifIns = $conn->prepare("INSERT INTO ai_notifications (user_id, type, title, message, priority, action_url) VALUES (?, 'payment', ?, ?, ?, 'tenant/payments.php')");
+                $notifIns->bind_param("isss", $tenantUserId, $notifTitle, $notifMsg, $priority);
+                $notifIns->execute();
+                $notifIns->close();
+            }
+        }
+    }
+} catch (Throwable $e) { /* never break the page */ }
+
 // Recent announcements
 $announcements = $conn->query("SELECT * FROM announcements ORDER BY created_at DESC LIMIT 3");
 
