@@ -89,7 +89,18 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&isset($_POST['submit_complaint'])){
             $ins=$conn->prepare("INSERT INTO complaints (tenant_id,title,description,status) VALUES (?,?,?,'pending')");
             $ins->bind_param("iss",$tenant_id,$title,$desc);
         }
-        $success=$ins->execute()?"Complaint submitted! We'll respond soon.":"Failed: ".$ins->error;
+        $ok = $ins->execute();
+        $success = $ok ? "Complaint submitted! We'll respond soon." : "Failed: ".$ins->error;
+        // Notify tenant - complaint received confirmation
+        if ($ok) {
+            try {
+                $nTitle = "📝 Complaint Received";
+                $nMsg   = "Your complaint \"" . mb_substr($title,0,60) . "\" has been submitted. We'll respond soon.";
+                $nIns2  = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'advisory',?,?,'low','tenant/complaints.php')");
+                $nIns2->bind_param("iss", $_SESSION['user_id'], $nTitle, $nMsg);
+                $nIns2->execute(); $nIns2->close();
+            } catch(Throwable $e){}
+        }
         $ins->close();
     } else {$error="Please fill in all required fields.";}
 }
