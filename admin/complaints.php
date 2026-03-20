@@ -54,6 +54,22 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['ajax_send_reply'])) {
     $name = $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Admin';
     $reply = ['reply_id'=>$rid,'complaint_id'=>$cid,'role'=>'admin','message'=>$msg,'created_at'=>date('Y-m-d H:i:s'),'full_name'=>$name];
     try { logAdminAction($conn,$uid,'reply_complaint',"Replied to #$cid"); } catch(Throwable $e){}
+
+    // Notify tenant in-app + email
+    try {
+        $tInfo = $conn->prepare("SELECT t.user_id, t.name, t.email, c.title FROM complaints c JOIN tenants t ON c.tenant_id=t.tenant_id WHERE c.complaint_id=?");
+        $tInfo->bind_param("i",$cid); $tInfo->execute();
+        $tRow = $tInfo->get_result()->fetch_assoc(); $tInfo->close();
+        if ($tRow) {
+            $nTitle = "💬 Admin replied to your complaint";
+            $nMsg   = "Re: " . mb_substr($tRow['title'],0,60) . " — " . mb_substr($msg,0,80) . (mb_strlen($msg)>80?'…':'');
+            $nIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url,related_id) VALUES (?,'advisory',?,?,'medium','tenant/complaints.php',?)");
+            $nIns->bind_param("issi",$tRow['user_id'],$nTitle,$nMsg,$cid);
+            $nIns->execute(); $nIns->close();
+            // Email notification removed - in-app only
+        }
+    } catch(Throwable $e){}
+
     echo json_encode(['success'=>true,'reply'=>$reply]);
     exit();
 }
@@ -64,7 +80,23 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['update_complaint'])) {
     $cid=intval($_POST['complaint_id']??0); $status=$_POST['status']??''; $resp=trim($_POST['admin_response']??'');
     $upd=$conn->prepare("UPDATE complaints SET status=?,admin_response=? WHERE complaint_id=?");
     if ($upd) { $upd->bind_param("ssi",$status,$resp,$cid); $upd->execute(); $upd->close(); }
-    try { logAdminAction($conn,$_SESSION['user_id'],'update_complaint',"Updated #$cid"); } catch(Throwable $e){}
+    try { logAdminAction($conn,$_SESSION['user_id'],'update_complaint',"Updated #$cid to $status"); } catch(Throwable $e){}
+    // Notify tenant of status change
+    try {
+        $tInfo2 = $conn->prepare("SELECT t.user_id, t.name, t.email, c.title FROM complaints c JOIN tenants t ON c.tenant_id=t.tenant_id WHERE c.complaint_id=?");
+        $tInfo2->bind_param("i",$cid); $tInfo2->execute();
+        $tRow2 = $tInfo2->get_result()->fetch_assoc(); $tInfo2->close();
+        if ($tRow2) {
+            $sLabels = ['pending'=>'Pending','ongoing'=>'In Progress 🔧','resolved'=>'Resolved ✅'];
+            $sLabel  = $sLabels[$status] ?? ucfirst($status);
+            $nTitle2 = "Complaint Update: $sLabel";
+            $nMsg2   = "\"" . mb_substr($tRow2['title'],0,60) . "\" marked as $sLabel." . (!empty($resp) ? " Admin: ".mb_substr($resp,0,80) : '');
+            $nIns2 = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url,related_id) VALUES (?,'advisory',?,?,'medium','tenant/complaints.php',?)");
+            $nIns2->bind_param("issi",$tRow2['user_id'],$nTitle2,$nMsg2,$cid);
+            $nIns2->execute(); $nIns2->close();
+            // Email notification removed - in-app only
+        }
+    } catch(Throwable $e){}
     header("Location: complaints.php?updated=1"); exit();
 }
 
