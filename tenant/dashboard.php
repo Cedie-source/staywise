@@ -185,6 +185,48 @@ $complaints_stmt->execute();
 $complaints_result = $complaints_stmt->get_result();
 $stats['pending_complaints'] = $complaints_result->fetch_assoc()['count'];
 
+// ── Lease Expiry Reminder (triggered on dashboard visit) ────────────
+try {
+    $leaseEndRaw = $tenant['lease_end_date'] ?? '';
+    if (!empty($leaseEndRaw) && $leaseEndRaw !== '0000-00-00') {
+        $leaseEndDt  = new DateTime(date('Y-m-d', strtotime($leaseEndRaw)));
+        $todayDt     = new DateTime('today');
+        $daysToEnd   = (int)$todayDt->diff($leaseEndDt)->format('%r%a');
+        $todayStr2   = date('Y-m-d');
+
+        // Only notify at 30, 15, 7, 3, 1 days before expiry
+        $reminderDays = [30, 15, 7, 3, 1];
+
+        if (in_array($daysToEnd, $reminderDays)) {
+            // Check not already sent today
+            $dupChk = $conn->prepare("SELECT notification_id FROM ai_notifications WHERE user_id=? AND DATE(created_at)=? AND title LIKE '%Lease%' LIMIT 1");
+            $dupChk->bind_param("is", $_SESSION['user_id'], $todayStr2);
+            $dupChk->execute(); $dupChk->store_result();
+            $leaseNotifSent = $dupChk->num_rows > 0;
+            $dupChk->close();
+
+            if (!$leaseNotifSent) {
+                if ($daysToEnd === 1) {
+                    $leaseNTitle = "🚨 Lease Expires Tomorrow!";
+                    $leaseNMsg   = "Your lease for Unit " . ($tenant['unit_number'] ?? '') . " expires tomorrow on " . $leaseEndDt->format('M d, Y') . ". Please contact your admin.";
+                    $leasePri    = 'high';
+                } elseif ($daysToEnd <= 7) {
+                    $leaseNTitle = "⚠️ Lease Expiring in $daysToEnd Days";
+                    $leaseNMsg   = "Your lease for Unit " . ($tenant['unit_number'] ?? '') . " expires on " . $leaseEndDt->format('M d, Y') . ". Contact admin to renew.";
+                    $leasePri    = 'high';
+                } else {
+                    $leaseNTitle = "📅 Lease Expiring in $daysToEnd Days";
+                    $leaseNMsg   = "Your lease for Unit " . ($tenant['unit_number'] ?? '') . " expires on " . $leaseEndDt->format('M d, Y') . ". Start planning your renewal.";
+                    $leasePri    = 'medium';
+                }
+                $leaseNIns = $conn->prepare("INSERT INTO ai_notifications (user_id,type,title,message,priority,action_url) VALUES (?,'advisory',?,?,?,'tenant/profile.php')");
+                $leaseNIns->bind_param("isss", $_SESSION['user_id'], $leaseNTitle, $leaseNMsg, $leasePri);
+                $leaseNIns->execute(); $leaseNIns->close();
+            }
+        }
+    }
+} catch (Throwable $e) {}
+
 // ── Due Date Notification (triggered on dashboard visit) ─────────────
 // Sends in-app bell when: 3 days before due, on due day, or overdue
 // Uses ai_notifications to avoid duplicate spam (checks if already sent today)
