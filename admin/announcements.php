@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once '../includes/security.php';
 set_secure_session_cookies(); // Must be before session_start()
 session_start();
@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_announcement'])) {
         $stmt = $conn->prepare("INSERT INTO announcements (title, content, announcement_date) VALUES (?, ?, ?)");
         $stmt->bind_param("sss", $title, $content, $announcement_date);
         if ($stmt->execute()) {
+            $announcementId = $conn->insert_id;
             // Log admin action (best-effort)
             try {
                 $log = $conn->prepare("INSERT INTO admin_logs (admin_id, action, details) VALUES (?, 'add_announcement', ?)");
@@ -60,14 +61,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_announcement'])) {
                 $log->bind_param("is", $_SESSION['user_id'], $details);
                 $log->execute();
                 $log->close();
-            } catch (Throwable $e) {
-                // ignore logging errors
-            }
+            } catch (Throwable $e) {}
+
+            // Notify ALL tenants in-app + email
+            try {
+                $allTenants = $conn->query("SELECT t.user_id, t.name, t.email FROM tenants t JOIN users u ON t.user_id = u.id WHERE u.is_active = 1 OR u.is_active IS NULL");
+                if ($allTenants) {
+                    $shortContent = mb_strlen($content) > 120 ? mb_substr($content, 0, 120) . '…' : $content;
+                    while ($tr = $allTenants->fetch_assoc()) {
+                        // In-app bell notification
+                        $ins = $conn->prepare("INSERT INTO ai_notifications (user_id, type, title, message, priority, action_url, related_id) VALUES (?, 'advisory', ?, ?, 'medium', 'tenant/announcements.php', ?)");
+                        $notifTitle = "📢 " . $title;
+                        $ins->bind_param("issi", $tr['user_id'], $notifTitle, $shortContent, $announcementId);
+                        $ins->execute(); $ins->close();
+                        // Email notification removed - in-app only
+                    }
+                }
+            } catch (Throwable $e) {}
+
             ann_flash_set('success', 'Announcement added successfully!');
-
-            // Email notifications sent in background to avoid slow page load
-            // Tenants will see the announcement on their dashboard immediately
-
             header('Location: announcements.php');
             exit();
         } else {
